@@ -485,6 +485,10 @@ email function safely either way (it just no-ops until this is set up).
       supabase secrets set "FROM_EMAIL=Plates <orders@your-domain.com>"`
 - [ ] Test it: place a real order between two test accounts and confirm an
       actual email arrives (not just the in-app notification)
+- [ ] Run `supabase/migration_winback.sql` in Supabase SQL Editor. Sets up a
+      daily pg_cron job that nudges buyers who've gone quiet for 21+ days
+- [ ] Run `supabase/migration_cottage_law.sql` in Supabase SQL Editor. Adds
+      `listings.cottage_law_confirmed`
 
 ## Things to check
 
@@ -1339,6 +1343,57 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
         empanadas post" / "your banh mi post" for leads with a listing
         note, and fell back to the generic "[dish]" wording for the one
         without
+- [x] Retention + compliance pass, prompted by the user asking how
+      platforms like Facebook Marketplace avoid liability for user-posted
+      food listings, and floating "just have community guidelines and let
+      people do what they want." Answered that honestly (Section 230 is
+      the real mechanism, but it weakens the more a platform actively
+      facilitates the specific conduct — which Plates does, via the seller
+      dashboard, admin approval, trust badges — so a guidelines page alone
+      isn't a legal shield) rather than treating it as solved by product
+      copy; the actual liability question still belongs in the attorney
+      review already flagged in `LEGAL_REVIEW_BRIEF.md`. Two concrete
+      things came out of that conversation:
+      - **Win-back notifications** (`migration_winback.sql`, confirmed run
+        live): a daily pg_cron job finds buyers who completed an order but
+        have gone quiet for 21+ days and sends one nudge (at most every 14
+        days) via the existing notification+push pipeline — first choice a
+        seller they've ordered from before who has something available
+        now, otherwise a fresh listing in the same cuisine as something
+        they've previously ordered. No new UI; reuses the notification
+        bell. **Real bug found and fixed during verification**: the
+        function's final `update public.profiles ... where id in (select
+        buyer_id from picks)` referenced the `picks` CTE from a *separate*
+        SQL statement — a CTE only stays in scope for the one statement
+        it's attached to, so this threw `relation "picks" does not exist`
+        the first time it actually ran (the earlier "no errors" report was
+        from `create or replace function`, which doesn't execute the body).
+        Fixed by folding the insert and update into one statement via a
+        data-modifying CTE chain (`inserted as (insert ... returning
+        user_id)` feeding the final `update`). Confirmed live end-to-end
+        after the fix: backdated a test buyer's completed order to 25 days
+        ago, called the function directly, and got the expected "👋 Referral
+        Test One just posted Dedup test jerk chicken — you ordered from
+        them before" notification plus a `last_winback_sent_at` update, all
+        via a clean test buyer with no prior order history (a first
+        buyer's leftover pending order from earlier testing had correctly
+        excluded them, which briefly looked like a second bug before
+        realizing it was the "no orders in 21 days" check working as
+        designed). Test data cleaned up afterward
+      - **Cottage law compliance checkbox** (`migration_cottage_law.sql`,
+        confirmed run live): a legitimate, non-legal-opinion mitigation,
+        not a fix for the liability question above. Seller-side checkbox
+        on Post/Edit Listing — "I confirm I'm legally permitted to sell
+        homemade food where I live under my state/local cottage food laws"
+        — same pattern as the existing allergens checkbox. Shown as a
+        small confirmation line on the listing detail page when checked.
+        Replaced an old passive disclaimer sentence at the bottom of the
+        post form that said roughly the same thing but wasn't tracked
+        anywhere. Confirmed live end-to-end: checked the box on a real
+        test listing, saved, and verified `cottage_law_confirmed = true`
+        directly in the database plus the confirmation line rendering on
+        the listing page. Test listing cleaned up afterward
+      - lint + build both clean after this batch
 
 ## Not built yet (future ideas)
 

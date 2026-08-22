@@ -12,6 +12,7 @@ const emptyForm = {
   description: '',
   allergens: '',
   allergensConfirmed: false,
+  cottageLawConfirmed: false,
   minOrderAmount: '',
   pickup: '',
   pickupDate: '',
@@ -137,6 +138,7 @@ export default function PostListing({ onAddListing, onEditListing, isAdmin, curr
               .map((a) => a.trim())
               .filter(Boolean),
             allergensConfirmed: form.allergensConfirmed,
+            cottageLawConfirmed: form.cottageLawConfirmed,
             minOrderAmount: form.minOrderAmount === '' ? null : Number(form.minOrderAmount),
             pickup: form.pickup.trim() || 'TBD',
             pickupDate: form.pickupDate,
@@ -313,6 +315,18 @@ export default function PostListing({ onAddListing, onEditListing, isAdmin, curr
         </span>
       </label>
 
+      <label className="flex items-start gap-2 text-xs -mt-1" style={{ color: 'var(--ink-soft)' }}>
+        <input
+          type="checkbox"
+          checked={form.cottageLawConfirmed}
+          onChange={(e) => setForm((f) => ({ ...f, cottageLawConfirmed: e.target.checked }))}
+          className="mt-0.5"
+        />
+        <span>
+          I confirm I'm legally permitted to sell homemade food where I live under my state/local cottage food laws
+        </span>
+      </label>
+
       <Field label="Minimum order amount (optional)">
         <input
           value={form.minOrderAmount}
@@ -389,11 +403,6 @@ export default function PostListing({ onAddListing, onEditListing, isAdmin, curr
           />
         </Field>
       )}
-
-      <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>
-        By posting you confirm this food is made in a home kitchen that meets your state's
-        cottage food rules.
-      </p>
 
       {submitError && (
         <p className="text-xs" style={{ color: 'var(--plum)' }}>

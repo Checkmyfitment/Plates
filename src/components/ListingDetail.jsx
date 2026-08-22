@@ -335,6 +335,12 @@ export default function ListingDetail({
           </div>
         </div>
 
+        {listing.cottageLawConfirmed && (
+          <p className="mt-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
+            ✓ Seller has confirmed they're legally permitted to sell homemade food where they live
+          </p>
+        )}
+
         {moreFromSeller.length > 0 && (
           <div className="mt-5">
             <p className="text-xs mb-2" style={{ color: 'var(--ink-soft)' }}>

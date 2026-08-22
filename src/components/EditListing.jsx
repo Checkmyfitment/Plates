@@ -15,6 +15,7 @@ export default function EditListing({ listing, onBack, onSave, onDelete, onToggl
     description: listing.description ?? '',
     allergens: (listing.allergens ?? []).join(', '),
     allergensConfirmed: listing.allergensConfirmed ?? false,
+    cottageLawConfirmed: listing.cottageLawConfirmed ?? false,
     minOrderAmount: listing.minOrderAmount ?? '',
     pickup: listing.pickup ?? '',
     pickupDate: listing.pickupDate ?? '',
@@ -97,6 +98,7 @@ export default function EditListing({ listing, onBack, onSave, onDelete, onToggl
           .map((a) => a.trim())
           .filter(Boolean),
         allergensConfirmed: form.allergensConfirmed,
+        cottageLawConfirmed: form.cottageLawConfirmed,
         minOrderAmount: form.minOrderAmount === '' ? null : Number(form.minOrderAmount),
         pickup: form.pickup.trim() || 'TBD',
         pickupDate: form.pickupDate,
@@ -310,6 +312,18 @@ export default function EditListing({ listing, onBack, onSave, onDelete, onToggl
           />
           <span>
             I've double-checked this allergen list is accurate for what's actually in this dish
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2 text-xs -mt-1" style={{ color: 'var(--ink-soft)' }}>
+          <input
+            type="checkbox"
+            checked={form.cottageLawConfirmed}
+            onChange={(e) => setForm((f) => ({ ...f, cottageLawConfirmed: e.target.checked }))}
+            className="mt-0.5"
+          />
+          <span>
+            I confirm I'm legally permitted to sell homemade food where I live under my state/local cottage food laws
           </span>
         </label>
 
