@@ -735,7 +735,15 @@ export default function App() {
   if (session && showAdmin) {
     body = (
       <Suspense fallback={<div className="px-5 pt-6"><div className="skeleton h-40 w-full rounded-2xl" /></div>}>
-        <AdminScreen onBack={() => setShowAdmin(false)} adminId={session.user.id} onSelfProfileChanged={refreshProfile} />
+        <AdminScreen
+          onBack={() => setShowAdmin(false)}
+          adminId={session.user.id}
+          onSelfProfileChanged={refreshProfile}
+          onEditListing={(listing) => {
+            setShowAdmin(false)
+            setEditingListing(listing)
+          }}
+        />
       </Suspense>
     )
   } else if (session && editingListing) {

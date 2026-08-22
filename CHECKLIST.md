@@ -1429,6 +1429,48 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       sellers" — flagged as a much bigger, messier feature given Plates has
       no payment processing and no listing-agnostic pickup coordination.
       Test listing cleaned up afterward. Lint + build clean
+- [x] Admin listings control + Browse search radius, prompted by two
+      questions: whether "trending" is really area-based, and whether
+      buyers can pick a search radius by zip code.
+      - **Trending clarified** (no code change, just an answer): "Trending
+        near you" does real haversine distance math (prefers sellers within
+        25 miles, pads with farther ones only if fewer than 5 are nearby).
+        The neighborhood leaderboard is coarser — an exact text match on
+        the `neighborhood` profile field, not a radius.
+      - **Search radius filter** — Browse previously only had a "📍
+        Nearest" sort toggle with no actual cutoff; everything showed
+        regardless of distance. Added a radius `<select>`
+        (Any/5/10/25/50 mi) next to it in `BrowseScreen.jsx`, filtering
+        `filtered` before it reaches the list/map — a listing with no
+        computable distance (e.g. an unclaimed store with just a typed
+        neighborhood, no geocoded point) stays visible rather than
+        vanishing. Persisted via the existing `browseFilters` localStorage
+        helper alongside cuisine/view. Noted for the user that the app
+        doesn't actually collect zip codes — it geocodes a neighborhood
+        into lat/lng and filters off that, same as everywhere else in the
+        app. Confirmed live: selected "Within 5 mi", every remaining card
+        showed a distance ≤5 mi ("nearby" or an explicit mi figure);
+        reloaded the page and the selection persisted; reset back to "Any
+        distance" afterward
+      - **Admin listings control** — RLS already had "Admins can
+        update/delete any listing" policies from earlier in the project,
+        just no UI surfaced them beyond the Reports moderation flow. Added
+        a "Listings" tab to `AdminScreen.jsx` (new `ListingsPanel`, listing
+        every listing platform-wide with search by title/seller) with Edit
+        and Delete per row. Edit reuses the exact same `EditListing` screen
+        a seller gets, wired through a new `onEditListing` prop threaded
+        from `App.jsx` down through `AdminScreen`. Confirmed live:
+        edited a listing owned by a different seller ("Referral Test One")
+        as an admin logged in as a different account, verified the title
+        change persisted via direct DB read while `seller_id` stayed
+        unchanged (ownership untouched, only the content changed), then
+        reverted the test edit. Delete: `adminDeleteListing` is the same
+        function the existing Reports panel already used successfully to
+        delete reported listings, so it's proven code — could not click
+        through the actual confirm() dialog in this session's sandboxed
+        browser (native dialogs are auto-suppressed there), so used SQL to
+        do the equivalent cleanup instead; a real user's browser doesn't
+        have that restriction. Lint + build clean
 
 ## Not built yet (future ideas)
 

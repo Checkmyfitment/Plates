@@ -28,6 +28,7 @@ import {
   updateOutreachLead,
   deleteOutreachLead,
 } from '../lib/outreach'
+import { fetchListings } from '../lib/listings'
 import WeeklyBarChart from './WeeklyBarChart'
 import OrderHealthBar from './OrderHealthBar'
 import { useToast } from '../context/ToastContext'
@@ -412,6 +413,111 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
                     style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
                   >
                     {u.isAdmin ? 'Remove admin' : 'Make admin'}
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </>
+  )
+}
+
+// admins can edit/delete any listing (backed by the "Admins can update/delete
+// any listing" RLS policies) — edit reuses the exact same EditListing screen
+// a seller gets, via the onEditListing callback passed down from App.jsx;
+// delete is a quick inline action here since it doesn't need the full form
+function ListingsPanel({ onEditListing }) {
+  const toast = useToast()
+  const [query, setQuery] = useState('')
+  const [listings, setListings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { busyIds, withBusy } = useBusyIds()
+
+  useEffect(() => {
+    fetchListings()
+      .then(setListings)
+      .catch((err) => {
+        console.error('Failed to load listings', err)
+        toast.error('Could not load listings — try again.')
+      })
+      .finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const q = query.trim().toLowerCase()
+  const filtered = q
+    ? listings.filter((l) => l.title.toLowerCase().includes(q) || l.seller.toLowerCase().includes(q))
+    : listings
+
+  const remove = (listing) =>
+    withBusy(listing.id, async () => {
+      if (!window.confirm(`Delete "${listing.title}" by ${listing.seller}? This can't be undone.`)) return
+      await adminDeleteListing(listing.id)
+      setListings((prev) => prev.filter((l) => l.id !== listing.id))
+      toast.success('Listing deleted.')
+    })
+
+  return (
+    <>
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search by title or seller…"
+        className="field mb-3"
+      />
+
+      {loading ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="skeleton h-16 w-full" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <Placeholder compact icon="🍽️" title="No listings found" body="Try a different search." />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {filtered.map((l) => {
+            const busy = busyIds.has(l.id)
+            return (
+              <div key={l.id} className="card-elevated p-3 text-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{l.title}</p>
+                    <p className="text-xs truncate" style={{ color: 'var(--ink-soft)' }}>
+                      {l.seller} · ${l.price} · {l.cuisine || 'Uncategorized'}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    {l.featured && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}>
+                        Featured
+                      </span>
+                    )}
+                    {!l.available && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--plum-soft)', color: 'var(--plum)' }}>
+                        Sold out
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  <button
+                    disabled={busy}
+                    onClick={() => onEditListing?.(l)}
+                    className="pressable text-xs px-2.5 py-1 rounded-full border disabled:opacity-50"
+                    style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    disabled={busy}
+                    onClick={() => remove(l)}
+                    className="pressable text-xs px-2.5 py-1 rounded-full border disabled:opacity-50"
+                    style={{ borderColor: 'var(--plum)', color: 'var(--plum)' }}
+                  >
+                    Delete
                   </button>
                 </div>
               </div>
@@ -1437,7 +1543,7 @@ function StatsPanel() {
   )
 }
 
-export default function AdminScreen({ onBack, adminId, onSelfProfileChanged }) {
+export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onEditListing }) {
   const [section, setSection] = useState('reports')
 
   return (
@@ -1457,7 +1563,7 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged }) {
       </div>
 
       <div className="px-5 flex gap-2 mb-1 overflow-x-auto pb-1">
-        {['reports', 'users', 'stores', 'promotions', 'outreach', 'broadcast', 'stats'].map((s) => (
+        {['reports', 'users', 'listings', 'stores', 'promotions', 'outreach', 'broadcast', 'stats'].map((s) => (
           <button
             key={s}
             onClick={() => setSection(s)}
@@ -1476,6 +1582,7 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged }) {
       <div className="px-5 pt-3">
         {section === 'reports' && <ReportsPanel adminId={adminId} onSelfProfileChanged={onSelfProfileChanged} />}
         {section === 'users' && <UsersPanel adminId={adminId} onSelfProfileChanged={onSelfProfileChanged} />}
+        {section === 'listings' && <ListingsPanel onEditListing={onEditListing} />}
         {section === 'stores' && <StoresPanel adminId={adminId} />}
         {section === 'promotions' && <PromotionsPanel />}
         {section === 'outreach' && <OutreachPanel adminId={adminId} />}

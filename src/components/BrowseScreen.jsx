@@ -51,10 +51,11 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
   const [query, setQuery] = useState('')
   const [view, setView] = useState(() => getSavedBrowseFilters()?.view ?? 'list')
   const [nearestFirst, setNearestFirst] = useState(false)
+  const [radiusMiles, setRadiusMiles] = useState(() => getSavedBrowseFilters()?.radiusMiles ?? null)
 
   useEffect(() => {
-    saveBrowseFilters({ active, view })
-  }, [active, view])
+    saveBrowseFilters({ active, view, radiusMiles })
+  }, [active, view, radiusMiles])
 
   // each unclaimed store counts as its own distinct "seller" here, since
   // sellerId alone would otherwise collapse every store an admin has
@@ -84,6 +85,10 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
       if (active === 'Under $15') return l.price < 15
       return l.cuisine === active
     })
+    // a listing with no computable distance (e.g. an unclaimed store with
+    // just a typed-in neighborhood, no geocoded point) stays visible rather
+    // than disappearing just because we can't measure it
+    .filter((l) => radiusMiles == null || l.distance == null || l.distance <= radiusMiles)
 
   if (nearestFirst) {
     filtered = [...filtered].sort((a, b) => {
@@ -151,17 +156,32 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
       </div>
       <div className="flex items-center justify-between gap-2 mb-4">
         {userLocation ? (
-          <button
-            onClick={() => setNearestFirst((v) => !v)}
-            className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full border-2 whitespace-nowrap"
-            style={{
-              background: nearestFirst ? 'var(--ink)' : 'var(--card)',
-              color: nearestFirst ? 'var(--paper)' : 'var(--ink-soft)',
-              borderColor: nearestFirst ? 'var(--ink)' : 'var(--rule)',
-            }}
-          >
-            📍 Nearest
-          </button>
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={() => setNearestFirst((v) => !v)}
+              className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full border-2 whitespace-nowrap"
+              style={{
+                background: nearestFirst ? 'var(--ink)' : 'var(--card)',
+                color: nearestFirst ? 'var(--paper)' : 'var(--ink-soft)',
+                borderColor: nearestFirst ? 'var(--ink)' : 'var(--rule)',
+              }}
+            >
+              📍 Nearest
+            </button>
+            <select
+              value={radiusMiles ?? ''}
+              onChange={(e) => setRadiusMiles(e.target.value === '' ? null : Number(e.target.value))}
+              aria-label="Search radius"
+              className="pressable shrink-0 text-xs font-bold pl-3 pr-2 py-2 rounded-full border-2 bg-[var(--card)]"
+              style={{ color: 'var(--ink-soft)', borderColor: 'var(--rule)' }}
+            >
+              <option value="">Any distance</option>
+              <option value="5">Within 5 mi</option>
+              <option value="10">Within 10 mi</option>
+              <option value="25">Within 25 mi</option>
+              <option value="50">Within 50 mi</option>
+            </select>
+          </div>
         ) : (
           <span />
         )}
