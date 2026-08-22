@@ -1410,6 +1410,25 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       a mixed completed/pending order set — pending orders were correctly
       excluded, the $20 total matched the dashboard, and the grand-total
       row was correct. Test order cleaned up afterward. Lint + build clean
+- [x] "Meal Prep" cuisine category, requested by the user asking about
+      subscribing to a meal-prep category. Turned out the recurring-order
+      piece already existed (per-listing "repeat this order" weekly/biweekly
+      at checkout, `MySubscriptions` screen, daily cron via
+      `migration_listing_subscriptions.sql`) — what was missing was the
+      category itself. Added `'Meal Prep'` to the shared `CUISINES` list in
+      `src/lib/listingOptions.js`. Along the way found that
+      `BrowseScreen.jsx` keeps its own hand-duplicated copy of the cuisine
+      list for the filter chips instead of importing the shared one (its own
+      comment says it's supposed to stay in sync manually) — added it there
+      too so the category is actually filterable, and flagged the
+      duplication itself as a follow-up task rather than refactoring it
+      inline. Confirmed live: "Meal Prep" appears in the Post Listing
+      cuisine dropdown, posted a real test listing with it, and confirmed
+      the "Meal Prep" filter chip on Browse shows exactly that listing.
+      Explicitly did not build "auto-order from whoever's available across
+      sellers" — flagged as a much bigger, messier feature given Plates has
+      no payment processing and no listing-agnostic pickup coordination.
+      Test listing cleaned up afterward. Lint + build clean
 
 ## Not built yet (future ideas)
 

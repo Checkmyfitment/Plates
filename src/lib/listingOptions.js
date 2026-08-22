@@ -2,6 +2,7 @@
 // the browse filter pills, and (for cuisine) the "follow a cuisine" alerts feature.
 export const CUISINES = [
   'Homemade',
+  'Meal Prep',
   'Bakery',
   'Mexican',
   'Italian',

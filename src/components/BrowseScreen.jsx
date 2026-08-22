@@ -16,7 +16,7 @@ const KitchensMap = lazy(() => import('./KitchensMap'))
 
 // same cuisine vocabulary as the listing form's own dropdown, so a chip
 // here always matches something a seller could actually have picked
-const CUISINES = ['Homemade', 'Bakery', 'Mexican', 'Italian', 'Indian', 'Chinese', 'Middle Eastern', 'Caribbean', 'Southern / Soul food', 'Desserts', 'Other']
+const CUISINES = ['Homemade', 'Meal Prep', 'Bakery', 'Mexican', 'Italian', 'Indian', 'Chinese', 'Middle Eastern', 'Caribbean', 'Southern / Soul food', 'Desserts', 'Other']
 const filters = ['All', ...CUISINES, 'Vegan', 'Under $15']
 
 function searchFields(l) {
