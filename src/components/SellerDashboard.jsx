@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Placeholder from './Placeholder'
 import OrderCard from './OrderCard'
 import WeeklyBarChart from './WeeklyBarChart'
-import { fetchSellerOrders, updateOrderStatus, updateCartStatus, groupOrders, markOrderPaid } from '../lib/orders'
+import { fetchSellerOrders, updateOrderStatus, updateCartStatus, groupOrders, markOrderPaid, ordersToIncomeCSV } from '../lib/orders'
 import { fetchMyPromotionRequest } from '../lib/promotions'
 import { fetchRestockCounts } from '../lib/restock'
 import { setVacationMode } from '../lib/profiles'
@@ -169,6 +169,18 @@ export default function SellerDashboard({
   const weekOrders = orders.filter((o) => o.status === 'completed' && Date.now() - new Date(o.createdAt).getTime() <= weekMs)
   const weekTotal = weekOrders.reduce((sum, o) => sum + o.priceAtOrder * o.quantity, 0)
   const weekOrderCount = groupOrders(weekOrders).length
+  const completedOrderCount = orders.filter((o) => o.status === 'completed').length
+
+  const exportIncome = () => {
+    const csv = ordersToIncomeCSV(orders)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `plates-income-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const toggleVacation = async () => {
     const next = !profile?.on_vacation
@@ -289,6 +301,25 @@ export default function SellerDashboard({
             valueKey="gmv"
             formatValue={(v) => `$${v.toFixed(2)}`}
           />
+        </div>
+      )}
+
+      {completedOrderCount > 0 && (
+        <div className="card-elevated p-4 mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">📄 Export your income</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+              A CSV of your {completedOrderCount} completed order{completedOrderCount === 1 ? '' : 's'} — handy for your own
+              records at tax time. Plates doesn't process payments, so this is just a summary of what you've sold.
+            </p>
+          </div>
+          <button
+            onClick={exportIncome}
+            className="pressable shrink-0 text-xs px-3 py-2 rounded-full font-medium"
+            style={{ background: 'var(--card)', color: 'var(--ink)' }}
+          >
+            Download CSV
+          </button>
         </div>
       )}
 

@@ -1394,6 +1394,22 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
         directly in the database plus the confirmation line rendering on
         the listing page. Test listing cleaned up afterward
       - lint + build both clean after this batch
+- [x] Seller income export (CSV), suggested after the user said they weren't
+      ready to deploy live yet and asked what else was worth building. No
+      migration needed — computed entirely from order data the client
+      already fetches. New `ordersToIncomeCSV()` in `src/lib/orders.js`
+      turns a seller's completed orders into a CSV (Date, Item, Buyer,
+      Quantity, Price, Total, plus a grand-total row); `SellerDashboard.jsx`
+      adds a "📄 Export your income" card with a Download CSV button, shown
+      only when the seller has at least one completed order. Explicitly
+      framed as personal recordkeeping, not a financial statement — Plates
+      still doesn't process payments. Confirmed live: gave a test seller
+      one completed order via SQL, the card correctly showed "1 completed
+      order" and a matching $20 weekly total, clicked Download CSV with no
+      console errors, and separately unit-tested `ordersToIncomeCSV()` with
+      a mixed completed/pending order set — pending orders were correctly
+      excluded, the $20 total matched the dashboard, and the grand-total
+      row was correct. Test order cleaned up afterward. Lint + build clean
 
 ## Not built yet (future ideas)
 

@@ -162,3 +162,35 @@ export async function markOrderPaid(orderId, paid = true) {
   const { error } = await supabase.rpc('mark_order_paid', { p_order_id: orderId, p_paid: paid })
   if (error) throw error
 }
+
+function csvEscape(value) {
+  const s = String(value)
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+// a seller's own record of what they've earned, for their own tax/bookkeeping
+// purposes — Plates has no payment processing, so this is just a summary of
+// completed orders, not a financial statement
+export function ordersToIncomeCSV(orders) {
+  const rows = orders
+    .filter((o) => o.status === 'completed')
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    .map((o) => {
+      const total = o.priceAtOrder * o.quantity
+      return [
+        new Date(o.createdAt).toLocaleDateString(),
+        o.listingTitle,
+        o.buyerName,
+        o.quantity,
+        o.priceAtOrder.toFixed(2),
+        total.toFixed(2),
+      ]
+    })
+  const grandTotal = rows.reduce((sum, r) => sum + Number(r[5]), 0)
+  const lines = [
+    ['Date', 'Item', 'Buyer', 'Quantity', 'Price', 'Total'],
+    ...rows,
+    ['', '', '', '', 'Grand total', grandTotal.toFixed(2)],
+  ]
+  return lines.map((row) => row.map(csvEscape).join(',')).join('\n')
+}
