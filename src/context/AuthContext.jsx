@@ -1,0 +1,79 @@
+import { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
+
+const AuthContext = createContext(null)
+
+export function AuthProvider({ children }) {
+  const [session, setSession] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
+
+  const loadProfile = async (userId) => {
+    if (!userId) {
+      setProfile(null)
+      return
+    }
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    if (error) console.error('Failed to load profile', error)
+    setProfile(data ?? null)
+  }
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      loadProfile(session?.user?.id).finally(() => setLoading(false))
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session)
+      loadProfile(session?.user?.id)
+      // fired when someone lands back here from a password-reset email link
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true)
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  const signUp = async (email, password, name, referredBy) => {
+    return supabase.auth.signUp({ email, password, options: { data: { name, referred_by: referredBy || null } } })
+  }
+
+  const signIn = async (email, password) => {
+    return supabase.auth.signInWithPassword({ email, password })
+  }
+
+  const signOut = () => {
+    setPasswordRecovery(false)
+    return supabase.auth.signOut()
+  }
+
+  const resetPassword = (email) =>
+    supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+
+  const updatePassword = async (password) => {
+    const result = await supabase.auth.updateUser({ password })
+    if (!result.error) setPasswordRecovery(false)
+    return result
+  }
+
+  const value = {
+    session,
+    user: session?.user ?? null,
+    profile,
+    loading,
+    passwordRecovery,
+    signUp,
+    signIn,
+    signOut,
+    resetPassword,
+    updatePassword,
+    refreshProfile: () => loadProfile(session?.user?.id),
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function useAuth() {
+  return useContext(AuthContext)
+}
