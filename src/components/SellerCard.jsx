@@ -12,6 +12,7 @@ export default function SellerCard({
   sellerNeighborhood,
   sellerKitchen,
   sellerPhoneVerified,
+  cottageLawVerified,
   badge,
   responseStats,
   formatResponseTime,
@@ -134,6 +135,11 @@ export default function SellerCard({
         {sellerPhoneVerified && (
           <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}>
             📱 Phone verified
+          </span>
+        )}
+        {cottageLawVerified && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}>
+            📋 Cottage law confirmed
           </span>
         )}
         {responseStats && responseStats.responseCount >= 3 && (

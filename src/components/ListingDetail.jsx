@@ -7,7 +7,7 @@ import PickupSlotPicker from './PickupSlotPicker'
 import OrderAheadPicker from './OrderAheadPicker'
 import PlaceOrderForm from './PlaceOrderForm'
 import PromotionRequestCard from './PromotionRequestCard'
-import { getSellerBadge } from '../lib/badges'
+import { getSellerBadge, hasCottageLawConfirmed } from '../lib/badges'
 import { formatResponseTime } from '../lib/responseStats'
 import { incrementListingViews, getListingShareLink, formatPickupTime, isOrderingClosed } from '../lib/listings'
 import { shareLink } from '../lib/share'
@@ -77,6 +77,7 @@ export default function ListingDetail({
   const manuallySold = listing.available === false
   const sold = manuallySold || listing.sellerOnVacation
   const badge = getSellerBadge(sellerRating, sellerTrust)
+  const cottageLawVerified = hasCottageLawConfirmed([listing, ...moreFromSeller])
   const isUnclaimed = !!listing.unclaimedStoreId
   const showInlineSellerInfo = isUnclaimed || isOwnListing
 
@@ -235,6 +236,7 @@ export default function ListingDetail({
             sellerNeighborhood={listing.sellerNeighborhood}
             sellerKitchen={listing.sellerKitchen}
             sellerPhoneVerified={listing.sellerPhoneVerified}
+            cottageLawVerified={cottageLawVerified}
             badge={badge}
             responseStats={responseStats}
             formatResponseTime={formatResponseTime}

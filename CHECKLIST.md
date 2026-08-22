@@ -1471,6 +1471,44 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
         browser (native dialogs are auto-suppressed there), so used SQL to
         do the equivalent cleanup instead; a real user's browser doesn't
         have that restriction. Lint + build clean
+- [x] Unified seller trust badge, prompted by "what can we build off those
+      [existing] features" — the plan was to combine the scattered trust
+      signals (phone verification, rating tier, cottage law confirmation)
+      into one visual cluster. Investigation found `SellerCard.jsx` and
+      `SellerStorefront.jsx` already render a unified pill row (rating-tier
+      badge from `getSellerBadge()`, phone verified, response time, repeat-
+      order count) — said so directly rather than rebuilding something that
+      existed. The real, genuine gap: cottage law confirmation (added
+      earlier this session) wasn't part of that trust cluster at all, only
+      buried as a small line on the individual listing page. Added
+      `hasCottageLawConfirmed(listings)` to `src/lib/badges.js` — strict
+      all-or-nothing across a seller's own listings, same spirit as the
+      trust badge's own thresholds, so it never claims "compliant" when
+      only some listings have confirmed it. Wired into both `SellerCard`
+      (via a new `cottageLawVerified` prop threaded from `ListingDetail`,
+      computed from `[listing, ...moreFromSeller]`) and `SellerStorefront`
+      (computed from its own `sellerListings`). Confirmed live: baseline
+      storefront showed no cottage-law pill (all 4 of a test seller's
+      listings unconfirmed), set all 4 to confirmed via SQL, reloaded and
+      saw "📋 Cottage law confirmed" appear on both the storefront header
+      and the inline SellerCard trust row, then reverted. Also answered a
+      follow-up question directly: this checkbox/badge is pure self-
+      attestation with zero enforcement — Plates doesn't capture seller
+      state in any structured way, so nothing stops someone from checking
+      the box and listing even where cottage food sales are actually
+      illegal for their state or food category. Real enforcement would
+      need a maintained per-state ruleset and belongs in the attorney
+      review, not a unilateral product decision — noted in the legal-risk
+      memory for future sessions. Lint + build clean
+- [x] Declined (again) building an AI agent to do Facebook/Craigslist/
+      Nextdoor outreach automatically — same request as earlier in the
+      session, framed differently ("AI agents" instead of "a script").
+      Answer didn't change: automated scraping and unsolicited messaging
+      violate those platforms' ToS regardless of what's driving the
+      browser, and an agent running continuously is if anything a stronger
+      signal of the "coordinated inauthentic behavior" platforms watch
+      for, not a weaker one. Redirected to speeding up specific parts of
+      the existing manual-outreach tools (Admin → Outreach) instead.
 
 ## Not built yet (future ideas)
 

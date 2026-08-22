@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import ListingCard from './ListingCard'
 import Placeholder from './Placeholder'
-import { getSellerBadge } from '../lib/badges'
+import { getSellerBadge, hasCottageLawConfirmed } from '../lib/badges'
 import { fetchProfile } from '../lib/profiles'
 import { fetchSellerReviews } from '../lib/reviews'
 import { fetchFollowedSellerIds, followSeller, unfollowSeller } from '../lib/follows'
@@ -132,6 +132,7 @@ export default function SellerStorefront({
   const sellerListings = listings.filter((l) => l.sellerId === sellerId && !l.unclaimedStoreId)
   const sellerListingsMap = new Map(sellerListings.map((l) => [l.id, l]))
   const badge = getSellerBadge(sellerRating, sellerTrust)
+  const cottageLawVerified = hasCottageLawConfirmed(sellerListings)
 
   const toggleFollow = async () => {
     if (!currentUserId) {
@@ -294,6 +295,11 @@ export default function SellerStorefront({
               {seller.phone_verified && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}>
                   📱 Phone verified
+                </span>
+              )}
+              {cottageLawVerified && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}>
+                  📋 Cottage law confirmed
                 </span>
               )}
               {orderCount >= 2 && (

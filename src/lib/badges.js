@@ -19,6 +19,14 @@ export function getSellerBadge(sellerRating, sellerTrust) {
   return null
 }
 
+// true only when every one of the seller's own listings has confirmed
+// cottage law compliance — an honest all-or-nothing signal (same spirit as
+// the trust badge's own strict thresholds), rather than claiming a seller
+// is "compliant" when only some of their listings have confirmed it
+export function hasCottageLawConfirmed(listings) {
+  return listings.length > 0 && listings.every((l) => l.cottageLawConfirmed)
+}
+
 // Non-monetary recognition for referrals — no credits or payments involved,
 // just a badge once enough neighbors have joined from someone's invite link.
 export function getReferralBadge(referralCount) {
