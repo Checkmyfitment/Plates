@@ -29,15 +29,10 @@ const COLLECTIONS = [
     endDay: 5,
     keywords: ['holiday', 'christmas', 'hanukkah', 'gingerbread', 'eggnog', 'latke', 'yule'],
   },
-  {
-    id: 'lunar-new-year',
-    title: '🧧 Lunar New Year',
-    startMonth: 1,
-    startDay: 15,
-    endMonth: 2,
-    endDay: 15,
-    keywords: ['lunar', 'new year', 'dumpling', 'mooncake', 'nian gao', 'spring roll'],
-  },
+  // valentines (Feb 1-14) is entirely contained within lunar-new-year's
+  // range (Jan 15-Feb 15) below, so it must be checked first — getActiveCollection
+  // uses .find() and stops at the first match, and a later, wholly-nested
+  // range can never win
   {
     id: 'valentines',
     title: '💝 Valentine’s treats',
@@ -46,6 +41,15 @@ const COLLECTIONS = [
     endMonth: 2,
     endDay: 14,
     keywords: ['valentine', 'chocolate', 'heart', 'romantic'],
+  },
+  {
+    id: 'lunar-new-year',
+    title: '🧧 Lunar New Year',
+    startMonth: 1,
+    startDay: 15,
+    endMonth: 2,
+    endDay: 15,
+    keywords: ['lunar', 'new year', 'dumpling', 'mooncake', 'nian gao', 'spring roll'],
   },
   {
     id: 'spring-brunch',

@@ -1509,8 +1509,41 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       signal of the "coordinated inauthentic behavior" platforms watch
       for, not a weaker one. Redirected to speeding up specific parts of
       the existing manual-outreach tools (Admin → Outreach) instead.
-
-## Not built yet (future ideas)
+- [x] First real automated test coverage pass, prompted directly by the
+      user after noting the app had only 5 test files for 200+ built
+      features and every verification this whole session had been manual
+      browser clicking. Added/extended (all via `npm test`, vitest +
+      @testing-library/react, matching the existing test file style):
+      - `PlaceOrderForm.test.jsx` (new) — regression test for the real
+        double-submit checkout bug fixed earlier this session (two rapid
+        clicks both reading stale `submitting` state before the `useRef`
+        fix): fires two synchronous clicks, asserts `onSubmit` called
+        exactly once. Also covers the minimum-order block and the
+        delivery-address-required block
+      - `ChatThread.test.jsx` (new) — same pattern for the analogous
+        double-send chat bug fixed the same way (`sendingRef` +
+        `queueMicrotask`)
+      - `orders.test.js` — added `ordersToIncomeCSV` coverage: excludes
+        non-completed orders, computes per-row and grand totals, sorts
+        oldest-first, quotes a field containing a comma
+      - `badges.test.js` — added `hasCottageLawConfirmed` (strict
+        all-or-nothing across a seller's listings) and `getReferralBadge`,
+        plus the previously-untested `sellerTrust`/"Top rated" branch of
+        `getSellerBadge`
+      - `seasonalCollections.test.js` (new) — `getActiveCollection` date-
+        range matching, including the December-to-January wrap for winter
+        holidays, plus `matchesCollection` keyword matching
+      - **Real bug found while writing the seasonal-collections tests**:
+        "Valentine's" (Feb 1-14) was completely unreachable — its range
+        sits entirely inside "Lunar New Year"'s (Jan 15-Feb 15), which is
+        listed first in the array, and `getActiveCollection` uses
+        `.find()`, which stops at the first match. Every date Valentine's
+        could ever match, Lunar New Year already claimed. Fixed by
+        reordering the array so the fully-nested range is checked first;
+        the fix and the regression test verifying both collections now
+        resolve correctly on every boundary date landed together
+      - 46 tests passing (up from 20), all in `npm test`; lint + build
+        both clean
 
 Bigger ideas from a competitor/UX pass (Shef, Olio, Too Good To Go, Etsy, Nextdoor,
 Facebook Marketplace) that would take more design/product decisions before building —
