@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { updateProfile } from '../lib/profiles'
 import { geocodeArea } from '../lib/geocode'
 import { uploadAvatarPhoto, validatePhotoFile } from '../lib/storage'
+import { LANGUAGE_OPTIONS } from '../lib/translate'
 
 export default function EditProfile({ userId, profile, onBack, onSaved }) {
   const [name, setName] = useState(profile?.name ?? '')
@@ -9,6 +10,7 @@ export default function EditProfile({ userId, profile, onBack, onSaved }) {
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? '')
   const [neighborhood, setNeighborhood] = useState(profile?.neighborhood ?? '')
   const [defaultPickupNote, setDefaultPickupNote] = useState(profile?.default_pickup_note ?? '')
+  const [preferredLanguage, setPreferredLanguage] = useState(profile?.preferred_language ?? '')
   const [photoError, setPhotoError] = useState('')
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -66,6 +68,7 @@ export default function EditProfile({ userId, profile, onBack, onSaved }) {
         lat,
         lng,
         defaultPickupNote: defaultPickupNote.trim() || null,
+        preferredLanguage: preferredLanguage || null,
       })
       onSaved(updated)
     } catch (err) {
@@ -147,6 +150,22 @@ export default function EditProfile({ userId, profile, onBack, onSaved }) {
             maxLength={150}
           />
           <span>Pre-fills the pickup note on every new listing you post — you can still change it per listing.</span>
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Preferred language for chat translation
+          <select
+            value={preferredLanguage}
+            onChange={(e) => setPreferredLanguage(e.target.value)}
+            className="field"
+          >
+            {LANGUAGE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <span>Used when you tap "Translate" on a chat message — leave on Auto to use your browser's language.</span>
         </label>
 
         <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--ink-soft)' }}>

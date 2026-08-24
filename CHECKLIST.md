@@ -1593,6 +1593,50 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       `translate.test.js` covers the success case, the responseStatus bug
       specifically, network failures, and empty input — 54 tests passing.
       Lint + build clean
+- [x] Account settings: change email/password, delete account, preferred
+      language (`migration_account_settings.sql`, confirmed run live).
+      User picked all three off a clarifying multi-select rather than me
+      guessing what "more options" meant.
+      - **Change email / password** — new "🔒 Account & security" card
+        (`AccountSecurity.jsx`) on the You screen, using
+        `supabase.auth.updateUser()` via two new `AuthContext` methods
+        (`updateEmail`, reusing the existing `updatePassword` from the
+        password-recovery flow). Confirmed live on a disposable test
+        account: password change took effect (verified by logging in with
+        the new password via a direct API call, old one now rejected);
+        email change correctly required confirmation before taking effect
+        (toast said so, "currently" line stayed on the old address). A
+        genuine-looking 400 in the browser console during this test turned
+        out to be unrelated leftover noise accumulated over the session,
+        not a real bug — confirmed by re-testing and finding fresh 400s
+        even on a page load with no action taken
+      - **Delete account** — the one requiring real design thought. A true
+        hard-delete would cascade through the database and destroy *other
+        people's* data (`orders.buyer_id`/`seller_id` both cascade from
+        `profiles`, so deleting your account would silently wipe a
+        seller's income history or a buyer's reviews). Built as
+        anonymization instead: new `delete_my_account()` RPC blanks the
+        profile's name/photo/bio/location (name becomes "Deleted user"),
+        hides the account's listings, cancels their recurring orders, and
+        sets `deleted_at`. New `DeletedScreen.jsx` mirrors the existing
+        `BannedScreen.jsx` pattern — `App.jsx` checks `profile?.deleted_at`
+        right alongside `profile?.banned` and permanently bounces that
+        account back to a blocking screen, even with valid credentials.
+        Two-step in-app confirm, no native `confirm()` dialogs. Confirmed
+        live end-to-end on a disposable account: deletion signed out
+        immediately, direct DB read showed the profile correctly
+        anonymized, and logging back in with valid credentials landed on
+        "Account deleted" instead of the app
+      - **Preferred language** — new dropdown in Edit Profile
+        (`profiles.preferred_language`), feeds into the chat translation
+        feature via a new `targetLanguageFor(profile)` helper in
+        `lib/translate.js` that prefers this over the browser's own
+        locale when set. Confirmed live: set to Spanish on a disposable
+        account, verified `preferred_language: "es"` via direct DB read
+      - Both disposable test accounts used for verification were deleted
+        through the real delete-account flow afterward (not raw SQL) —
+        doubled as an extra live confirmation that deletion works
+      - 56 tests passing; lint + build clean
 
 ## Not built yet (future ideas)
 

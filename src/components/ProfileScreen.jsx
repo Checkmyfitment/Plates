@@ -9,6 +9,7 @@ import FollowedKitchens from './FollowedKitchens'
 import MySubscriptions from './MySubscriptions'
 import ThemeToggle from './ThemeToggle'
 import GettingStartedChecklist from './GettingStartedChecklist'
+import AccountSecurity from './AccountSecurity'
 import { getSellerBadge } from '../lib/badges'
 
 export default function ProfileScreen({
@@ -184,6 +185,8 @@ export default function ProfileScreen({
       )}
 
       <ThemeToggle />
+
+      {userId && <AccountSecurity email={email} />}
 
       {userId && <InviteFriends userId={userId} />}
 

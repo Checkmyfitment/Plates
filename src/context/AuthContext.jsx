@@ -57,6 +57,11 @@ export function AuthProvider({ children }) {
     return result
   }
 
+  // Supabase emails a confirmation link to the new address before the
+  // change actually takes effect — the account keeps signing in with the
+  // old email until that link is clicked
+  const updateEmail = (email) => supabase.auth.updateUser({ email })
+
   const value = {
     session,
     user: session?.user ?? null,
@@ -68,6 +73,7 @@ export function AuthProvider({ children }) {
     signOut,
     resetPassword,
     updatePassword,
+    updateEmail,
     refreshProfile: () => loadProfile(session?.user?.id),
   }
 

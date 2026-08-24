@@ -38,3 +38,24 @@ export function browserTargetLanguage() {
   const lang = typeof navigator !== 'undefined' ? navigator.language : 'en'
   return (lang || 'en').split('-')[0]
 }
+
+// a profile's explicit preferred_language wins over the browser's own
+// locale when set — useful whenever the two don't match (e.g. an English
+// browser but a Spanish-speaking user)
+export function targetLanguageFor(profile) {
+  return profile?.preferred_language || browserTargetLanguage()
+}
+
+export const LANGUAGE_OPTIONS = [
+  { value: '', label: "Auto (use my browser's language)" },
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'zh', label: 'Chinese' },
+  { value: 'vi', label: 'Vietnamese' },
+  { value: 'tl', label: 'Tagalog' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'fr', label: 'French' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'ar', label: 'Arabic' },
+  { value: 'hi', label: 'Hindi' },
+]

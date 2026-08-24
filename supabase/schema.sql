@@ -2,6 +2,7 @@
 -- Run this once in the Supabase SQL Editor (Project > SQL Editor > New query)
 -- Safe to re-run: clears out any previous attempt at these objects first.
 
+drop function if exists public.delete_my_account() cascade;
 drop function if exists public.send_winback_notifications() cascade;
 drop function if exists public.admin_broadcast(uuid[], text) cascade;
 drop view if exists public.neighborhood_leaderboard;
@@ -83,6 +84,12 @@ create table public.profiles (
   default_pickup_note text check (default_pickup_note is null or char_length(default_pickup_note) <= 150),
   -- throttles send_winback_notifications() to at most one nudge per 14 days
   last_winback_sent_at timestamptz,
+  -- explicit override for chat translation target; falls back to the
+  -- browser's own language when null
+  preferred_language text,
+  -- set by delete_my_account() below -- treated like `banned`: signed out
+  -- and blocked from using this account again
+  deleted_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -240,6 +247,40 @@ $$;
 create trigger on_auth_user_phone_verified
   after update of phone_confirmed_at on auth.users
   for each row execute procedure public.handle_phone_verified();
+
+-- self-service account deletion: anonymizes the profile instead of hard-
+-- deleting the row -- orders/reviews/messages involving this person are
+-- other users' records too (a seller's income history, a buyer's review),
+-- and profiles.id cascades into orders on both buyer_id and seller_id, so
+-- a true hard delete would silently destroy other people's transaction
+-- history. deleted_at is treated like the existing banned flag by the
+-- client -- signed out and blocked from using that account again.
+create function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.profiles
+  set name = 'Deleted user',
+      avatar_url = null,
+      kitchen = null,
+      neighborhood = null,
+      lat = null,
+      lng = null,
+      default_pickup_note = null,
+      preferred_language = null,
+      deleted_at = now()
+  where id = auth.uid();
+
+  update public.listings set available = false where seller_id = auth.uid();
+
+  update public.listing_subscriptions
+  set active = false, cancelled_at = now()
+  where buyer_id = auth.uid() and active = true;
+end;
+$$;
 
 -- unclaimed_stores: lets an admin pre-seed the marketplace by posting on
 -- behalf of a real cook found elsewhere (Facebook, word of mouth) who isn't

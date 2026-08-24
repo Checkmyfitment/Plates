@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { translateText, browserTargetLanguage } from './translate'
+import { translateText, browserTargetLanguage, targetLanguageFor } from './translate'
 
 function mockFetchOnce(body) {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => body }))
@@ -50,5 +50,22 @@ describe('browserTargetLanguage', () => {
   it('reduces a region-specific locale to its base language code', () => {
     vi.stubGlobal('navigator', { language: 'es-MX' })
     expect(browserTargetLanguage()).toBe('es')
+  })
+})
+
+describe('targetLanguageFor', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it("prefers the profile's explicit preferred_language over the browser's own", () => {
+    vi.stubGlobal('navigator', { language: 'en-US' })
+    expect(targetLanguageFor({ preferred_language: 'es' })).toBe('es')
+  })
+
+  it("falls back to the browser's language when no profile preference is set", () => {
+    vi.stubGlobal('navigator', { language: 'fr-CA' })
+    expect(targetLanguageFor(null)).toBe('fr')
+    expect(targetLanguageFor({ preferred_language: null })).toBe('fr')
   })
 })

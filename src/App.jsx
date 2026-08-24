@@ -15,6 +15,7 @@ import EditListing from './components/EditListing'
 import EditProfile from './components/EditProfile'
 import NotificationsScreen from './components/NotificationsScreen'
 import BannedScreen from './components/BannedScreen'
+import DeletedScreen from './components/DeletedScreen'
 import LegalScreen from './components/LegalScreen'
 import SellerStorefront from './components/SellerStorefront'
 import OrdersScreen from './components/OrdersScreen'
@@ -719,6 +720,10 @@ export default function App() {
     return <BannedScreen onLogout={signOut} />
   }
 
+  if (profile?.deleted_at) {
+    return <DeletedScreen onLogout={signOut} />
+  }
+
   if (!onboarded) {
     return (
       <OnboardingWalkthrough
@@ -865,6 +870,7 @@ export default function App() {
       <ChatThread
         chat={activeChat}
         currentUserId={session.user.id}
+        viewerProfile={profile}
         onBack={() => setActiveChatId(null)}
         onSend={(text, photoUrl) => sendMessage(activeChat.id, text, photoUrl)}
       />

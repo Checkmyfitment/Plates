@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import { uploadChatPhoto, validatePhotoFile } from '../lib/storage'
-import { translateText, browserTargetLanguage } from '../lib/translate'
+import { translateText, targetLanguageFor } from '../lib/translate'
 import ReportModal from './ReportModal'
 
-export default function ChatThread({ chat, currentUserId, onBack, onSend }) {
+export default function ChatThread({ chat, currentUserId, viewerProfile, onBack, onSend }) {
   const [text, setText] = useState('')
   const [pendingPhoto, setPendingPhoto] = useState(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -22,7 +22,7 @@ export default function ChatThread({ chat, currentUserId, onBack, onSend }) {
       return
     }
     setTranslations((prev) => ({ ...prev, [key]: { loading: true, visible: true } }))
-    const result = await translateText(originalText, browserTargetLanguage())
+    const result = await translateText(originalText, targetLanguageFor(viewerProfile))
     setTranslations((prev) => ({ ...prev, [key]: { loading: false, visible: true, text: result, failed: !result } }))
   }
   // guards against a rapid double-click sending the same message twice —

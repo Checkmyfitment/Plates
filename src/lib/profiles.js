@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient'
 
-export async function updateProfile(userId, { name, kitchen, avatarUrl, neighborhood, lat, lng, defaultPickupNote }) {
+export async function updateProfile(userId, { name, kitchen, avatarUrl, neighborhood, lat, lng, defaultPickupNote, preferredLanguage }) {
   const { data, error } = await supabase
     .from('profiles')
     .update({
@@ -11,12 +11,20 @@ export async function updateProfile(userId, { name, kitchen, avatarUrl, neighbor
       lat,
       lng,
       default_pickup_note: defaultPickupNote,
+      preferred_language: preferredLanguage,
     })
     .eq('id', userId)
     .select()
     .single()
   if (error) throw error
   return data
+}
+
+// anonymizes the profile and signs the account out for good — see
+// migration_account_settings.sql for why this doesn't hard-delete the row
+export async function deleteMyAccount() {
+  const { error } = await supabase.rpc('delete_my_account')
+  if (error) throw error
 }
 
 export async function fetchProfile(userId) {
