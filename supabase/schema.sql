@@ -256,6 +256,11 @@ create table public.unclaimed_stores (
   created_by uuid references public.profiles(id) on delete set null,
   claimed_by uuid references public.profiles(id) on delete set null,
   claimed_at timestamptz,
+  -- geocoded from the admin-typed neighborhood text via geocodeArea(), same
+  -- flow a seller's own profile uses -- lets an unclaimed store show a real
+  -- map pin and distance instead of just a text label
+  lat double precision,
+  lng double precision,
   created_at timestamptz not null default now()
 );
 
@@ -274,7 +279,7 @@ create policy "Admins manage unclaimed stores"
 -- with the owner's privileges, so this is selectable by anyone even though
 -- the underlying table is admin-only, same pattern as pickup_slot_counts
 create view public.unclaimed_store_public as
-  select id, name, kitchen, neighborhood, contact_note
+  select id, name, kitchen, neighborhood, contact_note, lat, lng
   from public.unclaimed_stores;
 
 -- listings

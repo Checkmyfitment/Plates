@@ -43,7 +43,7 @@ export async function fetchPublicStores(ids) {
   if (unique.length === 0) return {}
   const { data, error } = await supabase
     .from('unclaimed_store_public')
-    .select('id, name, kitchen, neighborhood, contact_note')
+    .select('id, name, kitchen, neighborhood, contact_note, lat, lng')
     .in('id', unique)
   if (error) throw error
   return Object.fromEntries(data.map((s) => [s.id, s]))

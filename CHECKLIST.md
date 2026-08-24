@@ -1544,6 +1544,57 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
         resolve correctly on every boundary date landed together
       - 46 tests passing (up from 20), all in `npm test`; lint + build
         both clean
+- [x] Unclaimed-store map pins + distance (`migration_unclaimed_store_geocoding.sql`,
+      confirmed run live) — the last remaining "not built yet" item. Added
+      `lat`/`lng` to `unclaimed_stores`, exposed through
+      `unclaimed_store_public`. `StoresPanel` (Admin → Stores) now geocodes
+      the typed neighborhood via the same `geocodeArea()` a seller's own
+      profile uses, right when a store is created — with a graceful "still
+      listed, just couldn't place it on the map" fallback if geocoding
+      finds nothing. `mapListing()` in `src/lib/listings.js` now uses the
+      store's real coordinates instead of hard-forcing them to null.
+      Confirmed live end-to-end: created a test store with "Oceanside, CA
+      92057," verified real lat/lng landed in the database, posted a
+      listing under that store, and saw both a real pin on the Browse map
+      and a live distance figure ("5.7 mi") on its listing card. Also
+      admin verification for this and the earlier admin-listings work hit
+      a real snag worth recording: the browser session I'd been reusing
+      all session had quietly logged out (this sandboxed browser doesn't
+      share cookies with the user's own browser, and never did — it had
+      just been sitting on an already-authenticated tab since before this
+      conversation started), and I have no way to log back in myself since
+      entering a password isn't something I'll do even if asked. Needed
+      the user to sign up a fresh account and self-promote it to admin via
+      SQL before verification could continue. Test store + listing cleaned
+      up afterward. Lint + build clean
+- [x] Chat message translation, requested directly by the user for Spanish-
+      speaking (and other-language) buyers/sellers. New `src/lib/translate.js`
+      using MyMemory's free translation API (no key/signup, same
+      free-public-API pattern as `geocode.js`) — `translateText(text,
+      targetLang)` with `autodetect` as the source language, so it works
+      without knowing what language a message is in ahead of time.
+      `ChatThread.jsx` adds a "🌐 Translate" toggle under every message with
+      text; results are cached per-message so switching it on and off after
+      the first translate doesn't re-hit the API. **Real bug found and
+      fixed during live verification**: MyMemory returns HTTP 200 even on
+      an API-level failure (e.g. "PLEASE SELECT TWO DISTINCT LANGUAGES"
+      when the detected source language matches the target — which happens
+      whenever someone translates a message already in their own browser
+      language) — the actual failure only shows up in the JSON body's
+      `responseStatus` field, and `translatedText` is literally the error
+      text in caps. `translateText()` now checks `responseStatus === 200`
+      before trusting the response, falling back to "Couldn't translate
+      this message." Confirmed live: reproduced the bug first (raw
+      "PLEASE SELECT TWO DISTINCT LANGUAGES" string rendered in the chat),
+      fixed it, reloaded, and got the graceful fallback instead; then sent
+      a real Spanish test message ("¿Tienes tamales disponibles hoy?") and
+      confirmed it translated correctly to "Do you have tamales available
+      today?" with the toggle working both directions. New
+      `translate.test.js` covers the success case, the responseStatus bug
+      specifically, network failures, and empty input — 54 tests passing.
+      Lint + build clean
+
+## Not built yet (future ideas)
 
 Bigger ideas from a competitor/UX pass (Shef, Olio, Too Good To Go, Etsy, Nextdoor,
 Facebook Marketplace) that would take more design/product decisions before building —
@@ -1562,8 +1613,4 @@ noted here so they're not lost, not started yet:
       past friends/family — they're a reasonable starting draft, not legal advice,
       and cottage food law varies a lot by state/county. [LEGAL_REVIEW_BRIEF.md](LEGAL_REVIEW_BRIEF.md)
       now exists to make that first conversation faster
-- [ ] Unclaimed-store listings don't show a map pin or "📍 Nearest" distance — the
-      store's neighborhood is just a text label an admin typed in, not a geocoded
-      point, so there's nothing accurate to plot until the real owner claims it and
-      sets their own location
 - [ ] Deploy live

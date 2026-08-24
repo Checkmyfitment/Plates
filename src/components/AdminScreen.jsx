@@ -29,6 +29,7 @@ import {
   deleteOutreachLead,
 } from '../lib/outreach'
 import { fetchListings } from '../lib/listings'
+import { geocodeArea } from '../lib/geocode'
 import WeeklyBarChart from './WeeklyBarChart'
 import OrderHealthBar from './OrderHealthBar'
 import { useToast } from '../context/ToastContext'
@@ -558,16 +559,26 @@ function StoresPanel({ adminId }) {
     if (!form.name.trim()) return
     setCreating(true)
     try {
+      const neighborhood = form.neighborhood.trim()
+      // best-effort — a store still gets created without a pin if geocoding
+      // finds nothing, same fallback geocodeArea already guarantees
+      const coords = neighborhood ? await geocodeArea(neighborhood) : null
       const store = await createUnclaimedStore({
         name: form.name.trim(),
         kitchen: form.kitchen.trim(),
-        neighborhood: form.neighborhood.trim(),
+        neighborhood,
         contactNote: form.contactNote.trim(),
         createdBy: adminId,
+        lat: coords?.lat,
+        lng: coords?.lng,
       })
       setStores((prev) => [store, ...prev])
       setForm(emptyStoreForm)
-      toast.success('Store created — share its claim link with the owner.')
+      toast.success(
+        neighborhood && !coords
+          ? "Store created — couldn't place it on the map from that neighborhood, but it's still listed."
+          : 'Store created — share its claim link with the owner.',
+      )
     } catch (err) {
       console.error('Failed to create store', err)
       toast.error('Could not create the store — try again.')
@@ -662,6 +673,14 @@ function StoresPanel({ adminId }) {
                     {s.claimedBy ? 'Claimed' : 'Unclaimed'}
                   </span>
                 </div>
+                {s.neighborhood && (
+                  <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>
+                    📍 {s.neighborhood}
+                    {s.lat == null && (
+                      <span style={{ color: 'var(--plum)' }}> · no map pin yet</span>
+                    )}
+                  </p>
+                )}
                 {s.kitchen && (
                   <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>
                     {s.kitchen}

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { uploadChatPhoto, validatePhotoFile } from '../lib/storage'
+import { translateText, browserTargetLanguage } from '../lib/translate'
 import ReportModal from './ReportModal'
 
 export default function ChatThread({ chat, currentUserId, onBack, onSend }) {
@@ -8,7 +9,22 @@ export default function ChatThread({ chat, currentUserId, onBack, onSend }) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photoError, setPhotoError] = useState('')
   const [reporting, setReporting] = useState(false)
+  // keyed by message id (or index, for a message that hasn't been assigned
+  // one yet) — cached once translated so toggling back and forth doesn't
+  // re-hit the translation API
+  const [translations, setTranslations] = useState({})
   const fileInputRef = useRef(null)
+
+  const toggleTranslate = async (key, originalText) => {
+    const existing = translations[key]
+    if (existing && (existing.text || existing.failed)) {
+      setTranslations((prev) => ({ ...prev, [key]: { ...prev[key], visible: !prev[key].visible } }))
+      return
+    }
+    setTranslations((prev) => ({ ...prev, [key]: { loading: true, visible: true } }))
+    const result = await translateText(originalText, browserTargetLanguage())
+    setTranslations((prev) => ({ ...prev, [key]: { loading: false, visible: true, text: result, failed: !result } }))
+  }
   // guards against a rapid double-click sending the same message twice —
   // two clicks in the same tick both read `text` before React commits the
   // setText('') from the first, so state alone can't block the second
@@ -89,23 +105,47 @@ export default function ChatThread({ chat, currentUserId, onBack, onSend }) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-2">
-        {chat.messages.map((m, i) => (
-          <div
-            key={m.id ?? i}
-            className="max-w-[75%] text-sm rounded-2xl overflow-hidden"
-            style={{
-              alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start',
-              background: m.from === 'me' ? 'var(--forest)' : 'var(--card)',
-              color: m.from === 'me' ? 'white' : 'var(--ink)',
-              border: m.from === 'me' ? 'none' : '1px solid var(--rule)',
-            }}
-          >
-            {m.photoUrl && (
-              <img src={m.photoUrl} alt="Shared photo" className="w-full max-h-64 object-cover" />
-            )}
-            {m.text && <div className="px-3 py-2">{m.text}</div>}
-          </div>
-        ))}
+        {chat.messages.map((m, i) => {
+          const key = m.id ?? i
+          const translation = translations[key]
+          const subtleColor = m.from === 'me' ? 'rgba(255,255,255,0.75)' : 'var(--ink-soft)'
+          return (
+            <div
+              key={key}
+              className="max-w-[75%] text-sm rounded-2xl overflow-hidden"
+              style={{
+                alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start',
+                background: m.from === 'me' ? 'var(--forest)' : 'var(--card)',
+                color: m.from === 'me' ? 'white' : 'var(--ink)',
+                border: m.from === 'me' ? 'none' : '1px solid var(--rule)',
+              }}
+            >
+              {m.photoUrl && (
+                <img src={m.photoUrl} alt="Shared photo" className="w-full max-h-64 object-cover" />
+              )}
+              {m.text && (
+                <div className="px-3 py-2">
+                  <div>{m.text}</div>
+                  <button
+                    type="button"
+                    onClick={() => toggleTranslate(key, m.text)}
+                    className="pressable text-xs mt-1 underline"
+                    style={{ color: subtleColor }}
+                  >
+                    {translation?.visible ? 'Hide translation' : '🌐 Translate'}
+                  </button>
+                  {translation?.visible && (
+                    <div className="text-xs mt-1 pt-1" style={{ color: subtleColor, borderTop: `1px solid ${subtleColor}` }}>
+                      {translation.loading
+                        ? 'Translating…'
+                        : translation.text || "Couldn't translate this message."}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {photoError && (

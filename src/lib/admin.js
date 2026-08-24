@@ -83,6 +83,8 @@ function mapStore(row) {
     claimCode: row.claim_code,
     claimedBy: row.claimed_by,
     claimedAt: row.claimed_at,
+    lat: row.lat ?? null,
+    lng: row.lng ?? null,
     createdAt: row.created_at,
   }
 }
@@ -96,7 +98,7 @@ export async function fetchUnclaimedStores() {
   return data.map(mapStore)
 }
 
-export async function createUnclaimedStore({ name, kitchen, neighborhood, contactNote, createdBy }) {
+export async function createUnclaimedStore({ name, kitchen, neighborhood, contactNote, createdBy, lat, lng }) {
   const { data, error } = await supabase
     .from('unclaimed_stores')
     .insert({
@@ -105,6 +107,8 @@ export async function createUnclaimedStore({ name, kitchen, neighborhood, contac
       neighborhood: neighborhood || null,
       contact_note: contactNote || null,
       created_by: createdBy,
+      lat: lat ?? null,
+      lng: lng ?? null,
     })
     .select()
     .single()

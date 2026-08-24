@@ -11,10 +11,11 @@ function mapListing(row, store) {
     sellerKitchen: store ? store.kitchen : (row.seller?.kitchen ?? null),
     sellerAvatar: store ? null : (row.seller?.avatar_url ?? null),
     sellerNeighborhood: store ? store.neighborhood : (row.seller?.neighborhood ?? null),
-    // an unclaimed store's listed neighborhood is just a text label, not a
-    // geocoded point — don't show a (misleading) map pin at the admin's own location
-    sellerLat: store ? null : (row.seller?.lat ?? null),
-    sellerLng: store ? null : (row.seller?.lng ?? null),
+    // geocoded from the admin-typed neighborhood text when the store was
+    // created (see migration_unclaimed_store_geocoding.sql) — null until an
+    // admin re-saves an older store that predates geocoding
+    sellerLat: store ? (store.lat ?? null) : (row.seller?.lat ?? null),
+    sellerLng: store ? (store.lng ?? null) : (row.seller?.lng ?? null),
     price: row.price,
     unit: row.unit,
     tag: row.tag,
