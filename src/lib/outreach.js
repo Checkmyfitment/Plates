@@ -66,3 +66,30 @@ export async function deleteOutreachLead(id) {
   const { error } = await supabase.from('outreach_leads').delete().eq('id', id)
   if (error) throw error
 }
+
+export const outreachMessageTemplate = `Hey! I saw your [dish] post — looks amazing. I run Plates, a marketplace just for home cooks like you (no furniture/electronics clutter, just food). It's free to list, buyers can order and message you directly, and you build reviews/a following instead of starting over on every post. Want me to send you the link to set up your kitchen? Takes like 2 minutes.`
+
+export function personalizedOutreachMessage(lead) {
+  const dish = lead.listingNote?.trim()
+  return dish ? outreachMessageTemplate.replace('[dish]', dish) : outreachMessageTemplate
+}
+
+// "Name - what they're selling - contact info" pasted one per line — the
+// fast-typing format for logging a bunch of marketplace finds in one go,
+// contact info stays optional since you often don't have it yet.
+//
+// Deliberately does NOT filter out empty parts before assigning them —
+// splitting "Maria -  - (555) 123-4567" (a blank middle field, e.g. from
+// pasting a spreadsheet with an empty cell) and then dropping empty
+// strings would shift every field after it left by one, silently landing
+// the phone number in listingNote instead of contactInfo.
+export function parseBulkLeadLine(line) {
+  const parts = line.split(' - ').map((p) => p.trim())
+  const contactName = parts[0] || ''
+  if (!contactName) return null
+  return {
+    contactName,
+    listingNote: parts[1] || '',
+    contactInfo: parts.slice(2).join(' - '),
+  }
+}

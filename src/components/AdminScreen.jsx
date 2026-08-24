@@ -27,6 +27,9 @@ import {
   createOutreachLeadsBulk,
   updateOutreachLead,
   deleteOutreachLead,
+  outreachMessageTemplate,
+  personalizedOutreachMessage,
+  parseBulkLeadLine,
 } from '../lib/outreach'
 import { fetchListings } from '../lib/listings'
 import { geocodeArea } from '../lib/geocode'
@@ -52,30 +55,6 @@ const outreachStatuses = {
   joined: { label: 'Joined!', background: 'var(--forest)', color: 'white' },
 }
 
-const outreachMessageTemplate = `Hey! I saw your [dish] post — looks amazing. I run Plates, a marketplace just for home cooks like you (no furniture/electronics clutter, just food). It's free to list, buyers can order and message you directly, and you build reviews/a following instead of starting over on every post. Want me to send you the link to set up your kitchen? Takes like 2 minutes.`
-
-// swaps in what they're actually selling when we know it, instead of the
-// buyer having to hand-edit the placeholder before every single send
-function personalizedOutreachMessage(lead) {
-  const dish = lead.listingNote?.trim()
-  return dish ? outreachMessageTemplate.replace('[dish]', dish) : outreachMessageTemplate
-}
-
-// "Name - what they're selling - contact info" pasted one per line — the
-// fast-typing format for logging a bunch of marketplace finds in one go,
-// contact info stays optional since you often don't have it yet
-function parseBulkLeadLine(line) {
-  const parts = line
-    .split(' - ')
-    .map((p) => p.trim())
-    .filter(Boolean)
-  if (parts.length === 0) return null
-  return {
-    contactName: parts[0],
-    listingNote: parts[1] || '',
-    contactInfo: parts.slice(2).join(' - '),
-  }
-}
 
 function timeAgo(iso) {
   const diffMs = Date.now() - new Date(iso).getTime()

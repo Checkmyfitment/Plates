@@ -1637,6 +1637,41 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
         through the real delete-account flow afterward (not raw SQL) —
         doubled as an extra live confirmation that deletion works
       - 56 tests passing; lint + build clean
+- [x] Audit pass over small/untested lib functions, prompted by "a lot of
+      small things like this was overlooked, let's do some looking at the
+      small functions" — continued the approach that already caught two
+      real bugs this session (writing real tests, not just eyeballing
+      code). Added tests for four previously-untested files:
+      `recentlyViewed.js`, `responseStats.js` (`formatResponseTime`),
+      `recommendations.js` (`getRecommendedListings`), and a new
+      `outreach.test.js`.
+      - **Real bug found and fixed**: `parseBulkLeadLine()` (the "Name -
+        dish - contact" bulk-paste parser in Admin → Outreach) filtered
+        out empty strings after splitting on `' - '`. A line with a
+        genuinely blank middle field — e.g. `"Maria -  - (555) 123-4567"`,
+        plausible when pasting from a spreadsheet with an empty "dish"
+        cell — had that blank filtered away, shifting every field after it
+        left by one: the phone number silently landed in `listingNote`
+        instead of `contactInfo`, and `contactInfo` came out empty. Fixed
+        by trimming without filtering and indexing positionally instead.
+        Regression test reproduces the exact scenario
+      - Along the way, moved `outreachMessageTemplate`,
+        `personalizedOutreachMessage()`, and `parseBulkLeadLine()` out of
+        `AdminScreen.jsx` and into `lib/outreach.js` — they're pure logic
+        with no UI dependency, same as everything else in `lib/`, and
+        moving them is what made them testable at all (a page component
+        isn't an importable unit)
+      - Checked `formatResponseTime()` and `getRecommendedListings()`
+        (cuisine-overlap recommender, tie-break-on-insertion-order) closely
+        for similar edge-case bugs — both held up under test; no changes
+        needed there
+      - Not live-verified in the browser — logged out at the time with no
+        admin credentials available, and typing in credentials myself is
+        off the table regardless. The fix is covered by a unit test that
+        reproduces the exact bug scenario, and only the parsing logic
+        changed, not the surrounding UI wiring (already verified working
+        earlier this session)
+      - 79 tests passing (up from 56); lint + build clean
 
 ## Not built yet (future ideas)
 
