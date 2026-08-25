@@ -1665,12 +1665,11 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
         (cuisine-overlap recommender, tie-break-on-insertion-order) closely
         for similar edge-case bugs — both held up under test; no changes
         needed there
-      - Not live-verified in the browser — logged out at the time with no
-        admin credentials available, and typing in credentials myself is
-        off the table regardless. The fix is covered by a unit test that
-        reproduces the exact bug scenario, and only the parsing logic
-        changed, not the surrounding UI wiring (already verified working
-        earlier this session)
+      - Confirmed live once the user logged back in: pasted the exact
+        repro line into Admin → Outreach's bulk-add ("Blank Field Test -
+         - (555) 123-4567") and got a lead with the phone number correctly
+        in contact info and an empty listing note — not swallowed. Test
+        lead removed afterward
       - 79 tests passing (up from 56); lint + build clean
 
 ## Not built yet (future ideas)
