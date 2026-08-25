@@ -129,6 +129,17 @@ export async function fetchSellerOrders(sellerId) {
   return data.map(mapOrder)
 }
 
+// any order at all, any seller, any status -- just "have they ever placed
+// one" for the buyer getting-started checklist, not a completion count
+export async function fetchHasEverOrdered(buyerId) {
+  const { count, error } = await supabase
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('buyer_id', buyerId)
+  if (error) throw error
+  return (count ?? 0) > 0
+}
+
 export async function fetchCompletedOrderCount(buyerId, sellerId) {
   const { count, error } = await supabase
     .from('orders')

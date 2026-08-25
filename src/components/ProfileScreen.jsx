@@ -31,6 +31,8 @@ export default function ProfileScreen({
   onOpenOrders,
   onOpenDashboard,
   onGoToSell,
+  onGoBrowse,
+  hasEverOrdered,
   onProfileRefresh,
 }) {
   const yourListings = listings.filter((l) => l.sellerId === userId && !l.unclaimedStoreId)
@@ -132,13 +134,25 @@ export default function ProfileScreen({
         )}
       </div>
 
-      {onEditProfile && (
+      {onEditProfile && onGoBrowse && (
         <GettingStartedChecklist
-          hasPhoto={!!user.avatarUrl}
-          hasNeighborhood={!!user.neighborhood}
-          hasListing={yourListings.length > 0}
-          onEditProfile={onEditProfile}
-          onGoToSell={onGoToSell}
+          title="🛒 Getting started as a buyer"
+          steps={[
+            { key: 'neighborhood', label: 'Set your neighborhood', done: !!user.neighborhood, action: onEditProfile },
+            { key: 'favorite', label: 'Save a listing you like', done: favoriteIds.size > 0, action: onGoBrowse },
+            { key: 'order', label: 'Place your first order', done: !!hasEverOrdered, action: onGoBrowse },
+          ]}
+        />
+      )}
+
+      {onEditProfile && onGoToSell && (
+        <GettingStartedChecklist
+          title="🚀 Getting started as a seller"
+          steps={[
+            { key: 'photo', label: 'Add a profile photo', done: !!user.avatarUrl, action: onEditProfile },
+            { key: 'neighborhood', label: 'Set your neighborhood', done: !!user.neighborhood, action: onEditProfile },
+            { key: 'listing', label: 'Post your first listing', done: yourListings.length > 0, action: onGoToSell },
+          ]}
         />
       )}
 

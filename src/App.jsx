@@ -27,7 +27,7 @@ import { fetchListings, insertListing, updateListing, deleteListing, setListingA
 import { fetchFavoriteIds, addFavorite, removeFavorite } from './lib/favorites'
 import { fetchChats, startOrGetChat, sendMessage as sendChatMessage, markChatRead } from './lib/chats'
 import { subscribeToTable } from './lib/realtime'
-import { placeOrder, placeCartOrder } from './lib/orders'
+import { placeOrder, placeCartOrder, fetchHasEverOrdered } from './lib/orders'
 import { createSubscription } from './lib/subscriptions'
 import { fetchSellerRatings, fetchSellerTrustStats } from './lib/reviews'
 import { fetchRestockIds, addRestockAlert, removeRestockAlert, fetchRestockCounts } from './lib/restock'
@@ -65,6 +65,7 @@ export default function App() {
   const [listings, setListings] = useState([])
   const [listingsLoading, setListingsLoading] = useState(true)
   const [favoriteIds, setFavoriteIds] = useState(new Set())
+  const [hasEverOrdered, setHasEverOrdered] = useState(false)
   const [chats, setChats] = useState([])
   const [chatsLoading, setChatsLoading] = useState(true)
   const [activeChatId, setActiveChatId] = useState(null)
@@ -121,6 +122,18 @@ export default function App() {
     fetchFavoriteIds(session.user.id)
       .then(setFavoriteIds)
       .catch((err) => console.error('Failed to load favorites', err))
+  }, [session])
+
+  // just for the buyer getting-started checklist — not worth keeping a
+  // full order list in memory for a single true/false nudge
+  useEffect(() => {
+    if (!session) {
+      setHasEverOrdered(false)
+      return
+    }
+    fetchHasEverOrdered(session.user.id)
+      .then(setHasEverOrdered)
+      .catch((err) => console.error('Failed to check order history', err))
   }, [session])
 
   useEffect(() => {
@@ -924,6 +937,8 @@ export default function App() {
         onOpenOrders={openOrders}
         onOpenDashboard={openDashboard}
         onGoToSell={() => setTab('post')}
+        onGoBrowse={() => setTab('browse')}
+        hasEverOrdered={hasEverOrdered}
         onProfileRefresh={refreshProfile}
       />
     )

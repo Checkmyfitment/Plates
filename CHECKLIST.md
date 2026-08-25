@@ -1692,6 +1692,29 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       correctly makes the other store's session invisible (matching real
       behavior — a stale session in the "wrong" store for the current
       preference isn't found). 84 tests passing; lint + build clean
+- [x] Separate "Getting started" checklists for buyers and sellers,
+      requested since the one checklist that existed nagged pure buyers
+      with "Post your first listing" forever — something they might never
+      want to do. `GettingStartedChecklist.jsx` is now a generic
+      `{ title, steps }` renderer (a step is `{ key, label, done, action }`)
+      instead of being hard-coded to the old seller-only steps, and
+      `ProfileScreen.jsx` renders it twice:
+      - **🛒 Getting started as a buyer**: set neighborhood, save a listing
+        you like (`favoriteIds.size > 0`, already available), place your
+        first order (new `fetchHasEverOrdered()` in `lib/orders.js` — a
+        cheap existence check, not a full order fetch, since the checklist
+        only needs true/false). Both action buttons jump to Browse via a
+        new `onGoBrowse` prop
+      - **🚀 Getting started as a seller**: the original three steps
+        (photo, neighborhood, first listing), unchanged
+      - Confirmed live: both cards render with the right per-step state for
+        a real account (2/3 seller steps already done, 1/3 buyer steps);
+        clicking "Save a listing you like" correctly jumped to Browse;
+        favoriting something there flipped that step to done and updated
+        the buyer card to 2/3 in real time (matching the Saved count going
+        to 1); unfavorited afterward to leave no test data behind
+      - 84 tests passing (checklist itself has no new logic to unit test —
+        it's a pure props-in renderer); lint + build clean
 
 ## Not built yet (future ideas)
 
