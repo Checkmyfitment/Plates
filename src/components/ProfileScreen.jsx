@@ -33,8 +33,13 @@ export default function ProfileScreen({
   onGoToSell,
   onGoBrowse,
   hasEverOrdered,
+  signupIntent,
   onProfileRefresh,
 }) {
+  // null covers every account that signed up before this choice existed —
+  // treated the same as 'both' so nobody loses a checklist they already had
+  const showBuyerChecklist = signupIntent !== 'seller'
+  const showSellerChecklist = signupIntent !== 'buyer'
   const yourListings = listings.filter((l) => l.sellerId === userId && !l.unclaimedStoreId)
   const badge = yourListings.length > 0 ? getSellerBadge(sellerRating, sellerTrust) : null
 
@@ -134,7 +139,7 @@ export default function ProfileScreen({
         )}
       </div>
 
-      {onEditProfile && onGoBrowse && (
+      {onEditProfile && onGoBrowse && showBuyerChecklist && (
         <GettingStartedChecklist
           title="🛒 Getting started as a buyer"
           steps={[
@@ -145,7 +150,7 @@ export default function ProfileScreen({
         />
       )}
 
-      {onEditProfile && onGoToSell && (
+      {onEditProfile && onGoToSell && showSellerChecklist && (
         <GettingStartedChecklist
           title="🚀 Getting started as a seller"
           steps={[

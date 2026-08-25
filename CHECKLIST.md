@@ -1715,6 +1715,27 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
         to 1); unfavorited afterward to leave no test data behind
       - 84 tests passing (checklist itself has no new logic to unit test —
         it's a pure props-in renderer); lint + build clean
+- [x] Signup intent (buyer/seller/both) picked at sign-up, gating which
+      getting-started checklist(s) show — follow-up to the buyer/seller
+      split above (`migration_signup_intent.sql`, confirmed run live).
+      New `profiles.signup_intent` column, set via the same
+      `raw_user_meta_data` → `handle_new_user()` trigger pattern
+      `referred_by` already uses (no separate write needed after signup).
+      `AuthScreen.jsx` adds a required "What brings you to Plates?"
+      Buy/Sell/Both picker on the signup form; `signUp()` in
+      `AuthContext.jsx` takes the choice as a new param.
+      `ProfileScreen.jsx` shows the buyer checklist unless
+      `signup_intent === 'seller'`, and the seller checklist unless it's
+      `'buyer'` — so 'both' (and null, for every account that predates
+      this) still shows both, matching the existing behavior nobody should
+      lose. Confirmed live end-to-end with two disposable test accounts:
+      chose "Buy" on the first — verified `signup_intent: "buyer"` via
+      direct DB read and that only the buyer checklist rendered on
+      Profile; chose "Sell" on the second — only the seller checklist
+      rendered. Both test accounts deleted through the real delete-account
+      flow afterward (this required logging out of the admin session that
+      was in use for other testing — the user will need to log back in)
+      - 84 tests passing; lint + build clean
 
 ## Not built yet (future ideas)
 

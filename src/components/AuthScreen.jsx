@@ -21,6 +21,7 @@ export default function AuthScreen({ onClose, reason }) {
   const [password, setPassword] = useState('')
   const [agreed, setAgreed] = useState(false)
   const [remember, setRemember] = useState(true)
+  const [intent, setIntent] = useState(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -36,6 +37,10 @@ export default function AuthScreen({ onClose, reason }) {
     e.preventDefault()
     setError('')
     setNotice('')
+    if (mode === 'signup' && !intent) {
+      setError("Let us know if you're here to buy, sell, or both.")
+      return
+    }
     if (mode === 'signup' && !agreed) {
       setError('Please agree to the Terms of Service and Privacy Policy to continue.')
       return
@@ -43,7 +48,7 @@ export default function AuthScreen({ onClose, reason }) {
     setBusy(true)
     if (mode === 'signup') {
       setRememberMe(true)
-      const { data, error } = await signUp(email, password, name, referredBy)
+      const { data, error } = await signUp(email, password, name, referredBy, intent)
       if (error) setError(error.message)
       else if (!data.session) setNotice('Check your email for a confirmation link, then log in.')
     } else if (mode === 'reset') {
@@ -147,6 +152,35 @@ export default function AuthScreen({ onClose, reason }) {
             />
             Remember me on this device
           </label>
+        )}
+
+        {mode === 'signup' && (
+          <div>
+            <p className="text-xs mb-1.5" style={{ color: 'var(--ink-soft)' }}>
+              What brings you to Plates?
+            </p>
+            <div className="flex gap-2">
+              {[
+                { value: 'buyer', label: '🛒 Buy' },
+                { value: 'seller', label: "👩‍🍳 Sell" },
+                { value: 'both', label: '🤝 Both' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setIntent(opt.value)}
+                  className="pressable flex-1 py-2.5 rounded-xl text-xs font-bold border"
+                  style={
+                    intent === opt.value
+                      ? { background: 'var(--forest)', color: 'white', borderColor: 'var(--forest)' }
+                      : { borderColor: 'var(--rule)', color: 'var(--ink)' }
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         {mode === 'signup' && (

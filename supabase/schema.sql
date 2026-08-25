@@ -90,6 +90,9 @@ create table public.profiles (
   -- set by delete_my_account() below -- treated like `banned`: signed out
   -- and blocked from using this account again
   deleted_at timestamptz,
+  -- chosen at signup, decides which getting-started checklist(s) Profile
+  -- shows -- null (every account predating this) is treated like 'both'
+  signup_intent text check (signup_intent is null or signup_intent in ('buyer', 'seller', 'both')),
   created_at timestamptz not null default now()
 );
 
@@ -200,6 +203,7 @@ create function public.handle_new_user()
 returns trigger as $$
 declare
   v_referred_by uuid;
+  v_signup_intent text;
 begin
   begin
     v_referred_by := nullif(new.raw_user_meta_data->>'referred_by', '')::uuid;
@@ -211,11 +215,17 @@ begin
     v_referred_by := null;
   end if;
 
-  insert into public.profiles (id, name, referred_by)
+  v_signup_intent := nullif(new.raw_user_meta_data->>'signup_intent', '');
+  if v_signup_intent not in ('buyer', 'seller', 'both') then
+    v_signup_intent := null;
+  end if;
+
+  insert into public.profiles (id, name, referred_by, signup_intent)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    v_referred_by
+    v_referred_by,
+    v_signup_intent
   );
   return new;
 end;

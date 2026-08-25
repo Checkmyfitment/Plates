@@ -920,6 +920,7 @@ export default function App() {
           neighborhood: profile?.neighborhood ?? null,
           phoneVerified: profile?.phone_verified ?? false,
         }}
+        signupIntent={profile?.signup_intent ?? null}
         userId={session.user.id}
         email={session.user.email}
         listings={listings}
