@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import Logo from './Logo'
 import LegalScreen from './LegalScreen'
 import { savePendingClaim } from '../lib/stores'
+import { setRememberMe } from '../lib/supabaseClient'
 
 export default function AuthScreen({ onClose, reason }) {
   const { signIn, signUp, resetPassword } = useAuth()
@@ -19,6 +20,7 @@ export default function AuthScreen({ onClose, reason }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [agreed, setAgreed] = useState(false)
+  const [remember, setRemember] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -40,6 +42,7 @@ export default function AuthScreen({ onClose, reason }) {
     }
     setBusy(true)
     if (mode === 'signup') {
+      setRememberMe(true)
       const { data, error } = await signUp(email, password, name, referredBy)
       if (error) setError(error.message)
       else if (!data.session) setNotice('Check your email for a confirmation link, then log in.')
@@ -48,6 +51,7 @@ export default function AuthScreen({ onClose, reason }) {
       if (error) setError(error.message)
       else setNotice('Check your email for a password reset link.')
     } else {
+      setRememberMe(remember)
       const { error } = await signIn(email, password)
       if (error) setError(error.message)
     }
@@ -132,6 +136,17 @@ export default function AuthScreen({ onClose, reason }) {
             required
             minLength={6}
           />
+        )}
+
+        {mode === 'signin' && (
+          <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            Remember me on this device
+          </label>
         )}
 
         {mode === 'signup' && (

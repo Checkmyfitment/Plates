@@ -1671,6 +1671,27 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
         in contact info and an empty listing note — not swallowed. Test
         lead removed afterward
       - 79 tests passing (up from 56); lint + build clean
+- [x] "Remember me" checkbox on login. Supabase already persists sessions
+      in localStorage by default (survives closing the browser) — the
+      logouts earlier this session were from me explicitly signing out to
+      test disposable accounts, not a real gap — but the user wanted an
+      explicit toggle, so: `src/lib/supabaseClient.js` now wraps a custom
+      storage adapter (`authStorage`) that reads/writes to `localStorage`
+      when remembered (the default, matching every login before this
+      existed) or `sessionStorage` when not, deciding per-call based on a
+      `plates_remember_me` flag. `setRememberMe()` is called right before
+      `signIn`/`signUp` so the session about to be written lands in the
+      right place. Checkbox only shown on the sign-in form (sign-up always
+      remembers). Deliberately verified without touching the live admin
+      session that was already logged in for other testing — logging out
+      to test this would have repeated the exact credential-access problem
+      from earlier in the session. Instead, `authStorage` was exported and
+      exercised directly with real `localStorage`/`sessionStorage` in
+      `supabaseClient.test.js`: confirms writes and reads go to the right
+      store based on the flag, and that switching the flag after writing
+      correctly makes the other store's session invisible (matching real
+      behavior — a stale session in the "wrong" store for the current
+      preference isn't found). 84 tests passing; lint + build clean
 
 ## Not built yet (future ideas)
 
