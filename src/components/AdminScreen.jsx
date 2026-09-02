@@ -33,6 +33,7 @@ import {
 } from '../lib/outreach'
 import { fetchListings } from '../lib/listings'
 import { geocodeArea } from '../lib/geocode'
+import { fetchClientErrors, deleteClientError, clearClientErrors } from '../lib/errorLog'
 import WeeklyBarChart from './WeeklyBarChart'
 import OrderHealthBar from './OrderHealthBar'
 import { useToast } from '../context/ToastContext'
@@ -1541,6 +1542,124 @@ function StatsPanel() {
   )
 }
 
+// unhandled JS errors reported from real browsers (React render errors, plus
+// window 'error'/'unhandledrejection' for everything a React error boundary
+// can't catch) — the whole point of migration_client_errors.sql: bugs that
+// happen after this is actually deployed shouldn't just vanish into a
+// console nobody's watching
+function ErrorsPanel() {
+  const toast = useToast()
+  const [errors, setErrors] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState(null)
+  const { busyIds, withBusy } = useBusyIds()
+
+  const load = () => {
+    setLoading(true)
+    fetchClientErrors()
+      .then(setErrors)
+      .catch((err) => {
+        console.error('Failed to load client errors', err)
+        toast.error('Could not load errors — try again.')
+      })
+      .finally(() => setLoading(false))
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(load, [])
+
+  const remove = (id) =>
+    withBusy(id, async () => {
+      await deleteClientError(id)
+      setErrors((prev) => prev.filter((e) => e.id !== id))
+    })
+
+  const clearAll = async () => {
+    if (errors.length === 0) return
+    try {
+      await clearClientErrors(errors.map((e) => e.id))
+      setErrors([])
+      toast.success('Cleared.')
+    } catch (err) {
+      console.error('Failed to clear errors', err)
+      toast.error('Could not clear errors — try again.')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="skeleton h-16 w-full" />
+        ))}
+      </div>
+    )
+  }
+
+  if (errors.length === 0) {
+    return <Placeholder compact icon="✅" title="No errors reported" body="Nothing's been logged since this was last cleared." />
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+          {errors.length} recent error{errors.length === 1 ? '' : 's'}
+        </p>
+        <button onClick={clearAll} className="pressable text-xs underline" style={{ color: 'var(--ink-soft)' }}>
+          Clear all
+        </button>
+      </div>
+      {errors.map((e) => {
+        const busy = busyIds.has(e.id)
+        const expanded = expandedId === e.id
+        return (
+          <div key={e.id} className="card-elevated p-3 text-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium truncate">{e.message}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                  {timeAgo(e.createdAt)} · {e.context ?? 'unknown'}
+                  {e.userName ? ` · ${e.userName}` : ''}
+                  {e.path ? ` · ${e.path}` : ''}
+                </p>
+              </div>
+              <span
+                className="shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium"
+                style={{ background: 'var(--plum-soft)', color: 'var(--plum)' }}
+              >
+                {e.context ?? 'error'}
+              </span>
+            </div>
+            {e.stack && (
+              <button
+                onClick={() => setExpandedId(expanded ? null : e.id)}
+                className="pressable text-xs mt-1.5 underline"
+                style={{ color: 'var(--ink-soft)' }}
+              >
+                {expanded ? 'Hide stack trace' : 'Show stack trace'}
+              </button>
+            )}
+            {expanded && e.stack && (
+              <pre className="text-[10px] mt-1.5 p-2 rounded-lg overflow-x-auto" style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}>
+                {e.stack}
+              </pre>
+            )}
+            <button
+              disabled={busy}
+              onClick={() => remove(e.id)}
+              className="pressable text-xs mt-2 px-2.5 py-1 rounded-full border disabled:opacity-50"
+              style={{ borderColor: 'var(--plum)', color: 'var(--plum)' }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onEditListing }) {
   const [section, setSection] = useState('reports')
 
@@ -1561,7 +1680,7 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onE
       </div>
 
       <div className="px-5 flex gap-2 mb-1 overflow-x-auto pb-1">
-        {['reports', 'users', 'listings', 'stores', 'promotions', 'outreach', 'broadcast', 'stats'].map((s) => (
+        {['reports', 'users', 'listings', 'stores', 'promotions', 'outreach', 'broadcast', 'stats', 'errors'].map((s) => (
           <button
             key={s}
             onClick={() => setSection(s)}
@@ -1586,6 +1705,7 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onE
         {section === 'outreach' && <OutreachPanel adminId={adminId} />}
         {section === 'broadcast' && <BroadcastPanel />}
         {section === 'stats' && <StatsPanel />}
+        {section === 'errors' && <ErrorsPanel />}
       </div>
     </div>
   )

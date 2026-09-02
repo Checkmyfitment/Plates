@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import Logo from './Logo'
+import { logClientError } from '../lib/errorLog'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -13,6 +14,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('Unhandled error in app tree', error, info)
+    logClientError({ message: error.message, stack: error.stack, context: 'react-render' })
   }
 
   render() {

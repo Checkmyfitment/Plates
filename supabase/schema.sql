@@ -31,6 +31,7 @@ drop table if exists public.pickup_slots cascade;
 drop table if exists public.listing_subscriptions cascade;
 drop view if exists public.seller_trust_stats;
 drop view if exists public.seller_response_stats;
+drop table if exists public.client_errors cascade;
 drop table if exists public.reports cascade;
 drop view if exists public.restock_counts;
 drop table if exists public.restock_alerts cascade;
@@ -1326,6 +1327,37 @@ create policy "Admins can view all reports"
 
 create policy "Admins can update reports"
   on public.reports for update
+  using (public.is_admin(auth.uid()));
+
+-- client_errors: unhandled JS errors reported from the browser, so bugs a
+-- real user hits after deployment don't just vanish into a console nobody's
+-- watching. Anyone (including a logged-out guest) can insert -- errors
+-- happen before login too -- but only admins can read them back.
+create table public.client_errors (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete set null,
+  message text not null check (char_length(message) <= 2000),
+  stack text check (stack is null or char_length(stack) <= 4000),
+  context text check (context is null or char_length(context) <= 100),
+  path text check (path is null or char_length(path) <= 300),
+  user_agent text check (user_agent is null or char_length(user_agent) <= 300),
+  created_at timestamptz not null default now()
+);
+
+create index client_errors_created_at_idx on public.client_errors (created_at desc);
+
+alter table public.client_errors enable row level security;
+
+create policy "Anyone can log a client error"
+  on public.client_errors for insert
+  with check (true);
+
+create policy "Admins can view client errors"
+  on public.client_errors for select
+  using (public.is_admin(auth.uid()));
+
+create policy "Admins can delete client errors"
+  on public.client_errors for delete
   using (public.is_admin(auth.uid()));
 
 -- aggregate view: how quickly each seller typically replies to messages

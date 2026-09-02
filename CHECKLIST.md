@@ -1736,6 +1736,40 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       flow afterward (this required logging out of the admin session that
       was in use for other testing — the user will need to log back in)
       - 84 tests passing; lint + build clean
+- [x] "Make it great when launched" pass, part 1 of 4 — the user asked to
+      keep building rather than deploy now, then picked all four launch-
+      quality dimensions I offered (polish, trust for strangers, growth/
+      first impression, reliability in the wild) rather than one. Starting
+      with reliability since it's the most concrete and unblocks judging
+      the other three later: **client-side error logging**
+      (`migration_client_errors.sql`, confirmed run live). Before this, an
+      unhandled error just went to `console.error` — fine in dev, useless
+      once this is actually deployed and nobody's watching a console.
+      - New `client_errors` table (RLS: anyone can insert, including a
+        logged-out guest, since errors happen pre-login too; only admins
+        can read/delete)
+      - `lib/errorLog.js`: `logClientError()` resolves the current user id
+        via `supabase.auth.getSession()` when not passed explicitly, and
+        throttles per exact message+context to one report per browser
+        session — a render loop or a repeating rejection shouldn't flood
+        the table with thousands of identical rows
+      - Wired into three places: `ErrorBoundary.jsx`'s `componentDidCatch`
+        (React render errors), plus new `window.addEventListener('error'
+        / 'unhandledrejection', ...)` in `main.jsx` for everything a React
+        error boundary structurally can't catch — an exception in a click
+        handler, a rejected promise with no `.catch`
+      - New Admin → Errors tab: recent errors with context badge, relative
+        time, which user hit it, expandable stack trace, dismiss
+        individually or clear all
+      - Confirmed live: triggered a real `setTimeout` throw (window-error
+        path) and a real unhandled `Promise.reject` (unhandled-rejection
+        path) — the two paths `ErrorBoundary` alone can't cover — and both
+        showed up in Admin → Errors within seconds, correctly attributed
+        to the logged-in admin, with full messages and stack traces.
+        Cleared afterward
+      - New `errorLog.test.js` covers the throttling specifically (same
+        message+context dedupes to one insert; different context for the
+        same message doesn't). 87 tests passing; lint + build clean
 
 ## Not built yet (future ideas)
 
