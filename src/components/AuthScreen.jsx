@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Logo from './Logo'
-import LegalScreen from './LegalScreen'
 import { savePendingClaim } from '../lib/stores'
 import { setRememberMe } from '../lib/supabaseClient'
+
+// most people who land on this screen never tap Terms/Privacy — no reason
+// to make every guest download it upfront
+const LegalScreen = lazy(() => import('./LegalScreen'))
 
 export default function AuthScreen({ onClose, reason }) {
   const { signIn, signUp, resetPassword } = useAuth()
@@ -66,7 +69,9 @@ export default function AuthScreen({ onClose, reason }) {
   if (legalDoc) {
     return (
       <div className="max-w-md mx-auto min-h-screen" style={{ background: 'var(--paper)' }}>
-        <LegalScreen doc={legalDoc} onBack={() => setLegalDoc(null)} />
+        <Suspense fallback={null}>
+          <LegalScreen doc={legalDoc} onBack={() => setLegalDoc(null)} />
+        </Suspense>
       </div>
     )
   }

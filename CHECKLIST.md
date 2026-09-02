@@ -1770,6 +1770,39 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       - New `errorLog.test.js` covers the throttling specifically (same
         message+context dedupes to one insert; different context for the
         same message doesn't). 87 tests passing; lint + build clean
+- [x] "Make it great when launched" pass, part 2 of 4 — polish. Two checks:
+      - **Mobile width** — this whole session had only ever tested at
+        ~800px, never real phone width. Resized to 375×812 and the bottom
+        nav appeared missing from screenshots — turned out to be a
+        screenshot-tool rendering quirk in this session (same one seen a
+        few times before with stale/blank captures), not a real bug:
+        checked the nav's actual computed styles and bounding box directly
+        (`position: fixed; bottom: 16px`, box at top:731/bottom:796 within
+        an 812px viewport) and it's correctly positioned and visible. No
+        fix needed — confirmed via computed styles rather than trusting a
+        flaky screenshot
+      - **Code-splitting the main bundle** — every build this whole
+        session warned about a >500kB chunk; the main bundle had grown to
+        636kB with only `AdminScreen` lazy-loaded. Lazy-loaded nine more
+        screens that aren't needed for the first thing almost anyone does
+        (browse or log in): `PostListing`, `ResetPassword`, `EditListing`,
+        `EditProfile`, `NotificationsScreen`, `LegalScreen` (in both
+        places it's imported — `App.jsx` and `AuthScreen.jsx`
+        separately, since the second import would have defeated the
+        point), `SellerStorefront`, `OrdersScreen`, `SellerDashboard`.
+        Kept `BrowseScreen`, `ListingDetail`, `AuthScreen`, `ProfileScreen`,
+        `ChatThread`, `ChatsScreen`, `SavedScreen`, and
+        `OnboardingWalkthrough` eager — all either the first thing a user
+        sees or common enough that a loading flash would cost more than
+        the bytes saved. Result: main bundle 636kB → 345kB (46% smaller),
+        the build size warning is gone, and everything split into small
+        per-screen chunks (1-19kB each) loaded on demand. Confirmed live:
+        navigated to the lazy-loaded `PostListing` (via Sell) and
+        `LegalScreen` (via both the Profile footer link and the signup
+        form's Terms link) and inspected the DOM directly rather than
+        trusting screenshots — both rendered fully and correctly, no
+        chunk-loading errors in console. 87 tests passing; lint + build
+        clean
 
 ## Not built yet (future ideas)
 

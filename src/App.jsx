@@ -4,22 +4,13 @@ import TopBar from './components/TopBar'
 import BottomNav from './components/BottomNav'
 import BrowseScreen from './components/BrowseScreen'
 import ListingDetail from './components/ListingDetail'
-import PostListing from './components/PostListing'
 import SavedScreen from './components/SavedScreen'
 import ChatsScreen from './components/ChatsScreen'
 import ChatThread from './components/ChatThread'
 import ProfileScreen from './components/ProfileScreen'
 import AuthScreen from './components/AuthScreen'
-import ResetPassword from './components/ResetPassword'
-import EditListing from './components/EditListing'
-import EditProfile from './components/EditProfile'
-import NotificationsScreen from './components/NotificationsScreen'
 import BannedScreen from './components/BannedScreen'
 import DeletedScreen from './components/DeletedScreen'
-import LegalScreen from './components/LegalScreen'
-import SellerStorefront from './components/SellerStorefront'
-import OrdersScreen from './components/OrdersScreen'
-import SellerDashboard from './components/SellerDashboard'
 import OnboardingWalkthrough from './components/OnboardingWalkthrough'
 import { hasSeenOnboarding, markOnboardingSeen } from './lib/onboarding'
 import { useAuth } from './context/AuthContext'
@@ -40,6 +31,25 @@ import { useToast } from './context/ToastContext'
 // only admins ever open this screen, so it stays out of everyone else's
 // initial bundle
 const AdminScreen = lazy(() => import('./components/AdminScreen'))
+
+// none of these are needed for the first thing almost anyone does (browse,
+// or log in) -- splitting them out keeps the initial bundle to what a
+// brand-new guest actually needs
+const PostListing = lazy(() => import('./components/PostListing'))
+const ResetPassword = lazy(() => import('./components/ResetPassword'))
+const EditListing = lazy(() => import('./components/EditListing'))
+const EditProfile = lazy(() => import('./components/EditProfile'))
+const NotificationsScreen = lazy(() => import('./components/NotificationsScreen'))
+const LegalScreen = lazy(() => import('./components/LegalScreen'))
+const SellerStorefront = lazy(() => import('./components/SellerStorefront'))
+const OrdersScreen = lazy(() => import('./components/OrdersScreen'))
+const SellerDashboard = lazy(() => import('./components/SellerDashboard'))
+
+const screenFallback = (
+  <div className="px-5 pt-6">
+    <div className="skeleton h-40 w-full rounded-2xl" />
+  </div>
+)
 
 const titles = {
   browse: 'Plates',
@@ -722,7 +732,11 @@ export default function App() {
   }
 
   if (passwordRecovery) {
-    return <ResetPassword />
+    return (
+      <Suspense fallback={screenFallback}>
+        <ResetPassword />
+      </Suspense>
+    )
   }
 
   if (authPromptOpen && !session) {
@@ -766,63 +780,77 @@ export default function App() {
     )
   } else if (session && editingListing) {
     body = (
-      <EditListing
-        listing={editingListing}
-        onBack={() => setEditingListing(null)}
-        onSave={saveListingEdits}
-        onDelete={removeListing}
-        onToggleAvailability={toggleListingAvailability}
-        onDuplicate={duplicateListing}
-        currentUserId={session.user.id}
-      />
+      <Suspense fallback={screenFallback}>
+        <EditListing
+          listing={editingListing}
+          onBack={() => setEditingListing(null)}
+          onSave={saveListingEdits}
+          onDelete={removeListing}
+          onToggleAvailability={toggleListingAvailability}
+          onDuplicate={duplicateListing}
+          currentUserId={session.user.id}
+        />
+      </Suspense>
     )
   } else if (session && showOrders) {
     body = (
-      <OrdersScreen
-        userId={session.user.id}
-        onBack={() => setShowOrders(false)}
-        onReorder={reorderGroup}
-        onOpenDashboard={() => {
-          setShowOrders(false)
-          setShowDashboard(true)
-        }}
-      />
+      <Suspense fallback={screenFallback}>
+        <OrdersScreen
+          userId={session.user.id}
+          onBack={() => setShowOrders(false)}
+          onReorder={reorderGroup}
+          onOpenDashboard={() => {
+            setShowOrders(false)
+            setShowDashboard(true)
+          }}
+        />
+      </Suspense>
     )
   } else if (session && showDashboard) {
     body = (
-      <SellerDashboard
-        userId={session.user.id}
-        listings={listings}
-        sellerRating={sellerRatings.get(session.user.id)}
-        profile={profile}
-        onProfileRefresh={refreshProfile}
-        onBack={() => setShowDashboard(false)}
-        onEditListing={setEditingListing}
-        onDuplicate={duplicateListing}
-      />
+      <Suspense fallback={screenFallback}>
+        <SellerDashboard
+          userId={session.user.id}
+          listings={listings}
+          sellerRating={sellerRatings.get(session.user.id)}
+          profile={profile}
+          onProfileRefresh={refreshProfile}
+          onBack={() => setShowDashboard(false)}
+          onEditListing={setEditingListing}
+          onDuplicate={duplicateListing}
+        />
+      </Suspense>
     )
   } else if (session && legalDoc) {
-    body = <LegalScreen doc={legalDoc} onBack={() => setLegalDoc(null)} />
+    body = (
+      <Suspense fallback={screenFallback}>
+        <LegalScreen doc={legalDoc} onBack={() => setLegalDoc(null)} />
+      </Suspense>
+    )
   } else if (session && showNotifications) {
     body = (
-      <NotificationsScreen
-        notifications={notifications}
-        onBack={() => setShowNotifications(false)}
-        onOpen={openNotification}
-      />
+      <Suspense fallback={screenFallback}>
+        <NotificationsScreen
+          notifications={notifications}
+          onBack={() => setShowNotifications(false)}
+          onOpen={openNotification}
+        />
+      </Suspense>
     )
   } else if (session && editingProfile) {
     body = (
-      <EditProfile
-        userId={session.user.id}
-        profile={profile}
-        onBack={() => setEditingProfile(false)}
-        onSaved={async () => {
-          await refreshProfile()
-          fetchListings().then(setListings).catch((err) => console.error('Failed to reload listings', err))
-          setEditingProfile(false)
-        }}
-      />
+      <Suspense fallback={screenFallback}>
+        <EditProfile
+          userId={session.user.id}
+          profile={profile}
+          onBack={() => setEditingProfile(false)}
+          onSaved={async () => {
+            await refreshProfile()
+            fetchListings().then(setListings).catch((err) => console.error('Failed to reload listings', err))
+            setEditingProfile(false)
+          }}
+        />
+      </Suspense>
     )
   } else if (selected) {
     body = (
@@ -862,21 +890,23 @@ export default function App() {
     )
   } else if (viewingSellerId) {
     body = (
-      <SellerStorefront
-        sellerId={viewingSellerId}
-        currentUserId={session?.user?.id ?? null}
-        listings={listings}
-        favoriteIds={favoriteIds}
-        onToggleFavoriteListing={session ? toggleFavorite : () => requireAuth('Log in to save this listing.')}
-        sellerRating={sellerRatings.get(viewingSellerId)}
-        sellerTrust={sellerTrustStats.get(viewingSellerId)}
-        onBack={() => setViewingSellerId(null)}
-        onSelectListing={setSelected}
-        onRequireAuth={requireAuth}
-        onPlaceCartOrder={(items, fulfillmentMethod, deliveryAddress) =>
-          placeCartOrderAndNotify(viewingSellerId, items, fulfillmentMethod, deliveryAddress)
-        }
-      />
+      <Suspense fallback={screenFallback}>
+        <SellerStorefront
+          sellerId={viewingSellerId}
+          currentUserId={session?.user?.id ?? null}
+          listings={listings}
+          favoriteIds={favoriteIds}
+          onToggleFavoriteListing={session ? toggleFavorite : () => requireAuth('Log in to save this listing.')}
+          sellerRating={sellerRatings.get(viewingSellerId)}
+          sellerTrust={sellerTrustStats.get(viewingSellerId)}
+          onBack={() => setViewingSellerId(null)}
+          onSelectListing={setSelected}
+          onRequireAuth={requireAuth}
+          onPlaceCartOrder={(items, fulfillmentMethod, deliveryAddress) =>
+            placeCartOrderAndNotify(viewingSellerId, items, fulfillmentMethod, deliveryAddress)
+          }
+        />
+      </Suspense>
     )
   } else if (session && tab === 'messages' && activeChat) {
     body = (
@@ -890,13 +920,15 @@ export default function App() {
     )
   } else if (session && tab === 'post') {
     body = (
-      <PostListing
-        onAddListing={addListing}
-        onEditListing={setEditingListing}
-        isAdmin={!!profile?.is_admin}
-        currentUserId={session.user.id}
-        defaultPickupNote={profile?.default_pickup_note}
-      />
+      <Suspense fallback={screenFallback}>
+        <PostListing
+          onAddListing={addListing}
+          onEditListing={setEditingListing}
+          isAdmin={!!profile?.is_admin}
+          currentUserId={session.user.id}
+          defaultPickupNote={profile?.default_pickup_note}
+        />
+      </Suspense>
     )
   } else if (session && tab === 'favorites') {
     body = (
