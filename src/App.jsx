@@ -948,6 +948,8 @@ export default function App() {
         user={{
           name: profile?.name ?? session.user.email,
           kitchen: profile?.kitchen ?? null,
+          bio: profile?.bio ?? null,
+          socialLink: profile?.social_link ?? null,
           avatarUrl: profile?.avatar_url ?? null,
           neighborhood: profile?.neighborhood ?? null,
           phoneVerified: profile?.phone_verified ?? false,

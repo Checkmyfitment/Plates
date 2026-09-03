@@ -1848,6 +1848,45 @@ All four parts of the "make it great when launched" pass (polish &
 quality bar, reliability in the wild, trust for strangers, growth &
 first impression) are now done.
 
+- [x] Cleaned up stray test data: a "Geocode pin test dish" ($8) listing
+      spotted under mike chin's "Your listings" while verifying an
+      earlier feature. Confirmed via a read-only API check that it was
+      posted under mike chin's own account on the exact day the geocode-pin
+      feature was built, with a one-word test title — safe to remove. Gave
+      the user a `delete from listings where id = ...` to run (orders
+      cascade-delete automatically via the existing FK, but a check
+      confirmed no order referenced it anyway). Confirmed gone afterward
+      via the same read-only check and live in "Your listings"
+- [x] Added a bio and a social media/website link to profiles, plus split
+      the old dual-purpose "Kitchen name / bio" field into two clearer
+      ones. Previously `kitchen` was doing double duty: a short tagline
+      shown next to a seller's name on listings, *and* a full paragraph
+      on the storefront/profile pages, capped at 300 characters. Split
+      it into `kitchen` (now genuinely short — "Kitchen or shop name",
+      80 chars, unchanged everywhere it was already used as a tagline:
+      `ListingDetail`, `SellerCard`, `AdminScreen`'s unclaimed-store
+      form) and new `bio` (500 chars, the paragraph shown on
+      `ProfileScreen` and `SellerStorefront`) and `social_link` (200
+      chars, rendered as a clickable link with a 🔗 prefix on both of
+      those same two screens). New `lib/socialLink.js` normalizes
+      whatever someone types (e.g. "instagram.com/mariascocina") into a
+      full `https://` URL for storage, rejects non-http(s) input like
+      `javascript:...`, and formats it back down to a short label for
+      display; covered by 8 new unit tests (`socialLink.test.js`) for
+      the empty/protocol-prefixed/whitespace/malicious-input/trailing-
+      slash cases. Migration: `migration_profile_bio.sql`, mirrored into
+      `schema.sql`. Confirmed live end-to-end: filled in Kitchen name,
+      Bio, and Social link on the real Edit Profile screen, saved,
+      confirmed a "Could not find the 'bio' column" error before the
+      migration ran (proving the form was wired correctly and just
+      waiting on the DB), then re-saved after the user ran the migration
+      and confirmed both the bio paragraph and the `🔗 instagram.com/…`
+      link render correctly on `ProfileScreen` *and* on the public
+      `SellerStorefront` (with the link's `href` correctly normalized to
+      `https://instagram.com/...`). Cleared the test values back out
+      afterward so they don't show on the live profile. 95 tests
+      passing; lint + build clean
+
 ## Not built yet (future ideas)
 
 Bigger ideas from a competitor/UX pass (Shef, Olio, Too Good To Go, Etsy, Nextdoor,

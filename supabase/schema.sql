@@ -94,6 +94,12 @@ create table public.profiles (
   -- chosen at signup, decides which getting-started checklist(s) Profile
   -- shows -- null (every account predating this) is treated like 'both'
   signup_intent text check (signup_intent is null or signup_intent in ('buyer', 'seller', 'both')),
+  -- longer free-text "about me" paragraph -- separate from `kitchen`,
+  -- which is the short name/tagline shown next to a seller's name
+  bio text check (bio is null or char_length(bio) <= 500),
+  -- one optional link (Instagram, TikTok, a personal site, etc.) shown on
+  -- the public storefront and own profile
+  social_link text check (social_link is null or char_length(social_link) <= 200),
   created_at timestamptz not null default now()
 );
 

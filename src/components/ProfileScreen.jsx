@@ -11,6 +11,7 @@ import ThemeToggle from './ThemeToggle'
 import GettingStartedChecklist from './GettingStartedChecklist'
 import AccountSecurity from './AccountSecurity'
 import { getSellerBadge } from '../lib/badges'
+import { formatSocialLinkLabel } from '../lib/socialLink'
 
 export default function ProfileScreen({
   user,
@@ -63,6 +64,11 @@ export default function ProfileScreen({
           <p className="text-xs truncate" style={{ color: 'var(--ink-soft)' }}>
             {email}
           </p>
+          {user.kitchen && (
+            <p className="text-xs truncate font-medium" style={{ color: 'var(--forest-dark)' }}>
+              {user.kitchen}
+            </p>
+          )}
           {badge && (
             <span
               className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium mt-1"
@@ -94,10 +100,21 @@ export default function ProfileScreen({
         </div>
       </div>
 
-      {user.kitchen && (
-        <p className="text-sm mb-3 leading-relaxed" style={{ color: 'var(--ink)' }}>
-          {user.kitchen}
+      {user.bio && (
+        <p className="text-sm mb-1.5 leading-relaxed" style={{ color: 'var(--ink)' }}>
+          {user.bio}
         </p>
+      )}
+      {user.socialLink && (
+        <a
+          href={user.socialLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pressable inline-block text-xs mb-3"
+          style={{ color: 'var(--forest-dark)', textDecoration: 'underline' }}
+        >
+          🔗 {formatSocialLinkLabel(user.socialLink)}
+        </a>
       )}
 
       <div className="flex gap-2 mb-5">

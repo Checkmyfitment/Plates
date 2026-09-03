@@ -8,6 +8,7 @@ import { fetchFollowedSellerIds, followSeller, unfollowSeller } from '../lib/fol
 import { fetchCompletedOrderCount } from '../lib/orders'
 import { isOrderingClosed } from '../lib/listings'
 import { shareLink } from '../lib/share'
+import { formatSocialLinkLabel } from '../lib/socialLink'
 import { useToast } from '../context/ToastContext'
 import ReviewItem from './ReviewItem'
 import ReportModal from './ReportModal'
@@ -268,6 +269,11 @@ export default function SellerStorefront({
             <h2 className="font-display text-xl truncate" style={{ color: 'var(--forest-dark)' }}>
               {seller.name}
             </h2>
+            {seller.kitchen && (
+              <p className="text-xs mt-0.5 font-medium" style={{ color: 'var(--forest-dark)' }}>
+                {seller.kitchen}
+              </p>
+            )}
             {seller.neighborhood && (
               <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
                 {seller.neighborhood}
@@ -340,10 +346,21 @@ export default function SellerStorefront({
           </div>
         )}
 
-        {seller.kitchen && (
+        {seller.bio && (
           <p className="text-sm mt-3 leading-relaxed" style={{ color: 'var(--ink)' }}>
-            {seller.kitchen}
+            {seller.bio}
           </p>
+        )}
+        {seller.social_link && (
+          <a
+            href={seller.social_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pressable inline-block text-xs mt-2"
+            style={{ color: 'var(--forest-dark)', textDecoration: 'underline' }}
+          >
+            🔗 {formatSocialLinkLabel(seller.social_link)}
+          </a>
         )}
 
         {sellerRating?.avgTaste != null && (

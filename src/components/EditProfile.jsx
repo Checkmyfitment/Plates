@@ -3,10 +3,13 @@ import { updateProfile } from '../lib/profiles'
 import { geocodeArea } from '../lib/geocode'
 import { uploadAvatarPhoto, validatePhotoFile } from '../lib/storage'
 import { LANGUAGE_OPTIONS } from '../lib/translate'
+import { normalizeSocialLink } from '../lib/socialLink'
 
 export default function EditProfile({ userId, profile, onBack, onSaved }) {
   const [name, setName] = useState(profile?.name ?? '')
   const [kitchen, setKitchen] = useState(profile?.kitchen ?? '')
+  const [bio, setBio] = useState(profile?.bio ?? '')
+  const [socialLinkInput, setSocialLinkInput] = useState(profile?.social_link ?? '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? '')
   const [neighborhood, setNeighborhood] = useState(profile?.neighborhood ?? '')
   const [defaultPickupNote, setDefaultPickupNote] = useState(profile?.default_pickup_note ?? '')
@@ -60,6 +63,15 @@ export default function EditProfile({ userId, profile, onBack, onSaved }) {
         lng = coords?.lng ?? null
       }
 
+      let socialLink
+      try {
+        socialLink = normalizeSocialLink(socialLinkInput)
+      } catch (err) {
+        setSaving(false)
+        setSubmitError(err.message)
+        return
+      }
+
       const updated = await updateProfile(userId, {
         name: name.trim(),
         kitchen: kitchen.trim() || null,
@@ -69,6 +81,8 @@ export default function EditProfile({ userId, profile, onBack, onSaved }) {
         lng,
         defaultPickupNote: defaultPickupNote.trim() || null,
         preferredLanguage: preferredLanguage || null,
+        bio: bio.trim() || null,
+        socialLink,
       })
       onSaved(updated)
     } catch (err) {
@@ -169,15 +183,39 @@ export default function EditProfile({ userId, profile, onBack, onSaved }) {
         </label>
 
         <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--ink-soft)' }}>
-          Kitchen name / bio
-          <textarea
-            rows={3}
+          Kitchen or shop name (optional)
+          <input
             value={kitchen}
             onChange={(e) => setKitchen(e.target.value)}
-            placeholder="e.g. Maria's Cocina — family recipes from Oaxaca, baking since 2019"
-            className="field resize-none"
-            maxLength={300}
+            placeholder="e.g. Maria's Cocina"
+            className="field"
+            maxLength={80}
           />
+          <span>Shown next to your name on listings and your profile.</span>
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Bio (optional)
+          <textarea
+            rows={3}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="Tell buyers a bit about yourself — what you cook, how long you've been at it, what makes your food special."
+            className="field resize-none"
+            maxLength={500}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Social media or website link (optional)
+          <input
+            value={socialLinkInput}
+            onChange={(e) => setSocialLinkInput(e.target.value)}
+            placeholder="e.g. instagram.com/mariascocina"
+            className="field"
+            maxLength={200}
+          />
+          <span>Shown as a link on your public profile.</span>
         </label>
 
         {submitError && (

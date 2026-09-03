@@ -1,6 +1,9 @@
 import { supabase } from './supabaseClient'
 
-export async function updateProfile(userId, { name, kitchen, avatarUrl, neighborhood, lat, lng, defaultPickupNote, preferredLanguage }) {
+export async function updateProfile(
+  userId,
+  { name, kitchen, avatarUrl, neighborhood, lat, lng, defaultPickupNote, preferredLanguage, bio, socialLink }
+) {
   const { data, error } = await supabase
     .from('profiles')
     .update({
@@ -12,6 +15,8 @@ export async function updateProfile(userId, { name, kitchen, avatarUrl, neighbor
       lng,
       default_pickup_note: defaultPickupNote,
       preferred_language: preferredLanguage,
+      bio,
+      social_link: socialLink,
     })
     .eq('id', userId)
     .select()
