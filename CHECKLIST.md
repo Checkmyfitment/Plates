@@ -1803,6 +1803,25 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
         trusting screenshots — both rendered fully and correctly, no
         chunk-loading errors in console. 87 tests passing; lint + build
         clean
+- [x] "Make it great when launched" pass, part 3 of 4 — trust for
+      strangers. Since Plates has no payment processing, the real trust
+      gap isn't refund/dispute handling (Reports + cancellation reasons
+      already cover that) — it's that two strangers meeting in person to
+      hand off food get zero safety framing at the moment it actually
+      matters. Found that Community Guidelines already had good advice on
+      this ("meet in a public, well-lit spot..."), just buried in a legal
+      document nobody reads outside a small footer link — the fix was
+      surfacing it in context, not writing new copy. Added one line to
+      `OrderCard.jsx`, shown to the buyer alongside the pickup code once
+      an order is confirmed/ready (pickup orders only, not delivery):
+      "🤝 Meeting a neighbor for the first time? Pick somewhere well-lit
+      and public if you can, and take a look before you pay." Confirmed
+      live: placed a real test order, asked the user to run one SQL update
+      to flip it to 'confirmed' (mirrors what a seller's own confirm
+      action does — no way to do that as the buyer's own account), and
+      saw the note render correctly right under the real pickup code on
+      the actual Orders screen. Test order cleaned up afterward. 87 tests
+      passing; lint + build clean
 
 ## Not built yet (future ideas)
 

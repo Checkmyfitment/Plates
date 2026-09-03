@@ -114,6 +114,14 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
                 </p>
               </div>
             )}
+          {role === 'buyer' &&
+            !isDelivery &&
+            (first.status === 'confirmed' || first.status === 'ready') && (
+              <p className="text-[11px] mt-1.5" style={{ color: 'var(--ink-soft)' }}>
+                🤝 Meeting a neighbor for the first time? Pick somewhere well-lit and public if you
+                can, and take a look before you pay.
+              </p>
+            )}
           {first.status !== 'cancelled' && (
             <div className="mt-2">
               {(role === 'buyer' ? first.buyerMarkedPaid : first.sellerMarkedPaid) ? (
