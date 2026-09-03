@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchReferralCount } from '../lib/profiles'
 import { getReferralBadge } from '../lib/badges'
+import { shareLink } from '../lib/share'
 import { useToast } from '../context/ToastContext'
 
 export default function InviteFriends({ userId }) {
@@ -16,13 +17,17 @@ export default function InviteFriends({ userId }) {
   const inviteLink = `${window.location.origin}${window.location.pathname}?ref=${userId}`
   const referralBadge = getReferralBadge(count ?? 0)
 
-  const copyLink = async () => {
+  const share = async () => {
     try {
-      await navigator.clipboard.writeText(inviteLink)
-      toast.success('Invite link copied!')
+      const result = await shareLink({
+        url: inviteLink,
+        title: 'Join me on Plates',
+        text: "I'm on Plates, a marketplace for homemade food from neighbors — join me?",
+      })
+      if (result === 'copied') toast.success('Invite link copied!')
     } catch (err) {
-      console.error('Failed to copy invite link', err)
-      toast.error('Could not copy the link — copy it manually.')
+      console.error('Failed to share invite link', err)
+      toast.error('Could not share that — try again.')
     }
   }
 
@@ -48,11 +53,11 @@ export default function InviteFriends({ userId }) {
         </span>
       )}
       <button
-        onClick={copyLink}
+        onClick={share}
         className="pressable mt-2.5 text-xs px-3 py-1.5 rounded-full border block"
         style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
       >
-        Copy invite link
+        Share invite link
       </button>
     </div>
   )

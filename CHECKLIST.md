@@ -1822,6 +1822,31 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       saw the note render correctly right under the real pickup code on
       the actual Orders screen. Test order cleaned up afterward. 87 tests
       passing; lint + build clean
+- [x] "Make it great when launched" pass, part 4 of 4 — growth & first
+      impression. Reviewed the guest experience (Browse works fully
+      logged-out, onboarding walkthrough, signup now asks buyer/seller/
+      both and shows a matching checklist) and found it already solid —
+      no changes needed there. The real gap was in "Invite your
+      neighbors" (`InviteFriends.jsx`, shown on the Profile screen): its
+      button only ever did `navigator.clipboard.writeText` silently
+      copying a link with no native share option, when the app already
+      had a proper `shareLink()` helper (`lib/share.js`, used by
+      `ListingDetail`'s "Share listing") that prefers the OS share sheet
+      and falls back to clipboard-copy-with-toast. Swapped
+      `InviteFriends.jsx` to use `shareLink()` the same way
+      `ListingDetail` does — button relabeled "Share invite link".
+      Confirmed live: clicked the button on the actual Profile screen
+      while logged in — the automated browser pane has no
+      `navigator.share`, so it exercised the clipboard-fallback path,
+      and the tool harness confirmed the page wrote the invite link to
+      the OS clipboard during that click (the `'copied'` branch, which
+      also fires the "Invite link copied!" toast). On a real phone this
+      same code path opens the native share sheet instead. 87 tests
+      passing; lint + build clean
+
+All four parts of the "make it great when launched" pass (polish &
+quality bar, reliability in the wild, trust for strangers, growth &
+first impression) are now done.
 
 ## Not built yet (future ideas)
 
