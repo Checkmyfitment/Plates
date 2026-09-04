@@ -1886,7 +1886,7 @@ first impression) are now done.
       `https://instagram.com/...`). Cleared the test values back out
       afterward so they don't show on the live profile. 95 tests
       passing; lint + build clean
-- [ ] Recurring/subscription order tracking, for sellers who run a
+- [x] Recurring/subscription order tracking, for sellers who run a
       standing-order or meal-prep business. The core recurring-order
       system already existed (`listing_subscriptions` + a daily
       `place_subscription_orders()` cron job that auto-places a real
@@ -1910,10 +1910,18 @@ first impression) are now done.
       `upcoming_reminder_sent` flag (reset each cycle) so it only ever
       fires once per cycle. Migration:
       `migration_subscription_tracking.sql`, mirrored into `schema.sql`.
-      100 tests passing; lint + build clean. **Not yet verified live** —
-      waiting on the user to run the migration (nothing to click-through
-      until the DB has the new column/functions); will verify and update
-      this entry once that's done
+      100 tests passing; lint + build clean. Confirmed live: since the
+      test-listing cleanup had just removed every other listing/buyer
+      pairing on the platform, verified via a temporary subscription
+      (reusing an already-existing leftover test profile as the buyer,
+      no new test data created) backdated to be immediately due, then
+      manually invoking `place_subscription_orders()` once — confirmed
+      on the real Seller Dashboard: "🔁 Standing orders — 1 subscriber ·
+      chicken · 1 sub · 2x · next Sep 10" (next date correctly advanced
+      7 days from the backdated date) and the new order itself tagged
+      "🔁 Recurring" in "Orders needing attention." Cleaned up the test
+      order and subscription afterward and confirmed Seller Dashboard
+      is back to "All caught up" with no leftover data
 
 ## Not built yet (future ideas)
 
