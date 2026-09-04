@@ -1922,6 +1922,22 @@ first impression) are now done.
       "🔁 Recurring" in "Orders needing attention." Cleaned up the test
       order and subscription afterward and confirmed Seller Dashboard
       is back to "All caught up" with no leftover data
+- [x] Notify a seller's followers when they come off vacation mode.
+      `restock_alerts` already covered "this specific sold-out listing is
+      back"; there was no signal at all for "this seller I follow is open
+      again." Pure backend: a new `handle_seller_vacation_ended()` trigger
+      on `profiles`, fires on the `on_vacation` true→false transition,
+      bulk-inserts a notification for every row in `seller_follows` for
+      that seller — same pattern as the existing new-listing-alert
+      trigger. No client code changes needed since `setVacationMode()`
+      already just updates `profiles.on_vacation` directly. Migration:
+      `migration_seller_back_notification.sql`, mirrored into
+      `schema.sql`. Confirmed live: added a temporary follow (reusing an
+      existing leftover test profile, no new test data), then toggled
+      vacation mode on and back off through the real Seller Dashboard UI
+      (not synthetic SQL) — confirmed the notification landed for the
+      follower via a direct SQL check. Cleaned up the test follow +
+      notification afterward
 
 ## Not built yet (future ideas)
 

@@ -19,6 +19,8 @@ drop table if exists public.promotion_requests cascade;
 drop table if exists public.push_subscriptions cascade;
 drop trigger if exists on_listing_created_notify on public.listings;
 drop function if exists public.handle_new_listing_alert_matches() cascade;
+drop trigger if exists on_seller_vacation_ended on public.profiles;
+drop function if exists public.handle_seller_vacation_ended() cascade;
 drop table if exists public.notifications cascade;
 drop table if exists public.listing_alerts cascade;
 drop table if exists public.seller_follows cascade;
@@ -1805,6 +1807,26 @@ $$ language plpgsql security definer;
 create trigger on_listing_created_notify
   after insert on public.listings
   for each row execute procedure public.handle_new_listing_alert_matches();
+
+-- notifies a seller's followers when they come off vacation mode --
+-- restock_alerts already covers "this specific sold-out listing is back",
+-- this covers "this seller I follow is open for orders again"
+create function public.handle_seller_vacation_ended()
+returns trigger as $$
+begin
+  if old.on_vacation = true and new.on_vacation = false then
+    insert into public.notifications (user_id, message)
+    select follower_id, new.name || ' is back and taking orders again!'
+    from public.seller_follows
+    where seller_id = new.id;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_seller_vacation_ended
+  after update on public.profiles
+  for each row execute procedure public.handle_seller_vacation_ended();
 
 -- push_subscriptions: one row per browser/device a user has enabled push
 -- notifications on. The send-push edge function reads this table (as the
