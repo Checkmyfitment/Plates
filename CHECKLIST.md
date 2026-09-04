@@ -1974,6 +1974,16 @@ Bigger ideas from a competitor/UX pass (Shef, Olio, Too Good To Go, Etsy, Nextdo
 Facebook Marketplace) that would take more design/product decisions before building —
 noted here so they're not lost, not started yet:
 
+- [ ] Give the "Plates Pro" tier a real functional perk: make a Pro seller's
+      listings always sort/badge as Featured (Browse's "is this featured" check
+      becomes `listing.featured || listing.seller.isPro` — small change, no new
+      schema, reuses everything Featured already built), instead of Pro just
+      being a badge with no function. This was the alternative considered to
+      building a separate, pricier "feature my whole store" tier alongside the
+      existing per-listing $5/week Featured — decided to hold off on either
+      until Featured/Pro have run for a bit and there's real signal on whether
+      anyone actually pays for what exists now, rather than designing a third
+      pricing tier in a vacuum
 - [ ] Payments (Stripe Connect or similar) — buyers and sellers currently arrange
       payment and pickup entirely outside the app; this is also the prerequisite for
       taking a commission and actually making money from the app. The seller-facing
