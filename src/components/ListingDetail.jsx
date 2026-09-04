@@ -455,7 +455,14 @@ export default function ListingDetail({
             <p className="text-xs text-center mt-2" style={{ color: 'var(--ink-soft)' }}>
               👁️ {listing.views} view{listing.views === 1 ? '' : 's'}
             </p>
-            {!isUnclaimed && <PromotionRequestCard listingId={listing.id} sellerId={currentUserId} featured={featured} />}
+            {!isUnclaimed && (
+              <PromotionRequestCard
+                listingId={listing.id}
+                sellerId={currentUserId}
+                featured={featured}
+                featuredUntil={listing.featuredUntil}
+              />
+            )}
           </>
         )}
 

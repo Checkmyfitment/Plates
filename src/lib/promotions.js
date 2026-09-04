@@ -53,7 +53,9 @@ export async function approvePromotionRequest(requestId, listingId) {
     .update({ status: 'approved', reviewed_at: new Date().toISOString() })
     .eq('id', requestId)
   if (error) throw error
-  await setListingFeatured(listingId, true)
+  // one paid week, matching the "$5/week" copy sellers see when requesting
+  const featuredUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  await setListingFeatured(listingId, true, featuredUntil)
 }
 
 export async function rejectPromotionRequest(requestId) {

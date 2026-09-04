@@ -48,13 +48,15 @@ function mapListing(row, store) {
     deliveryNotes: row.delivery_notes,
     views: row.views ?? 0,
     featured: row.featured ?? false,
+    featuredUntil: row.featured_until ?? null,
+    sellerIsPro: store ? false : (row.seller?.is_pro ?? false),
     unclaimedStoreId: row.unclaimed_store_id ?? null,
     unclaimedContactNote: store?.contact_note ?? null,
   }
 }
 
 const SELLER_JOIN =
-  'seller:profiles!listings_seller_id_fkey(name, kitchen, avatar_url, neighborhood, lat, lng, on_vacation, phone_verified)'
+  'seller:profiles!listings_seller_id_fkey(name, kitchen, avatar_url, neighborhood, lat, lng, on_vacation, phone_verified, is_pro)'
 
 export async function fetchListings() {
   const { data, error } = await supabase

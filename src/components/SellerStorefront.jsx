@@ -280,6 +280,14 @@ export default function SellerStorefront({
               </p>
             )}
             <div className="flex items-center flex-wrap gap-1.5 mt-1">
+              {seller.is_pro && (
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                  style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}
+                >
+                  🌟 Plates Pro
+                </span>
+              )}
               {badge && (
                 <span
                   className="text-[10px] px-2 py-0.5 rounded-full font-medium"

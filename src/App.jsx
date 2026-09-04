@@ -953,6 +953,7 @@ export default function App() {
           avatarUrl: profile?.avatar_url ?? null,
           neighborhood: profile?.neighborhood ?? null,
           phoneVerified: profile?.phone_verified ?? false,
+          isPro: profile?.is_pro ?? false,
         }}
         signupIntent={profile?.signup_intent ?? null}
         userId={session.user.id}

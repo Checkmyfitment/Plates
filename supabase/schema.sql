@@ -15,6 +15,7 @@ drop function if exists public.get_platform_stats() cascade;
 drop function if exists public.increment_listing_views(uuid) cascade;
 drop trigger if exists protect_listing_admin_fields_trigger on public.listings;
 drop function if exists public.protect_listing_admin_fields() cascade;
+drop function if exists public.expire_featured_listings() cascade;
 drop table if exists public.promotion_requests cascade;
 drop table if exists public.push_subscriptions cascade;
 drop trigger if exists on_listing_created_notify on public.listings;
@@ -76,6 +77,12 @@ create table public.profiles (
   lng double precision,
   is_admin boolean not null default false,
   banned boolean not null default false,
+  -- seller "Pro" tier -- billed manually for now (same pattern Featured
+  -- listings started with), toggled by an admin in Users panel; protected
+  -- against self-grant by protect_profile_admin_fields() below, same as
+  -- is_admin/banned
+  is_pro boolean not null default false,
+  pro_since timestamptz,
   referred_by uuid references public.profiles(id) on delete set null,
   area_alerts_enabled boolean not null default false,
   on_vacation boolean not null default false,
@@ -152,9 +159,13 @@ begin
     if TG_OP = 'INSERT' then
       new.is_admin := false;
       new.banned := false;
+      new.is_pro := false;
+      new.pro_since := null;
     else
       new.is_admin := old.is_admin;
       new.banned := old.banned;
+      new.is_pro := old.is_pro;
+      new.pro_since := old.pro_since;
     end if;
   end if;
   return new;
@@ -176,7 +187,7 @@ create policy "Admins can update any profile"
 -- itself checks admin status, so it's safe to expose to any authenticated
 -- caller; non-admins just get an error back
 create function public.admin_list_users(q text default null)
-returns table(id uuid, name text, email text, is_admin boolean, banned boolean, created_at timestamptz)
+returns table(id uuid, name text, email text, is_admin boolean, banned boolean, is_pro boolean, created_at timestamptz)
 language plpgsql
 security definer
 set search_path = public
@@ -187,7 +198,7 @@ begin
   end if;
 
   return query
-    select p.id, p.name, u.email::text, p.is_admin, p.banned, p.created_at
+    select p.id, p.name, u.email::text, p.is_admin, p.banned, p.is_pro, p.created_at
     from public.profiles p
     join auth.users u on u.id = p.id
     where q is null or q = '' or p.name ilike '%' || q || '%' or u.email ilike '%' || q || '%'
@@ -373,6 +384,11 @@ create table public.listings (
   delivery_notes text check (delivery_notes is null or char_length(delivery_notes) <= 300),
   views integer not null default 0,
   featured boolean not null default false,
+  -- set to now() + 7 days when a paid promotion_request is approved, so
+  -- expire_featured_listings() can auto-unfeature it once the paid week
+  -- is up. Left null for an admin's own manual "feature this listing"
+  -- toggle, which is meant to stay on until turned off by hand.
+  featured_until timestamptz,
   unclaimed_store_id uuid references public.unclaimed_stores(id) on delete set null,
   -- seller actively confirms allergen info is accurate for this listing,
   -- rather than the free-text allergens field being trusted by default
@@ -471,6 +487,26 @@ create policy "Admins can review promotion requests"
   on public.promotion_requests for update
   using (public.is_admin(auth.uid()))
   with check (public.is_admin(auth.uid()));
+
+-- runs hourly: un-features anything past its paid week, so a seller who
+-- doesn't renew doesn't stay featured for free indefinitely. Only ever
+-- touches listings with featured_until set -- an admin's own manual
+-- "feature this listing" toggle (no expiry) is left alone on purpose.
+create function public.expire_featured_listings()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.listings
+  set featured = false, featured_until = null
+  where featured = true and featured_until is not null and featured_until < now();
+$$;
+
+create extension if not exists pg_cron with schema extensions;
+
+select cron.unschedule(jobid) from cron.job where jobname = 'expire-featured-listings';
+select cron.schedule('expire-featured-listings', '0 * * * *', 'select public.expire_featured_listings();');
 
 -- anyone signed in can bump a listing's view count (it's just a counter,
 -- and a plain client update would fail RLS since the viewer isn't the

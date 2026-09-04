@@ -1938,6 +1938,35 @@ first impression) are now done.
       (not synthetic SQL) — confirmed the notification landed for the
       follower via a direct SQL check. Cleaned up the test follow +
       notification afterward
+- [x] Two monetization pieces, both billed manually for now (no Stripe
+      Connect yet — that's still the bigger "Payments" item). First
+      fixed a real revenue leak in the existing $5/week Featured listing
+      flow: `featured` was a permanent boolean with no expiry, so a
+      seller who paid for one week would stay featured forever unless an
+      admin remembered to manually un-feature them. Added
+      `listings.featured_until`, set to +7 days when a promotion request
+      is approved, and a new hourly cron job `expire_featured_listings()`
+      that auto-unfeatures anything past its paid week — an admin's own
+      manual "feature this listing" toggle (no expiry) is untouched by
+      this. Admin → Promotions now also shows a "Currently featured
+      (paid)" list with expiry dates for renewal follow-up. Second, added
+      a seller "Plates Pro" tier ($9/month placeholder — easy to change,
+      it's just copy in `SellerDashboard.jsx`): a new `profiles.is_pro` /
+      `pro_since`, protected against self-grant the same way
+      `is_admin`/`banned` already are (extended
+      `protect_profile_admin_fields()`), an admin toggle in Users panel
+      ("Make Pro"/"Remove Pro"), a "🌟 Plates Pro" badge on the seller's
+      storefront and own profile, and a "Go Pro" card in Seller Dashboard
+      with a pre-filled mailto to request it. Migration:
+      `migration_monetization.sql`, mirrored into `schema.sql`. 100 tests
+      passing; lint + build clean. Confirmed live end-to-end: toggled
+      mike chin to Pro via the real Admin Users panel and confirmed the
+      badge on Profile, Seller Dashboard, and the public Storefront; ran
+      the real request→approve promotion flow on the `chicken` listing
+      and confirmed `featured_until` was set correctly (7 days out) and
+      showed up both on the listing's own "Featured until [date]" card
+      and in Admin's renewal-tracking list. Reverted both test toggles
+      (no real payment happened) afterward and confirmed clean
 
 ## Not built yet (future ideas)
 

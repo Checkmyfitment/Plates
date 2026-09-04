@@ -8,6 +8,7 @@ import { fetchMyPromotionRequest } from '../lib/promotions'
 import { fetchRestockCounts } from '../lib/restock'
 import { setVacationMode } from '../lib/profiles'
 import { broadcastToBuyers } from '../lib/notifications'
+import { SUPPORT_EMAIL } from '../lib/siteInfo'
 import { fetchSellerWeeklyEarnings } from '../lib/analytics'
 import { subscribeToTable } from '../lib/realtime'
 import { useToast } from '../context/ToastContext'
@@ -392,6 +393,37 @@ export default function SellerDashboard({
           </button>
         )}
       </div>
+
+      {profile?.is_pro ? (
+        <div className="card-elevated p-4 mb-3 flex items-center gap-3" style={{ background: 'var(--mustard-soft)' }}>
+          <div className="icon-badge" aria-hidden="true" style={{ background: 'rgba(255,255,255,0.5)' }}>
+            🌟
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium" style={{ color: 'var(--mustard-deep)' }}>
+              You're a Plates Pro seller
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--mustard-deep)', opacity: 0.8 }}>
+              Thanks for supporting Plates — your Pro badge is showing on your storefront.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="card-elevated p-4 mb-3">
+          <p className="text-sm font-medium flex items-center gap-1.5">🌟 Go Pro — $9/month</p>
+          <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+            A "Plates Pro" badge on your storefront and profile, plus priority support — billed
+            manually for now, same as Featured listings.
+          </p>
+          <a
+            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Going Pro on Plates')}`}
+            className="pressable inline-block mt-2 text-xs px-3 py-1.5 rounded-full font-medium"
+            style={{ background: 'var(--forest)', color: 'white' }}
+          >
+            Message us to upgrade
+          </a>
+        </div>
+      )}
 
       {standingByListing.length > 0 && (
         <div className="card-elevated p-4 mb-3">

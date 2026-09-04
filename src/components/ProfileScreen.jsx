@@ -69,6 +69,14 @@ export default function ProfileScreen({
               {user.kitchen}
             </p>
           )}
+          {user.isPro && (
+            <span
+              className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium mt-1 mr-1"
+              style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}
+            >
+              🌟 Plates Pro
+            </span>
+          )}
           {badge && (
             <span
               className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium mt-1"

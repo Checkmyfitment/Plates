@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { requestPromotion, fetchMyPromotionRequest } from '../lib/promotions'
 import { useToast } from '../context/ToastContext'
 
-export default function PromotionRequestCard({ listingId, sellerId, featured }) {
+function formatUntil(iso) {
+  if (!iso) return null
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+export default function PromotionRequestCard({ listingId, sellerId, featured, featuredUntil }) {
   const toast = useToast()
   const [request, setRequest] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -34,12 +39,13 @@ export default function PromotionRequestCard({ listingId, sellerId, featured }) 
   }
 
   if (featured) {
+    const until = formatUntil(featuredUntil)
     return (
       <div
         className="mt-3 card-elevated p-3 text-xs font-medium"
         style={{ background: 'var(--plum-soft)', color: 'var(--plum)' }}
       >
-        ✨ This listing is currently featured
+        ✨ {until ? `Featured until ${until}` : 'This listing is currently featured'}
       </div>
     )
   }

@@ -46,8 +46,14 @@ export async function adminDeleteListing(listingId) {
   if (error) throw error
 }
 
-export async function setListingFeatured(listingId, featured) {
-  const { error } = await supabase.from('listings').update({ featured }).eq('id', listingId)
+// `until` is only set for a paid promotion (auto-expires via the
+// expire_featured_listings() cron job); omit it for an admin's own manual
+// feature toggle, which is meant to stay on until turned off by hand
+export async function setListingFeatured(listingId, featured, until) {
+  const { error } = await supabase
+    .from('listings')
+    .update({ featured, featured_until: featured ? (until ?? null) : null })
+    .eq('id', listingId)
   if (error) throw error
 }
 
@@ -58,6 +64,7 @@ function mapUser(row) {
     email: row.email,
     isAdmin: row.is_admin,
     banned: row.banned,
+    isPro: row.is_pro,
     createdAt: row.created_at,
   }
 }
@@ -70,6 +77,16 @@ export async function searchUsers(query) {
 
 export async function setUserAdmin(userId, isAdmin) {
   const { error } = await supabase.from('profiles').update({ is_admin: isAdmin }).eq('id', userId)
+  if (error) throw error
+}
+
+// pro_since records when they went Pro (for future record-keeping /
+// "member since" display); cleared when Pro is turned off
+export async function setUserPro(userId, isPro) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_pro: isPro, pro_since: isPro ? new Date().toISOString() : null })
+    .eq('id', userId)
   if (error) throw error
 }
 

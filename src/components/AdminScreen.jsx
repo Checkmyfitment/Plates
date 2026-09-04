@@ -7,6 +7,7 @@ import {
   adminDeleteListing,
   searchUsers,
   setUserAdmin,
+  setUserPro,
   fetchUnclaimedStores,
   createUnclaimedStore,
   deleteUnclaimedStore,
@@ -326,6 +327,16 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
       toast.success(next ? 'Made admin.' : 'Admin removed.')
     })
 
+  // toggled once payment for a Pro subscription is confirmed off-platform
+  // (billed manually for now, same as Featured listings)
+  const togglePro = (user) =>
+    withBusy(user.id, async () => {
+      const next = !user.isPro
+      await setUserPro(user.id, next)
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isPro: next } : u)))
+      toast.success(next ? 'Made Pro.' : 'Pro removed.')
+    })
+
   return (
     <>
       <form onSubmit={submitSearch} className="flex gap-2 mb-3">
@@ -362,6 +373,11 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
                     </p>
                   </div>
                   <div className="flex gap-1 shrink-0">
+                    {u.isPro && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}>
+                        🌟 Pro
+                      </span>
+                    )}
                     {u.isAdmin && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}>
                         Admin
@@ -394,6 +410,18 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
                     style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
                   >
                     {u.isAdmin ? 'Remove admin' : 'Make admin'}
+                  </button>
+                  <button
+                    disabled={busy}
+                    onClick={() => togglePro(u)}
+                    className="pressable text-xs px-2.5 py-1 rounded-full border disabled:opacity-50"
+                    style={{
+                      borderColor: 'var(--mustard-deep)',
+                      background: u.isPro ? 'var(--mustard)' : 'transparent',
+                      color: 'var(--mustard-deep)',
+                    }}
+                  >
+                    {u.isPro ? 'Remove Pro' : 'Make Pro'}
                   </button>
                 </div>
               </div>
@@ -1127,13 +1155,24 @@ function OutreachPanel({ adminId }) {
 function PromotionsPanel() {
   const toast = useToast()
   const [requests, setRequests] = useState([])
+  const [paidFeatured, setPaidFeatured] = useState([])
   const [loading, setLoading] = useState(true)
   const { busyIds, withBusy } = useBusyIds()
 
   const load = () => {
     setLoading(true)
-    fetchPendingPromotionRequests()
-      .then(setRequests)
+    Promise.all([fetchPendingPromotionRequests(), fetchListings()])
+      .then(([reqs, listings]) => {
+        setRequests(reqs)
+        // paid (has an expiry) and still active -- an admin's own manual
+        // "feature this listing" toggle has no featuredUntil, so it's left
+        // out of this renewal-tracking list on purpose
+        setPaidFeatured(
+          listings
+            .filter((l) => l.featured && l.featuredUntil)
+            .sort((a, b) => new Date(a.featuredUntil) - new Date(b.featuredUntil)),
+        )
+      })
       .catch((err) => {
         console.error('Failed to load promotion requests', err)
         toast.error('Could not load promotion requests — try again.')
@@ -1149,6 +1188,7 @@ function PromotionsPanel() {
       await approvePromotionRequest(r.id, r.listingId)
       setRequests((prev) => prev.filter((req) => req.id !== r.id))
       toast.success(`${r.listingTitle} is now featured.`)
+      load()
     })
 
   const reject = (r) =>
@@ -1158,46 +1198,85 @@ function PromotionsPanel() {
       toast.success('Request rejected.')
     })
 
-  return loading ? (
-    <div className="flex flex-col gap-2">
-      {Array.from({ length: 2 }).map((_, i) => (
-        <div key={i} className="skeleton h-20 w-full" />
-      ))}
-    </div>
-  ) : requests.length === 0 ? (
-    <Placeholder compact icon="🌟" title="Nothing to review" body="Seller promotion requests will show up here." />
-  ) : (
-    <div className="flex flex-col gap-2">
-      {requests.map((r) => {
-        const busy = busyIds.has(r.id)
-        return (
-          <div key={r.id} className="card-elevated p-3 text-sm">
-            <p className="font-medium">{r.listingTitle}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
-              Requested by {r.sellerName} · {timeAgo(r.createdAt)}
-            </p>
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
-              <button
-                disabled={busy}
-                onClick={() => approve(r)}
-                className="pressable text-xs px-2.5 py-1 rounded-full font-medium disabled:opacity-50"
-                style={{ background: 'var(--forest)', color: 'white' }}
-              >
-                Approve
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => reject(r)}
-                className="pressable text-xs px-2.5 py-1 rounded-full border disabled:opacity-50"
-                style={{ borderColor: 'var(--rule)', color: 'var(--ink-soft)' }}
-              >
-                Reject
-              </button>
-            </div>
+  const featuredList = (
+    <>
+      {paidFeatured.length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs font-medium mb-2" style={{ color: 'var(--ink-soft)' }}>
+            Currently featured (paid) — follow up for renewal before these expire
+          </p>
+          <div className="flex flex-col gap-2">
+            {paidFeatured.map((l) => (
+              <div key={l.id} className="card-elevated p-3 text-sm flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{l.title}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                    {l.seller}
+                  </p>
+                </div>
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
+                  style={{ background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' }}
+                >
+                  until {new Date(l.featuredUntil).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            ))}
           </div>
-        )
-      })}
-    </div>
+        </div>
+      )}
+    </>
+  )
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="skeleton h-20 w-full" />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {featuredList}
+      {requests.length === 0 ? (
+        <Placeholder compact icon="🌟" title="Nothing to review" body="Seller promotion requests will show up here." />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {requests.map((r) => {
+            const busy = busyIds.has(r.id)
+            return (
+              <div key={r.id} className="card-elevated p-3 text-sm">
+                <p className="font-medium">{r.listingTitle}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                  Requested by {r.sellerName} · {timeAgo(r.createdAt)}
+                </p>
+                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  <button
+                    disabled={busy}
+                    onClick={() => approve(r)}
+                    className="pressable text-xs px-2.5 py-1 rounded-full font-medium disabled:opacity-50"
+                    style={{ background: 'var(--forest)', color: 'white' }}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    disabled={busy}
+                    onClick={() => reject(r)}
+                    className="pressable text-xs px-2.5 py-1 rounded-full border disabled:opacity-50"
+                    style={{ borderColor: 'var(--rule)', color: 'var(--ink-soft)' }}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </>
   )
 }
 
