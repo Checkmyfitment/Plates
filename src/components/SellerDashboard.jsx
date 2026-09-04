@@ -3,6 +3,7 @@ import Placeholder from './Placeholder'
 import OrderCard from './OrderCard'
 import WeeklyBarChart from './WeeklyBarChart'
 import { fetchSellerOrders, updateOrderStatus, updateCartStatus, groupOrders, markOrderPaid, ordersToIncomeCSV } from '../lib/orders'
+import { fetchSellerStandingOrders, summarizeStandingOrdersByListing } from '../lib/subscriptions'
 import { fetchMyPromotionRequest } from '../lib/promotions'
 import { fetchRestockCounts } from '../lib/restock'
 import { setVacationMode } from '../lib/profiles'
@@ -38,6 +39,7 @@ export default function SellerDashboard({
   const [broadcastText, setBroadcastText] = useState('')
   const [broadcastSending, setBroadcastSending] = useState(false)
   const [weeklyEarnings, setWeeklyEarnings] = useState(null)
+  const [standingOrders, setStandingOrders] = useState([])
 
   const yourListings = listings.filter((l) => l.sellerId === userId && !l.unclaimedStoreId)
   const totalViews = yourListings.reduce((sum, l) => sum + (l.views || 0), 0)
@@ -58,6 +60,13 @@ export default function SellerDashboard({
     fetchSellerWeeklyEarnings()
       .then(setWeeklyEarnings)
       .catch((err) => console.error('Failed to load earnings trend', err))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
+
+  useEffect(() => {
+    fetchSellerStandingOrders(userId)
+      .then(setStandingOrders)
+      .catch((err) => console.error('Failed to load standing orders', err))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
@@ -148,6 +157,12 @@ export default function SellerDashboard({
     prepMap.set(o.listingId, entry)
   }
   const prepList = [...prepMap.values()].sort((a, b) => b.quantity - a.quantity)
+  const standingByListing = summarizeStandingOrdersByListing(standingOrders)
+  const totalSubscribers = standingOrders.length
+
+  function formatStandingDate(dateStr) {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  }
 
   const openOrders = orders.filter((o) => o.status === 'pending' || o.status === 'confirmed' || o.status === 'ready')
   const openGroups = groupOrders(openOrders)
@@ -377,6 +392,35 @@ export default function SellerDashboard({
           </button>
         )}
       </div>
+
+      {standingByListing.length > 0 && (
+        <div className="card-elevated p-4 mb-3">
+          <p className="text-xs font-bold mb-2 flex items-center gap-1.5" style={{ color: 'var(--forest-dark)' }}>
+            <span
+              className="icon-badge"
+              aria-hidden="true"
+              style={{ width: 22, height: 22, fontSize: 12, background: 'var(--forest-soft)' }}
+            >
+              🔁
+            </span>
+            Standing orders — {totalSubscribers} {totalSubscribers === 1 ? 'subscriber' : 'subscribers'}
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {standingByListing.map((s) => (
+              <div key={s.listingId} className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium truncate">{s.listingTitle}</p>
+                <p className="text-xs shrink-0" style={{ color: 'var(--ink-soft)' }}>
+                  {s.subscriberCount} {s.subscriberCount === 1 ? 'sub' : 'subs'} · {s.totalQuantity}x · next{' '}
+                  {formatStandingDate(s.nextOrderDate)}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] mt-2" style={{ color: 'var(--ink-soft)' }}>
+            These place automatically on their next date and show up below tagged 🔁 Recurring.
+          </p>
+        </div>
+      )}
 
       {prepList.length > 0 && (
         <div className="card-elevated p-4 mb-6" style={{ background: 'var(--mustard-soft)' }}>

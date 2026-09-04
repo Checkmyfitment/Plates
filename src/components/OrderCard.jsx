@@ -80,6 +80,14 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
     <div className="card-elevated p-3.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
+          {first.subscriptionId && (
+            <span
+              className="inline-block text-[9px] px-1.5 py-0.5 rounded-full font-medium mb-1"
+              style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}
+            >
+              🔁 Recurring
+            </span>
+          )}
           {orders.map((o) => (
             <p key={o.id} className="text-sm font-medium truncate">
               {o.quantity}x {o.listingTitle}

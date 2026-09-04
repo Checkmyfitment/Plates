@@ -1886,6 +1886,34 @@ first impression) are now done.
       `https://instagram.com/...`). Cleared the test values back out
       afterward so they don't show on the live profile. 95 tests
       passing; lint + build clean
+- [ ] Recurring/subscription order tracking, for sellers who run a
+      standing-order or meal-prep business. The core recurring-order
+      system already existed (`listing_subscriptions` + a daily
+      `place_subscription_orders()` cron job that auto-places a real
+      order and notifies the buyer) — this closes two real gaps found
+      while reviewing it: (1) an auto-placed order was indistinguishable
+      from a one-time order, so a seller couldn't tell which pending
+      orders were recurring, or see how many standing subscribers they
+      had *before* the orders landed; (2) a buyer only found out their
+      subscription had been charged/placed *after* the fact, with no
+      chance to skip a week. Added: `orders.subscription_id` (tags
+      auto-placed orders, set by `place_subscription_orders()`); a
+      "🔁 Recurring" badge on those orders everywhere sellers/buyers see
+      order cards (`OrderCard.jsx`); a new "Standing orders" card in
+      Seller Dashboard (`SellerDashboard.jsx`) that rolls up active
+      subscribers per listing — count, total quantity, and the soonest
+      next order date — via new `lib/subscriptions.js` functions
+      `fetchSellerStandingOrders()` / `summarizeStandingOrdersByListing()`
+      (5 new unit tests); and a new daily cron job
+      `send_subscription_reminders()` that notifies a buyer one day
+      before their subscription auto-places, using a new
+      `upcoming_reminder_sent` flag (reset each cycle) so it only ever
+      fires once per cycle. Migration:
+      `migration_subscription_tracking.sql`, mirrored into `schema.sql`.
+      100 tests passing; lint + build clean. **Not yet verified live** —
+      waiting on the user to run the migration (nothing to click-through
+      until the DB has the new column/functions); will verify and update
+      this entry once that's done
 
 ## Not built yet (future ideas)
 

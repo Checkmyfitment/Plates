@@ -906,6 +906,10 @@ create table public.listing_subscriptions (
   delivery_address text,
   next_order_date date not null default current_date,
   active boolean not null default true,
+  -- tracks whether the day-before heads-up has gone out for the *current*
+  -- next_order_date -- reset to false every time place_subscription_orders()
+  -- advances to a new cycle, so each cycle gets exactly one reminder
+  upcoming_reminder_sent boolean not null default false,
   created_at timestamptz not null default now(),
   cancelled_at timestamptz
 );
@@ -913,6 +917,14 @@ create table public.listing_subscriptions (
 create index listing_subscriptions_buyer_id_idx on public.listing_subscriptions (buyer_id);
 create index listing_subscriptions_seller_id_idx on public.listing_subscriptions (seller_id);
 create index listing_subscriptions_due_idx on public.listing_subscriptions (next_order_date) where active = true;
+
+-- lets a seller and the order UI tell a subscription-generated order apart
+-- from a one-time order -- added after `orders` above, since it references
+-- this table
+alter table public.orders
+  add column subscription_id uuid references public.listing_subscriptions(id) on delete set null;
+
+create index orders_subscription_id_idx on public.orders (subscription_id) where subscription_id is not null;
 
 alter table public.listing_subscriptions enable row level security;
 
@@ -977,11 +989,11 @@ begin
 
         insert into public.orders (
           listing_id, buyer_id, seller_id, quantity, price_at_order,
-          fulfillment_method, delivery_address, pickup_code
+          fulfillment_method, delivery_address, pickup_code, subscription_id
         )
         values (
           sub.listing_id, sub.buyer_id, sub.seller_id, sub.quantity, v_listing.price,
-          sub.fulfillment_method, sub.delivery_address, v_pickup_code
+          sub.fulfillment_method, sub.delivery_address, v_pickup_code, sub.id
         );
 
         insert into public.notifications (user_id, listing_id, message)
@@ -1001,8 +1013,42 @@ begin
     end;
 
     update public.listing_subscriptions
-    set next_order_date = next_order_date + sub.interval_days
+    set next_order_date = next_order_date + sub.interval_days,
+        upcoming_reminder_sent = false
     where id = sub.id;
+  end loop;
+end;
+$$;
+
+-- runs daily: notifies the buyer one day before their subscription is due
+-- to auto-place, so they have a chance to skip/cancel instead of finding
+-- out after the fact. Only ever sends once per cycle (upcoming_reminder_sent).
+create or replace function public.send_subscription_reminders()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  sub record;
+begin
+  for sub in
+    select ls.id, ls.buyer_id, ls.listing_id, l.title as listing_title
+    from public.listing_subscriptions ls
+    join public.listings l on l.id = ls.listing_id
+    where ls.active = true
+      and ls.upcoming_reminder_sent = false
+      and ls.next_order_date = current_date + 1
+  loop
+    insert into public.notifications (user_id, listing_id, message)
+    values (
+      sub.buyer_id,
+      sub.listing_id,
+      '🔁 Heads up — your recurring order for ' || sub.listing_title ||
+        ' will be placed automatically tomorrow. Cancel anytime from your profile if you don''t want it this time.'
+    );
+
+    update public.listing_subscriptions set upcoming_reminder_sent = true where id = sub.id;
   end loop;
 end;
 $$;
@@ -1011,6 +1057,9 @@ create extension if not exists pg_cron with schema extensions;
 
 select cron.unschedule(jobid) from cron.job where jobname = 'listing-subscriptions';
 select cron.schedule('listing-subscriptions', '0 8 * * *', 'select public.place_subscription_orders();');
+
+select cron.unschedule(jobid) from cron.job where jobname = 'subscription-reminders';
+select cron.schedule('subscription-reminders', '0 9 * * *', 'select public.send_subscription_reminders();');
 
 -- rejects a new order once it's past the seller's cutoff (order_cutoff_hours
 -- before pickup_start) — only enforced when a listing has both a structured

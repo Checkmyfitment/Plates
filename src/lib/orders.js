@@ -30,12 +30,13 @@ function mapOrder(row) {
     pickupCode: row.pickup_code,
     buyerMarkedPaid: row.buyer_marked_paid,
     sellerMarkedPaid: row.seller_marked_paid,
+    subscriptionId: row.subscription_id,
   }
 }
 
 const ORDER_SELECT = `
   id, listing_id, buyer_id, seller_id, quantity, note, price_at_order, status, created_at, cart_id,
-  fulfillment_method, delivery_address, pickup_code, buyer_marked_paid, seller_marked_paid,
+  fulfillment_method, delivery_address, pickup_code, buyer_marked_paid, seller_marked_paid, subscription_id,
   listing:listings(title, photo, photo_url),
   buyer:profiles!orders_buyer_id_fkey(name),
   seller:profiles!orders_seller_id_fkey(name)
