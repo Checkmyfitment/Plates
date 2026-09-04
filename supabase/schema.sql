@@ -36,6 +36,7 @@ drop view if exists public.seller_trust_stats;
 drop view if exists public.seller_response_stats;
 drop table if exists public.client_errors cascade;
 drop table if exists public.reports cascade;
+drop table if exists public.admin_actions cascade;
 drop view if exists public.restock_counts;
 drop table if exists public.restock_alerts cascade;
 drop function if exists public.handle_listing_restock() cascade;
@@ -1391,6 +1392,33 @@ $$ language plpgsql security definer;
 create trigger on_listing_restocked
   after update on public.listings
   for each row execute procedure public.handle_listing_restock();
+
+-- admin_actions: a lightweight audit log -- who did what moderation/
+-- monetization action and when. admin_id defaults to auth.uid() (never
+-- passed by the client) and the insert policy pins it to the actual
+-- caller, so it can't be spoofed. Kept even if the admin's own account is
+-- later deleted (on delete set null) so the history isn't lost.
+create table public.admin_actions (
+  id uuid primary key default gen_random_uuid(),
+  admin_id uuid references public.profiles(id) on delete set null default auth.uid(),
+  action text not null,
+  target_type text not null,
+  target_id uuid,
+  detail text check (detail is null or char_length(detail) <= 300),
+  created_at timestamptz not null default now()
+);
+
+create index admin_actions_created_at_idx on public.admin_actions (created_at desc);
+
+alter table public.admin_actions enable row level security;
+
+create policy "Admins can view admin actions"
+  on public.admin_actions for select
+  using (public.is_admin(auth.uid()));
+
+create policy "Admins can insert admin actions"
+  on public.admin_actions for insert
+  with check (public.is_admin(auth.uid()) and admin_id = auth.uid());
 
 -- reports: buyers/sellers flagging a listing or seller for review
 create table public.reports (

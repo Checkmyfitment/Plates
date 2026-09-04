@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { setListingFeatured } from './admin'
+import { setListingFeatured, logAdminAction } from './admin'
 
 function mapRequest(row) {
   return {
@@ -47,21 +47,23 @@ export async function fetchPendingPromotionRequests() {
   return data.map(mapRequest)
 }
 
-export async function approvePromotionRequest(requestId, listingId) {
+export async function approvePromotionRequest(requestId, listingId, detail) {
   const { error } = await supabase
     .from('promotion_requests')
     .update({ status: 'approved', reviewed_at: new Date().toISOString() })
     .eq('id', requestId)
   if (error) throw error
+  await logAdminAction('promotion_approved', 'promotion_request', requestId, detail)
   // one paid week, matching the "$5/week" copy sellers see when requesting
   const featuredUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-  await setListingFeatured(listingId, true, featuredUntil)
+  await setListingFeatured(listingId, true, featuredUntil, 'paid promotion approved')
 }
 
-export async function rejectPromotionRequest(requestId) {
+export async function rejectPromotionRequest(requestId, detail) {
   const { error } = await supabase
     .from('promotion_requests')
     .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
     .eq('id', requestId)
   if (error) throw error
+  await logAdminAction('promotion_rejected', 'promotion_request', requestId, detail)
 }

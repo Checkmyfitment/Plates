@@ -13,6 +13,8 @@ import {
   deleteUnclaimedStore,
   resolveBroadcastAudience,
   sendBroadcast,
+  fetchAdminActions,
+  fetchAdminPendingCounts,
 } from '../lib/admin'
 import {
   fetchAnalyticsSummary,
@@ -121,7 +123,7 @@ function ReportsPanel({ adminId, onSelfProfileChanged }) {
 
   const resolveReport = (report, status) =>
     withBusy(report.id, async () => {
-      await setReportStatus(report.id, status)
+      await setReportStatus(report.id, status, report.reason)
       setReports((prev) => prev.map((r) => (r.id === report.id ? { ...r, status } : r)))
       toast.success(status === 'resolved' ? 'Report marked resolved.' : 'Report dismissed.')
     })
@@ -129,7 +131,7 @@ function ReportsPanel({ adminId, onSelfProfileChanged }) {
   const toggleBan = (report) =>
     withBusy(report.id, async () => {
       const next = !report.reportedUserBanned
-      await setUserBanned(report.reportedUserId, next)
+      await setUserBanned(report.reportedUserId, next, report.reportedUserName)
       setReports((prev) =>
         prev.map((r) =>
           r.reportedUserId === report.reportedUserId ? { ...r, reportedUserBanned: next } : r,
@@ -141,7 +143,7 @@ function ReportsPanel({ adminId, onSelfProfileChanged }) {
 
   const removeListing = (report) =>
     withBusy(report.id, async () => {
-      await adminDeleteListing(report.listingId)
+      await adminDeleteListing(report.listingId, report.listingTitle)
       setReports((prev) =>
         prev.map((r) => (r.listingId === report.listingId ? { ...r, listingId: null, listingTitle: null } : r)),
       )
@@ -312,7 +314,7 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
   const toggleBan = (user) =>
     withBusy(user.id, async () => {
       const next = !user.banned
-      await setUserBanned(user.id, next)
+      await setUserBanned(user.id, next, user.name)
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, banned: next } : u)))
       if (user.id === adminId) onSelfProfileChanged?.()
       toast.success(next ? 'User banned.' : 'User unbanned.')
@@ -321,7 +323,7 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
   const toggleAdmin = (user) =>
     withBusy(user.id, async () => {
       const next = !user.isAdmin
-      await setUserAdmin(user.id, next)
+      await setUserAdmin(user.id, next, user.name)
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isAdmin: next } : u)))
       if (user.id === adminId) onSelfProfileChanged?.()
       toast.success(next ? 'Made admin.' : 'Admin removed.')
@@ -332,7 +334,7 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
   const togglePro = (user) =>
     withBusy(user.id, async () => {
       const next = !user.isPro
-      await setUserPro(user.id, next)
+      await setUserPro(user.id, next, user.name)
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isPro: next } : u)))
       toast.success(next ? 'Made Pro.' : 'Pro removed.')
     })
@@ -463,7 +465,7 @@ function ListingsPanel({ onEditListing }) {
   const remove = (listing) =>
     withBusy(listing.id, async () => {
       if (!window.confirm(`Delete "${listing.title}" by ${listing.seller}? This can't be undone.`)) return
-      await adminDeleteListing(listing.id)
+      await adminDeleteListing(listing.id, `${listing.title} by ${listing.seller}`)
       setListings((prev) => prev.filter((l) => l.id !== listing.id))
       toast.success('Listing deleted.')
     })
@@ -1185,7 +1187,7 @@ function PromotionsPanel() {
 
   const approve = (r) =>
     withBusy(r.id, async () => {
-      await approvePromotionRequest(r.id, r.listingId)
+      await approvePromotionRequest(r.id, r.listingId, `${r.listingTitle} (${r.sellerName})`)
       setRequests((prev) => prev.filter((req) => req.id !== r.id))
       toast.success(`${r.listingTitle} is now featured.`)
       load()
@@ -1193,7 +1195,7 @@ function PromotionsPanel() {
 
   const reject = (r) =>
     withBusy(r.id, async () => {
-      await rejectPromotionRequest(r.id)
+      await rejectPromotionRequest(r.id, `${r.listingTitle} (${r.sellerName})`)
       setRequests((prev) => prev.filter((req) => req.id !== r.id))
       toast.success('Request rejected.')
     })
@@ -1739,8 +1741,84 @@ function ErrorsPanel() {
   )
 }
 
+// human-readable labels for admin_actions.action values -- keep in sync
+// with every logAdminAction() call site across lib/admin.js and lib/promotions.js
+const ACTION_LABELS = {
+  user_banned: 'Banned a user',
+  user_unbanned: 'Unbanned a user',
+  admin_granted: 'Made someone an admin',
+  admin_removed: 'Removed admin access',
+  pro_granted: 'Made a seller Pro',
+  pro_removed: 'Removed Pro from a seller',
+  listing_deleted: 'Deleted a listing',
+  listing_featured: 'Featured a listing',
+  listing_unfeatured: 'Unfeatured a listing',
+  report_resolved: 'Resolved a report',
+  report_dismissed: 'Dismissed a report',
+  promotion_approved: 'Approved a promotion request',
+  promotion_rejected: 'Rejected a promotion request',
+}
+
+// a read-only history of admin actions (who did what, when) -- nothing
+// here is actionable, it's purely a record for accountability/recall
+function ActivityPanel() {
+  const toast = useToast()
+  const [actions, setActions] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAdminActions()
+      .then(setActions)
+      .catch((err) => {
+        console.error('Failed to load admin activity', err)
+        toast.error('Could not load activity — try again.')
+      })
+      .finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="skeleton h-14 w-full" />
+        ))}
+      </div>
+    )
+  }
+
+  if (actions.length === 0) {
+    return <Placeholder compact icon="📜" title="No activity yet" body="Admin actions will show up here." />
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {actions.map((a) => (
+        <div key={a.id} className="card-elevated p-3 text-sm">
+          <p className="font-medium">{ACTION_LABELS[a.action] ?? a.action}</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+            {a.detail ? `${a.detail} · ` : ''}
+            {a.adminName} · {timeAgo(a.createdAt)}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const TAB_COUNT_KEYS = { reports: 'reports', promotions: 'promotions', errors: 'errors' }
+
 export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onEditListing }) {
   const [section, setSection] = useState('reports')
+  const [counts, setCounts] = useState({ reports: 0, promotions: 0, errors: 0 })
+
+  // refetches whenever the admin switches tabs, so the badges stay close
+  // to fresh without every panel needing to know how to update them
+  useEffect(() => {
+    fetchAdminPendingCounts()
+      .then(setCounts)
+      .catch((err) => console.error('Failed to load pending counts', err))
+  }, [section])
 
   return (
     <div className="pb-4">
@@ -1759,20 +1837,34 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onE
       </div>
 
       <div className="px-5 flex gap-2 mb-1 overflow-x-auto pb-1">
-        {['reports', 'users', 'listings', 'stores', 'promotions', 'outreach', 'broadcast', 'stats', 'errors'].map((s) => (
-          <button
-            key={s}
-            onClick={() => setSection(s)}
-            className="pressable shrink-0 text-sm px-4 py-2 rounded-xl border capitalize font-medium"
-            style={{
-              background: section === s ? 'var(--forest)' : 'transparent',
-              color: section === s ? 'white' : 'var(--ink-soft)',
-              borderColor: section === s ? 'var(--forest)' : 'var(--rule)',
-            }}
-          >
-            {s}
-          </button>
-        ))}
+        {['reports', 'users', 'listings', 'stores', 'promotions', 'outreach', 'broadcast', 'stats', 'errors', 'activity'].map((s) => {
+          const count = counts[TAB_COUNT_KEYS[s]] ?? 0
+          return (
+            <button
+              key={s}
+              onClick={() => setSection(s)}
+              className="pressable shrink-0 text-sm px-4 py-2 rounded-xl border capitalize font-medium flex items-center gap-1.5"
+              style={{
+                background: section === s ? 'var(--forest)' : 'transparent',
+                color: section === s ? 'white' : 'var(--ink-soft)',
+                borderColor: section === s ? 'var(--forest)' : 'var(--rule)',
+              }}
+            >
+              {s}
+              {count > 0 && (
+                <span
+                  className="text-[10px] leading-none px-1.5 py-0.5 rounded-full font-bold"
+                  style={{
+                    background: section === s ? 'rgba(255,255,255,0.25)' : 'var(--plum)',
+                    color: section === s ? 'white' : 'white',
+                  }}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       <div className="px-5 pt-3">
@@ -1784,6 +1876,7 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onE
         {section === 'outreach' && <OutreachPanel adminId={adminId} />}
         {section === 'broadcast' && <BroadcastPanel />}
         {section === 'stats' && <StatsPanel />}
+        {section === 'activity' && <ActivityPanel />}
         {section === 'errors' && <ErrorsPanel />}
       </div>
     </div>

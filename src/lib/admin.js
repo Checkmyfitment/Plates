@@ -1,5 +1,56 @@
 import { supabase } from './supabaseClient'
 
+// records an admin action for the Activity log -- never blocks or throws
+// into the caller, since a logging failure shouldn't undo a real action
+// that already succeeded. admin_id is never passed here; it defaults to
+// auth.uid() on the server and is pinned there by RLS.
+export async function logAdminAction(action, targetType, targetId, detail) {
+  const { error } = await supabase
+    .from('admin_actions')
+    .insert({ action, target_type: targetType, target_id: targetId ?? null, detail: detail || null })
+  if (error) console.error('Failed to log admin action', error)
+}
+
+function mapAdminAction(row) {
+  return {
+    id: row.id,
+    action: row.action,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    detail: row.detail,
+    adminName: row.admin?.name ?? 'An admin',
+    createdAt: row.created_at,
+  }
+}
+
+export async function fetchAdminActions() {
+  const { data, error } = await supabase
+    .from('admin_actions')
+    .select('id, action, target_type, target_id, detail, created_at, admin:profiles!admin_actions_admin_id_fkey(name)')
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (error) throw error
+  return data.map(mapAdminAction)
+}
+
+// counts for the "needs attention" badges on the Reports/Promotions/Errors
+// tabs -- three cheap head-only count queries, no new schema needed
+export async function fetchAdminPendingCounts() {
+  const [reports, promotions, errors] = await Promise.all([
+    supabase.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+    supabase.from('promotion_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('client_errors').select('id', { count: 'exact', head: true }),
+  ])
+  if (reports.error) throw reports.error
+  if (promotions.error) throw promotions.error
+  if (errors.error) throw errors.error
+  return {
+    reports: reports.count ?? 0,
+    promotions: promotions.count ?? 0,
+    errors: errors.count ?? 0,
+  }
+}
+
 function mapReport(row) {
   return {
     id: row.id,
@@ -31,30 +82,36 @@ export async function fetchReports() {
   return data.map(mapReport)
 }
 
-export async function setReportStatus(reportId, status) {
+export async function setReportStatus(reportId, status, detail) {
   const { error } = await supabase.from('reports').update({ status }).eq('id', reportId)
   if (error) throw error
+  await logAdminAction(`report_${status}`, 'report', reportId, detail)
 }
 
-export async function setUserBanned(userId, banned) {
+export async function setUserBanned(userId, banned, detail) {
   const { error } = await supabase.from('profiles').update({ banned }).eq('id', userId)
   if (error) throw error
+  await logAdminAction(banned ? 'user_banned' : 'user_unbanned', 'profile', userId, detail)
 }
 
-export async function adminDeleteListing(listingId) {
+export async function adminDeleteListing(listingId, detail) {
   const { error } = await supabase.from('listings').delete().eq('id', listingId)
   if (error) throw error
+  await logAdminAction('listing_deleted', 'listing', listingId, detail)
 }
 
 // `until` is only set for a paid promotion (auto-expires via the
 // expire_featured_listings() cron job); omit it for an admin's own manual
-// feature toggle, which is meant to stay on until turned off by hand
-export async function setListingFeatured(listingId, featured, until) {
+// feature toggle, which is meant to stay on until turned off by hand.
+// `reason` is just the audit-log detail text (e.g. "paid promotion
+// approved" vs left blank for a manual toggle).
+export async function setListingFeatured(listingId, featured, until, reason) {
   const { error } = await supabase
     .from('listings')
     .update({ featured, featured_until: featured ? (until ?? null) : null })
     .eq('id', listingId)
   if (error) throw error
+  await logAdminAction(featured ? 'listing_featured' : 'listing_unfeatured', 'listing', listingId, reason)
 }
 
 function mapUser(row) {
@@ -75,19 +132,21 @@ export async function searchUsers(query) {
   return data.map(mapUser)
 }
 
-export async function setUserAdmin(userId, isAdmin) {
+export async function setUserAdmin(userId, isAdmin, detail) {
   const { error } = await supabase.from('profiles').update({ is_admin: isAdmin }).eq('id', userId)
   if (error) throw error
+  await logAdminAction(isAdmin ? 'admin_granted' : 'admin_removed', 'profile', userId, detail)
 }
 
 // pro_since records when they went Pro (for future record-keeping /
 // "member since" display); cleared when Pro is turned off
-export async function setUserPro(userId, isPro) {
+export async function setUserPro(userId, isPro, detail) {
   const { error } = await supabase
     .from('profiles')
     .update({ is_pro: isPro, pro_since: isPro ? new Date().toISOString() : null })
     .eq('id', userId)
   if (error) throw error
+  await logAdminAction(isPro ? 'pro_granted' : 'pro_removed', 'profile', userId, detail)
 }
 
 function mapStore(row) {

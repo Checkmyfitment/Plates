@@ -85,7 +85,7 @@ export default function ListingDetail({
     const next = !featured
     setTogglingFeatured(true)
     try {
-      await setListingFeatured(listing.id, next)
+      await setListingFeatured(listing.id, next, undefined, listing.title)
       setFeatured(next)
       onFeaturedChanged?.(listing.id, next)
       toast.success(next ? 'Listing featured.' : 'Listing unfeatured.')

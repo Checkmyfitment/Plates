@@ -1967,6 +1967,32 @@ first impression) are now done.
       showed up both on the listing's own "Featured until [date]" card
       and in Admin's renewal-tracking list. Reverted both test toggles
       (no real payment happened) afterward and confirmed clean
+- [x] Two admin-empowerment pieces, picked from a review of all 9 Admin
+      tabs for real friction points. First, pending-action count badges
+      on the Reports/Promotions/Errors tabs — previously had to click
+      into each tab to see if anything needed attention; now a live count
+      shows right on the tab button. Needed no new schema, just three
+      cheap head-only count queries (`fetchAdminPendingCounts()` in
+      `lib/admin.js`), refetched whenever the admin switches tabs.
+      Second, a lightweight admin action audit log — there was
+      previously zero record of who banned/promoted/deleted what or
+      when. New `admin_actions` table (`admin_id` defaults to
+      `auth.uid()`, never passed by the client, and the insert policy
+      pins it to the actual caller so it can't be spoofed) plus a new
+      `logAdminAction()` helper wired into every existing moderation/
+      monetization action: ban/unban, make/remove admin, make/remove
+      Pro, delete a listing, resolve/dismiss a report, feature/unfeature
+      a listing, approve/reject a promotion request. Surfaced in a new
+      10th "Activity" tab (`ActivityPanel`) — newest first, human-
+      readable labels, who did it, a short detail (e.g. the affected
+      user/listing's name), and when. Migration: `migration_admin_audit.
+      sql`, mirrored into `schema.sql`. 100 tests passing; lint + build
+      clean. Confirmed live: checked the badges read 0 with nothing
+      pending (matched the real empty Reports/Errors state), then made
+      mike chin Pro through the real Admin Users panel and watched the
+      exact entry — "Made a seller Pro · mike chin · mike chin · just
+      now" — appear in Activity, then reverted (Remove Pro) and
+      confirmed via the UI
 
 ## Not built yet (future ideas)
 
