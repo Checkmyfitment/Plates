@@ -4,3 +4,23 @@ dist
 .env.local
 .DS_Store
 supabase/.temp
+
+# Capacitor native projects (ios/App, android/ themselves are committed —
+# only their generated/build output and synced web-asset copies are not)
+ios/App/App/public
+ios/App/Pods
+ios/App/build
+ios/App/DerivedData
+ios/App/App/capacitor.config.json
+**/xcuserdata/
+*.xcuserstate
+
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/.gradle
+android/local.properties
+android/app/build
+android/build
+android/captures
+android/.idea
+*.iml

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Plates</string>
+    <string name="title_activity_main">Plates</string>
+    <string name="package_name">com.yourplatesapp.app</string>
+    <string name="custom_url_scheme">com.yourplatesapp.app</string>
+</resources>

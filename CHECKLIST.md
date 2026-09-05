@@ -410,6 +410,78 @@ and the Supabase CLI is already installed in this project (`npx supabase`).
       account (or have someone else do it) — confirm a real OS-level
       notification pops up, not just the in-app bell badge
 
+## Mobile app store setup (bigger lift — multi-week project, not a single sitting)
+
+Plates was a pure web app with no native wrapper at all until this point.
+Getting it onto the Apple App Store and Google Play — plus real in-app
+purchases for Featured/Pro — is a genuinely large, multi-part project with
+real-world prerequisites (developer accounts, paid enrollment, installed
+tooling) that can't be shortcut. Laying out exactly where things stand so
+nothing gets lost.
+
+**Important distinction, easy to get wrong:** food orders do NOT need Apple/
+Google in-app purchase — Apple and Google both explicitly exempt real-world
+physical goods/services from their IAP requirement (the same exemption Uber
+Eats, DoorDash, and Etsy rely on), so food payment stays exactly as it is
+today (arranged outside the app). Featured listings and Plates Pro are
+different — those are digital platform perks, and Apple/Google **do**
+require those to go through their own in-app purchase systems (StoreKit /
+Google Play Billing) if sold from inside the native app. Shipping a digital
+purchase via Stripe/manual billing inside a native app instead of IAP is one
+of the most commonly enforced app store rejection reasons there is.
+
+- [x] Capacitor wrapper scaffolded — `@capacitor/core`, `@capacitor/cli`,
+      `@capacitor/ios`, `@capacitor/android` installed; `capacitor.config.
+      json` created (`appId: com.yourplatesapp.app` — a placeholder, same
+      convention as the `SUPPORT_EMAIL`/`SITE_URL` placeholders already in
+      `lib/siteInfo.js`; this needs to be a real bundle ID/package name you
+      pick once you're registering the app in each console, and it has to
+      match exactly in both consoles and this config). `ios/` and
+      `android/` native project folders generated via `npx cap add ios` /
+      `npx cap add android` and committed (their build artifacts — Pods,
+      Gradle caches, the synced web-asset copies — are gitignored, not the
+      project files themselves). New npm scripts: `npm run cap:sync`
+      (rebuilds the web app and copies it into both native projects),
+      `npm run cap:ios` / `npm run cap:android` (sync + open in Xcode /
+      Android Studio). Confirmed working as far as this machine allows:
+      `npx cap add ios`, `npx cap add android`, and `npx cap sync` all ran
+      clean with no errors
+- [ ] **Not verified beyond scaffolding** — this machine has Xcode Command
+      Line Tools but not the full Xcode.app, and no Android Studio or JDK,
+      so the native projects have never actually been opened, built, or
+      run in a simulator. Install Xcode from the Mac App Store (~15GB,
+      needs your Apple ID signed in) and Android Studio
+      (developer.android.com/studio, free), then `npm run cap:ios` /
+      `npm run cap:android` to open each project and hit Run
+- [ ] Apple Developer Program enrollment ($99/yr, developer.apple.com) —
+      your identity/payment, has to be you
+- [ ] Google Play Console account ($25 one-time, play.google.com/console)
+      — same, has to be you
+- [ ] Once both exist: create the app record in App Store Connect and Play
+      Console (this is where the real, final bundle ID/package name gets
+      locked in — update `capacitor.config.json`'s `appId` to match before
+      building for real)
+- [ ] Configure the actual IAP products: Featured listing as a consumable
+      (repurchased each time), Plates Pro as an auto-renewing subscription
+      — in both App Store Connect and Play Console, with matching
+      product IDs
+- [ ] Integrate a purchase SDK against those products (RevenueCat is worth
+      seriously considering over raw StoreKit2 + Play Billing — it wraps
+      both platforms in one API and handles receipt validation, which is
+      genuinely fiddly to build correctly from scratch) and wire its
+      server-side webhook to flip `profiles.is_pro` / `listings.featured`
+      the same way the manual admin toggle does today, so both paths
+      (manual billing on web, IAP on mobile) land in the same place
+- [ ] App Store Review Guideline 4.2 risk: Apple has gotten stricter about
+      rejecting apps that are "just a wrapped website" with nothing native
+      about them. Worth leaning on native-feeling things Plates already
+      has the plumbing for — real push notifications, camera-based photo
+      upload, the native share sheet (`lib/share.js`) — once this is
+      actually running in Xcode/Android Studio
+- [ ] Guideline 5.1.1(v) (Apple requires in-app account deletion, not just
+      an email request) — already satisfied, "Delete my account" already
+      exists in Profile → Account & security
+
 ## Phone verification setup (optional — do this whenever you're ready)
 
 The "Verify your phone" card already shows up in everyone's Profile and the

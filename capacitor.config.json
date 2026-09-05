@@ -1,0 +1,8 @@
+{
+  "appId": "com.yourplatesapp.app",
+  "appName": "Plates",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
