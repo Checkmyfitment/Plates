@@ -2083,6 +2083,33 @@ first impression) are now done.
       exact entry — "Made a seller Pro · mike chin · mike chin · just
       now" — appear in Activity, then reverted (Remove Pro) and
       confirmed via the UI
+- [x] Full-app regression walkthrough ("run through everything") after the
+      monetization + admin-audit + mobile-scaffolding work. 100/100
+      automated tests, lint, and build all clean. Live-checked: guest
+      Browse/listing detail/signup/legal docs, Profile, Seller Dashboard,
+      all 10 Admin tabs, Orders, Chats, and Sell — all render and
+      function correctly, zero regressions. Bisected two console
+      findings down to their exact source by opening fresh browser tabs
+      per screen (a shared console log across navigations was otherwise
+      impossible to attribute):
+      - A one-off `400` on page load that never recurred across 5+
+        reloads and never coincided with any visible breakage — treated
+        as a transient network blip, not a real bug
+      - A **real, fixed bug**: `WeeklyBarChart.jsx`'s gridlines
+        (`[0, 0.5, 1].map(t => Math.round(maxValue * t))`) collapse to
+        duplicate values whenever `maxValue` is small (e.g. `[0, 1, 1]`
+        on a low-data dashboard — exactly when a founder is most likely
+        to be looking), and were keyed by that value instead of
+        position, producing a React "duplicate key" warning on every one
+        of Admin → Stats' three charts. Fixed by keying gridlines by
+        their fixed index (3 lines always exist, at fixed positions)
+        instead of their computed value. Confirmed live in a fresh tab:
+        warning gone, charts still render correctly
+      - Also spotted (not fixed, just flagged): a leftover "QA Sweep
+        Kitchen" unclaimed test store in Admin → Stores, and two
+        obviously-test area-waitlist entries ("Nowhereville", "Test") in
+        Admin → Stats' growth-opportunities list — minor leftover test
+        data, same category as the accounts/listings cleaned up earlier
 
 ## Not built yet (future ideas)
 

@@ -29,9 +29,12 @@ export default function WeeklyBarChart({ title, data, valueKey, formatValue = (v
         {title}
       </p>
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ overflow: 'visible' }}>
-        {gridLines.map((g) => {
+        {gridLines.map((g, i) => {
+          // keyed by position (i), not value (g) -- with low data volume
+          // maxValue clamps to 1 and rounding can collapse two of the three
+          // fixed 0%/50%/100% gridlines to the same value (e.g. [0, 1, 1])
           const y = padding.top + chartHeight - (g / maxValue) * chartHeight
-          return <line key={g} x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="var(--rule)" strokeWidth="1" />
+          return <line key={i} x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="var(--rule)" strokeWidth="1" />
         })}
         {data.map((d, i) => {
           const value = d[valueKey]
