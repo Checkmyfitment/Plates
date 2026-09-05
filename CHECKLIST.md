@@ -446,13 +446,31 @@ of the most commonly enforced app store rejection reasons there is.
       Android Studio). Confirmed working as far as this machine allows:
       `npx cap add ios`, `npx cap add android`, and `npx cap sync` all ran
       clean with no errors
-- [ ] **Not verified beyond scaffolding** — this machine has Xcode Command
-      Line Tools but not the full Xcode.app, and no Android Studio or JDK,
-      so the native projects have never actually been opened, built, or
-      run in a simulator. Install Xcode from the Mac App Store (~15GB,
-      needs your Apple ID signed in) and Android Studio
-      (developer.android.com/studio, free), then `npm run cap:ios` /
-      `npm run cap:android` to open each project and hit Run
+- [x] Both platforms now genuinely proven end-to-end, not just scaffolded —
+      Xcode 26.6 and Android Studio 2026.1 installed (you did the Xcode
+      part yourself — Mac App Store sign-in and the `sudo xcode-select`/
+      license steps both need your own credentials, which I never touch).
+      **iOS:** iOS 26.5 Simulator runtime installed, the real Plates
+      project built clean (`xcodebuild ... BUILD SUCCEEDED`), installed
+      and launched on a simulated iPhone 17 Pro — a screenshot confirmed
+      the actual onboarding screen rendering correctly, not a blank
+      WebView. **Android:** this one hit a real compatibility snag worth
+      knowing about — Android Studio's bundled JDK is Java 25, which the
+      Capacitor-generated project's Gradle version (8.14.3) doesn't
+      support yet (`Unsupported class file major version 69`). Fixed by
+      installing Eclipse Temurin JDK 21 (LTS) alongside it — if you ever
+      open this project directly in Android Studio's own UI instead of
+      the command line and hit the same error, point its Gradle JDK
+      setting (Settings → Build Tools → Gradle) at a JDK 21, not the
+      bundled one. Also installed the Android SDK command-line tools,
+      platform 36 (matching `android/variables.gradle`), build-tools,
+      and an emulator system image (none of this ships with a fresh
+      Android Studio install — its own first-run setup wizard would
+      normally fetch it, but doing it via `sdkmanager` sidestepped that
+      GUI flow entirely). Built the real APK (`./gradlew assembleDebug`
+      — `BUILD SUCCESSFUL`), booted a Pixel 7 emulator (`Plates_Test`
+      AVD, API 36), installed and launched it — a screenshot confirmed
+      the same onboarding screen rendering correctly there too
 - [ ] Apple Developer Program enrollment ($99/yr, developer.apple.com) —
       your identity/payment, has to be you
 - [ ] Google Play Console account ($25 one-time, play.google.com/console)
