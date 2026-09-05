@@ -1,6 +1,6 @@
 import { SUPPORT_EMAIL } from '../lib/siteInfo'
 
-const LAST_UPDATED = 'August 19, 2026'
+const LAST_UPDATED = 'September 5, 2026'
 
 function Section({ title, children }) {
   return (
@@ -178,57 +178,108 @@ function Privacy() {
   return (
     <>
       <Section title="1. What we collect">
-        <p>
-          Account info you give us (name, email, kitchen name, profile photo), your approximate
-          location if you set a neighborhood or map pin, the listings, messages, ratings, and
-          reports you create, and basic usage info needed to run the app.
-        </p>
+        <p>Grouped the way Apple's and Google's app store privacy disclosures ask for it:</p>
+        <ul className="list-disc pl-5 mt-1.5 space-y-1">
+          <li>
+            <strong>Contact info:</strong> name, email address, and — only if you choose to verify
+            your phone — your phone number (used solely to send and check the one-time
+            verification code; never shown to other users, who only see a "phone verified"
+            badge).
+          </li>
+          <li>
+            <strong>Location — approximate only, never precise:</strong> the neighborhood name or
+            zip code you type into your profile or a listing, converted to an approximate map
+            point. Plates never requests your device's GPS location.
+          </li>
+          <li>
+            <strong>User content:</strong> listings (including photos), chat messages, reviews,
+            reports you file, and your profile photo/bio.
+          </li>
+          <li>
+            <strong>Identifiers:</strong> your account ID and, if you enable push notifications, a
+            device push subscription token.
+          </li>
+          <li>
+            <strong>Usage & diagnostics:</strong> basic in-app activity needed to run features
+            (e.g. listing view counts), and — only when something breaks — an error message,
+            stack trace, and the page it happened on, so we can fix real bugs.
+          </li>
+        </ul>
       </Section>
       <Section title="2. How we use it">
         <p>
           To run the marketplace: showing your listings to nearby buyers, connecting buyers and
           sellers through chat, computing distance/neighborhood matches, sending you alerts for
-          cuisines you follow, and enforcing our Terms of Service and Community Guidelines.
+          cuisines you follow, and enforcing our Terms of Service and Community Guidelines. We
+          don't use your data to serve ads, and we don't track you across other apps or websites.
         </p>
       </Section>
       <Section title="3. Who we share it with">
         <p>
-          We don't sell your personal data. Your name, listings, and public profile info are
-          visible to other users of the app, since that's how a marketplace works. We use Supabase
-          to host our database and handle login — they process data on our behalf under their own
-          privacy and security practices.
+          We don't sell your personal data, and we don't share it with data brokers or advertisers.
+          Your name, listings, and public profile info are visible to other users of the app, since
+          that's how a marketplace works. A few services process data on our behalf, under their
+          own privacy and security practices, only to do the specific job listed:
         </p>
+        <ul className="list-disc pl-5 mt-1.5 space-y-1">
+          <li><strong>Supabase</strong> — hosts our database, login, file storage, and server functions.</li>
+          <li>
+            <strong>OpenStreetMap / Nominatim</strong> — converts the neighborhood or zip text you
+            type into an approximate map point. The text you typed is sent to them to do this
+            lookup.
+          </li>
+          <li>
+            <strong>MyMemory Translated</strong> — only when you tap "Translate" on a chat message,
+            that message's text is sent to their API to translate it.
+          </li>
+        </ul>
       </Section>
       <Section title="4. Location data">
         <p>
           If you add a neighborhood or map location to your profile, it's used to sort and display
           nearby listings and to show your approximate pin on the map. You can remove it at any
-          time by editing your profile.
+          time by editing your profile. As noted above, this is always a neighborhood/zip-level
+          approximation you typed yourself — never your device's precise GPS location.
         </p>
       </Section>
       <Section title="5. Data retention & deletion">
         <p>
-          We keep your data as long as your account is active. To delete your account and personal
-          data, email{' '}
+          We keep your data as long as your account is active. You can delete your own account
+          directly in the app — Profile → Account & security → "Delete my account" — no need to
+          email us. Deleting removes your name, photo, and location, and takes your listings down;
+          past orders and reviews stay in place (without your personal info attached) so the other
+          party's own history isn't erased. Prefer email instead? That works too:{' '}
           <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color: 'var(--forest-dark)', textDecoration: 'underline' }}>
             {SUPPORT_EMAIL}
           </a>
           .
         </p>
       </Section>
-      <Section title="6. Children">
+      <Section title="6. Your rights">
+        <p>
+          Depending on where you live (including under California's CCPA/CPRA and similar state
+          laws), you may have the right to know what personal data we hold about you, request a
+          copy of it, correct it, or delete it. Since we don't sell personal data or use it for
+          targeted advertising, there's no "opt out of sale" list to manage — email{' '}
+          <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color: 'var(--forest-dark)', textDecoration: 'underline' }}>
+            {SUPPORT_EMAIL}
+          </a>{' '}
+          for any of these requests and we'll respond.
+        </p>
+      </Section>
+      <Section title="7. Children">
         <p>Plates is not intended for anyone under 18, and we don't knowingly collect data from minors.</p>
       </Section>
-      <Section title="7. Security">
+      <Section title="8. Security">
         <p>
           We use industry-standard practices (like row-level access controls on our database) to
           protect your data, but no system is 100% secure.
         </p>
       </Section>
-      <Section title="8. Changes">
+      <Section title="9. Changes">
         <p>We may update this policy from time to time; we'll update the date below when we do.</p>
       </Section>
-      <Section title="9. Contact">
+      <Section title="10. Contact">
         <p>
           Questions about your data? Email{' '}
           <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color: 'var(--forest-dark)', textDecoration: 'underline' }}>
@@ -380,11 +431,16 @@ function StateLaws() {
   )
 }
 
+const COTTAGE_LAW_NOTE =
+  ' Cottage food and home-kitchen laws vary by state and county — have an attorney review this before you rely on it for a real launch.'
+const APP_STORE_NOTE =
+  " If you're using this to fill out Apple's App Privacy questionnaire or Google Play's Data Safety section, have someone verify it matches exactly what the shipped app actually does before you submit — a mismatch between this document and real app behavior is itself a common cause of app store rejection."
+
 const docs = {
-  terms: { title: 'Terms of Service', body: Terms },
-  privacy: { title: 'Privacy Policy', body: Privacy },
-  guidelines: { title: 'Community Guidelines', body: Guidelines },
-  states: { title: 'Cottage Food Laws by State', body: StateLaws },
+  terms: { title: 'Terms of Service', body: Terms, note: COTTAGE_LAW_NOTE },
+  privacy: { title: 'Privacy Policy', body: Privacy, note: APP_STORE_NOTE },
+  guidelines: { title: 'Community Guidelines', body: Guidelines, note: COTTAGE_LAW_NOTE },
+  states: { title: 'Cottage Food Laws by State', body: StateLaws, note: COTTAGE_LAW_NOTE },
 }
 
 export default function LegalScreen({ doc, onBack }) {
@@ -412,8 +468,7 @@ export default function LegalScreen({ doc, onBack }) {
           style={{ borderColor: 'var(--rule)', background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}
         >
           This is a starting-point draft, not legal advice, and hasn't been reviewed by a lawyer.
-          Cottage food and home-kitchen laws vary by state and county — have an attorney review
-          this before you rely on it for a real launch.
+          {entry.note}
         </div>
         <Body />
       </div>
