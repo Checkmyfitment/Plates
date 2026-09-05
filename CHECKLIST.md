@@ -2110,6 +2110,35 @@ first impression) are now done.
         obviously-test area-waitlist entries ("Nowhereville", "Test") in
         Admin → Stats' growth-opportunities list — minor leftover test
         data, same category as the accounts/listings cleaned up earlier
+- [x] Cleaned up the "QA Sweep Kitchen" test store and the "Nowhereville"/
+      "Test" waitlist entries flagged above. Confirmed live: Admin → Stores
+      no longer lists it, and Admin → Stats' "Growth opportunities" section
+      is gone entirely (it only renders when there's at least one entry)
+- [x] Two pieces of pre-launch abuse protection, picked from the broader
+      "what's left before launch" list. First, a listing-creation rate
+      limit — a single compromised or spam account previously had no cap
+      on how fast it could flood the platform with listings. New
+      `check_listing_rate_limit()` trigger blocks a seller's 21st listing
+      within a rolling 24 hours (admins exempt, for bulk outreach/
+      onboarding imports). Second, Cloudflare Turnstile wired onto the
+      signup form — a new `TurnstileWidget.jsx`, the external script added
+      to `index.html`, `AuthContext.signUp()` now threads a `captchaToken`
+      through to `supabase.auth.signUp()`, and the Sign up button is
+      disabled until the widget verifies. Ships with Cloudflare's public
+      *test* site key (`TURNSTILE_SITE_KEY` in `lib/siteInfo.js`, clearly
+      commented) so the whole flow actually works out of the box — real
+      bot protection needs two more steps only the account owner can do:
+      swap in a real site key (free, ~2 min at Cloudflare) and enable
+      Turnstile with the matching secret key in Supabase's Auth settings.
+      Migration: `migration_abuse_protection.sql`, mirrored into
+      `schema.sql`. 100 tests passing; lint + build clean. Confirmed live:
+      posted a real listing well under the rate limit to confirm normal
+      posting still works (then deleted it); loaded the real signup screen
+      and watched the Turnstile widget render and show Cloudflare's own
+      "Success! ... For testing only" watermark, confirming it's genuinely
+      calling their service and produces a token that enables the Sign up
+      button — didn't complete an actual signup, since that would just
+      create another test account to later clean up
 
 ## Not built yet (future ideas)
 

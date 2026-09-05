@@ -35,11 +35,14 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  const signUp = async (email, password, name, referredBy, signupIntent) => {
+  const signUp = async (email, password, name, referredBy, signupIntent, captchaToken) => {
     return supabase.auth.signUp({
       email,
       password,
-      options: { data: { name, referred_by: referredBy || null, signup_intent: signupIntent || null } },
+      options: {
+        data: { name, referred_by: referredBy || null, signup_intent: signupIntent || null },
+        captchaToken,
+      },
     })
   }
 

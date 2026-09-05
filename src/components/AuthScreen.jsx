@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Logo from './Logo'
+import TurnstileWidget from './TurnstileWidget'
 import { savePendingClaim } from '../lib/stores'
 import { setRememberMe } from '../lib/supabaseClient'
 
@@ -29,6 +30,7 @@ export default function AuthScreen({ onClose, reason }) {
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [legalDoc, setLegalDoc] = useState(null)
+  const [captchaToken, setCaptchaToken] = useState(null)
 
   const switchMode = (next) => {
     setMode(next)
@@ -51,7 +53,7 @@ export default function AuthScreen({ onClose, reason }) {
     setBusy(true)
     if (mode === 'signup') {
       setRememberMe(true)
-      const { data, error } = await signUp(email, password, name, referredBy, intent)
+      const { data, error } = await signUp(email, password, name, referredBy, intent, captchaToken)
       if (error) setError(error.message)
       else if (!data.session) setNotice('Check your email for a confirmation link, then log in.')
     } else if (mode === 'reset') {
@@ -212,6 +214,10 @@ export default function AuthScreen({ onClose, reason }) {
           </label>
         )}
 
+        {mode === 'signup' && (
+          <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
+        )}
+
         {error && (
           <p className="text-xs" style={{ color: 'var(--plum)' }}>
             {error}
@@ -225,7 +231,7 @@ export default function AuthScreen({ onClose, reason }) {
 
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || (mode === 'signup' && !captchaToken)}
           className="pressable w-full mt-2 py-3 rounded-xl font-medium text-sm disabled:opacity-60 hover:opacity-90 active:opacity-80 transition-opacity"
           style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}
         >
