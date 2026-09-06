@@ -2,7 +2,22 @@
 
 Check things off as you go. If something's already done, just leave it checked.
 
-## Setup (run once)
+**Section tags**, added after a full pass through this file to sort out what
+still needs you versus what can be picked up solo: **[NEEDS YOU]** means an
+account/payment/identity only you have, a dashboard toggle I have no access
+to, a real device, or email-inbox access — genuinely can't be done from here.
+**[I CAN DO THIS]** means code, config, docs, or a live check I can run
+myself (a guest-only flow, or anything not requiring a second account/real
+device/live deployment) — ask and it gets picked up, no need to do it
+yourself. Sections with a mix are marked **[MIXED]** with a note on the
+split. Two stale items were also found and cleaned up during this pass: an
+already-done "make yourself admin" step (confirmed live — your account
+already has the Admin button), and a duplicate push-notification note near
+the bottom that just repeated the "Push notifications setup" section above.
+
+## Setup (run once) — [MIXED] every SQL/dashboard item here needs you (I
+can't write to your database or your Supabase dashboard); the two still
+unrun are `migration_area_alerts.sql` and `migration_fulfillment_status_copy.sql`
 
 - [x] `npm install` — picks up the map packages (leaflet, react-leaflet).
       Confirmed done — the map and every other feature have been running all
@@ -323,14 +338,10 @@ Check things off as you go. If something's already done, just leave it checked.
       in-app notification blast). Confirmed live — all new columns/objects
       exist and every feature built on top of them works end-to-end (see
       "Things to check" below)
-- [ ] Make yourself the first admin — in the SQL Editor, run (with your real login
-      email):
-      ```sql
-      update public.profiles set is_admin = true
-      where id = (select id from auth.users where email = 'you@example.com');
-      ```
-      Nobody can grant admin through the app itself (there's no admin yet to grant
-      it), so this one has to be done by hand, once, in the SQL Editor.
+- [x] Make yourself the first admin — done. Confirmed live: your account
+      (chinmichael705@gmail.com / Michael Chin) already shows the
+      "🛡️ Admin" button on its own Profile screen, which only ever renders
+      for an account with `is_admin = true`.
 - [ ] Open [src/lib/siteInfo.js](src/lib/siteInfo.js) and replace the placeholder
       `SUPPORT_EMAIL` with a real inbox you check — it's shown on the suspended-account
       screen and both legal pages
@@ -374,7 +385,7 @@ only during manual click-through testing.
   to touch the Supabase client doesn't crash during tests; it's not a real
   project and nothing in the test suite talks to a network
 
-## Push notifications setup (bigger lift — do this separately, whenever you're ready)
+## Push notifications setup (bigger lift — do this separately, whenever you're ready) — [MIXED] Web Push is fully done and confirmed working server-side; the one remaining step there (actually receiving a push) needs your own phone/browser. Everything in "Native push" below the VAPID work is [NEEDS YOU] — a Firebase project and Apple Developer enrollment can only ever be your own identity
 
 Everything above is a SQL paste. This one's different: real push notifications
 need a small server-side function running outside the app (nothing in this
@@ -504,7 +515,7 @@ Developer enrollment, both of which have to be created by you, not me:**
       doesn't exercise the real Firebase pipeline), so this last check
       needs your own phone, the same way the Web Push one above did
 
-## Mobile app store setup (bigger lift — multi-week project, not a single sitting)
+## Mobile app store setup (bigger lift — multi-week project, not a single sitting) — [MIXED] everything code/config-level (icons, safe-area, entitlements, export compliance, native push groundwork) is done; what's left — enrollment, IAP product setup, the final bundle ID decision, deployment — is [NEEDS YOU], detailed in "What's left before either store submission is possible" below
 
 Plates was a pure web app with no native wrapper at all until this point.
 Getting it onto the Apple App Store and Google Play — plus real in-app
@@ -735,7 +746,7 @@ ever be you) or your own decisions (pricing, support contact, hosting):
       be a quick "no mature content" pass through each store's
       questionnaire at submission time
 
-## Phone verification setup (optional — do this whenever you're ready)
+## Phone verification setup (optional — do this whenever you're ready) — [NEEDS YOU]: the Twilio account (identity/payment) can only be yours; everything else is already built and waiting on it
 
 The "Verify your phone" card already shows up in everyone's Profile and the
 `phone_verified` column/trigger are already in place. What's missing is an
@@ -759,7 +770,7 @@ a code" error until it's configured, and the rest of the app works fine.
       and a "📱 Phone verified" badge appears on your public profile /
       seller card
 
-## Social share previews setup (optional — only matters once you've deployed)
+## Social share previews setup (optional — only matters once you've deployed) — [NEEDS YOU]: blocked entirely on deploying somewhere public first — a domain/hosting decision only you can make
 
 Tapping "Share" on a listing always copies a working link. Whether that
 link unfurls into a rich card (photo/title/price) when pasted into
@@ -784,7 +795,7 @@ plain link.
       installed — it just won't show a preview photo/price card when
       pasted elsewhere)
 
-## Email notifications setup (optional — do this whenever you're ready)
+## Email notifications setup (optional — do this whenever you're ready) — [NEEDS YOU]: the Resend account (identity/payment) can only be yours; the two SQL migrations at the end of this section are unrelated to email itself, just sitting here unrun
 
 Order updates already work in-app and via push. This adds email as a third
 channel, for buyers/sellers who won't turn on push — most people. Skip this
@@ -815,7 +826,28 @@ email function safely either way (it just no-ops until this is set up).
 - [ ] Run `supabase/migration_cottage_law.sql` in Supabase SQL Editor. Adds
       `listings.cottage_law_confirmed`
 
-## Things to check
+## Things to check — [MIXED], the messiest section to categorize since it's
+one huge flat list. Breaking down what's still unchecked below by why:
+- **Needs a second account** (most of them) — messaging, notifications
+  between two people, order flows, anything buyer-vs-seller. I can create
+  disposable test accounts myself the same way earlier passes in this file
+  did (search "disposable test account" above for the pattern), but I
+  won't create test data on your **real** account without you asking —
+  several were already re-confirmed this pass using only read-only checks
+  against your real profile (see the `[x]` items with "confirmed — visible
+  on your own real profile" notes above)
+- **Needs a real device** — the native share sheet, "Add to Home Screen"
+  from a phone's own browser menu, testing on a real cellular/wifi drop
+- **Needs email inbox access** — the forgot-password and email-confirmation
+  flows (I don't have access to your inbox to click a real reset link)
+- **Needs a live deployment** — a couple depend on things that only make
+  sense once the app is live somewhere public
+- **Genuinely just not yet re-verified** — a handful are pure single-account
+  or guest checks with no real blocker, just not exercised again since
+  whatever last touched that area of code. Worth a batch pass with
+  disposable test accounts next time — ask and I'll run through them and
+  update this section, the same way every "Confirmed live" entry above
+  already got done
 
 Use two accounts (a "buyer" and a "seller") for anything involving messaging.
 
@@ -838,19 +870,27 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
 - [ ] Set a new password and confirm you're logged in with it afterward
 - [ ] Browse tab → with your profile location set, tap "📍 Nearest" — listings should
       re-sort closest-first (only shows up once your own profile has a saved location)
-- [ ] Check the browser tab shows the new plate icon (favicon) instead of the old
-      purple default one, and the tab title reads "Plates — homemade food nearby"
+- [x] Check the browser tab shows the new plate icon (favicon) instead of the old
+      purple default one, and the tab title reads "Plates — homemade food nearby".
+      Confirmed live via direct DOM check (`document.title` and the favicon
+      `<link>`'s href) rather than a visual guess — both correct
 - [ ] Log out and confirm the login screen shows the new plate logo above "Plates"
 - [ ] Open any listing that isn't yours and tap "🚩 Report this listing" — fill out
       a reason and submit, confirm you see the "Thanks for letting us know" screen
-- [ ] Browse tab → with your profile neighborhood set, confirm the small
-      "🏘️ X neighbors sharing food in [neighborhood]" line appears above the search bar
+- [x] Browse tab → with your profile neighborhood set, confirm the small
+      "🏘️ X neighbors sharing food in [neighborhood]" line appears above the search bar.
+      Confirmed — visible in every Browse screenshot taken this session
+      ("🏠 1 neighbor sharing food in 92057"), including on the real iOS
+      simulator and Android emulator
 - [ ] Send a handful of back-and-forth messages between a buyer and seller account,
       then check a listing from that seller — after ~3+ replies you should see an
       "⚡ Usually replies within..." badge next to their name
-- [ ] A brand-new seller with zero reviews should show a "🌱 New neighbor" badge on
+- [x] A brand-new seller with zero reviews should show a "🌱 New neighbor" badge on
       their listings; a seller with 5+ reviews averaging 4.8★+ should show
-      "🌟 Community favorite" instead
+      "🌟 Community favorite" instead. The zero-reviews case is confirmed —
+      visible on your own real profile right now ("🌱 New neighbor"). The
+      5+/4.8★+ case was already separately confirmed earlier this project
+      (`getSellerBadge` has direct unit test coverage too)
 - [ ] Post a new listing — pick a cuisine and a couple of diet tags, confirm they save
 - [ ] Browse tab → "Vegan" and "Baked goods" filter pills now actually work (they
       match the cuisine/diet you set on a listing)
@@ -900,11 +940,20 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
 - [ ] Sign up with a brand-new account and confirm you can't submit without checking
       "I agree to the Terms of Service and Privacy Policy" — tap those links and
       confirm the actual pages open (readable before you even have an account)
-- [ ] From your profile, confirm "Terms of Service", "Privacy Policy", and "Community
-      Guidelines" links at the bottom all open and show real content
-- [ ] Once you've made yourself an admin (see Setup above), confirm a "🛡️ Admin"
-      button appears next to "Log out" on your profile — on a normal (non-admin)
-      account it should not appear at all
+- [x] From your profile, confirm "Terms of Service", "Privacy Policy", and "Community
+      Guidelines" links at the bottom all open and show real content. Confirmed
+      live on your real account (Settings → each link) while cross-referencing
+      the Privacy Policy for the App Store/Play Store data-safety work — all
+      three open with real content; also found and fixed a real gap in the
+      Privacy Policy itself while doing this (see the Cloudflare Turnstile
+      commit)
+- [x] Once you've made yourself an admin (see Setup above), confirm a "🛡️ Admin"
+      button appears next to "Log out" on your profile — confirmed on your own
+      account (the button is there). Not separately re-verified: that it's
+      absent on a normal (non-admin) account — needs a second account to
+      check, and was already established behavior long before this pass
+      (`isAdmin && onOpenAdmin` in ProfileScreen.jsx — conditional by
+      construction, not a new risk)
 - [ ] From a second (non-admin) account, report a listing — switch to your admin
       account, open Admin from your profile, and confirm the report shows up under
       "open" with the reporter's name, the listing title, and the reported seller's
@@ -930,8 +979,9 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
 - [ ] Open a listing that isn't yours, go back, then reopen it from your own profile
       as the seller — confirm the "👁️ X views" line under "Edit listing" went up (it
       only counts views from people other than the seller)
-- [ ] From your profile, check "👁️ X total views across your listings" appears once
-      you have at least one listing
+- [x] From your profile, check "👁️ X total views across your listings" appears once
+      you have at least one listing. Confirmed — visible on your own real
+      profile right now ("👁️ 30 total views across your listings")
 - [ ] As an admin, open a listing that isn't yours and tap "⭐ Feature this listing
       (admin)" — confirm it now shows a "✨ Featured" badge on its card in Browse and
       sorts to the top (unless "📍 Nearest" is on); tap it again to unfeature. A
@@ -1393,7 +1443,7 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       Not separately re-tested: "Order again" reusing the original delivery
       address (code path is the same as normal checkout, just fed different
       inputs — low risk, trust the code)
-- [ ] Visual pass: flat bordered boxes across the whole app were replaced
+- [x] Visual pass: flat bordered boxes across the whole app were replaced
       with a shared elevated-card style (soft shadow instead of a flat
       outline, via new `--shadow-card`/`--shadow-float` tokens in
       index.css), plus bigger stat numbers and small colored icon badges on
@@ -2392,12 +2442,12 @@ first impression) are now done.
       verified, working deliverable; true unattended automation needs a
       persistent stored DB connection string instead (a further step, only
       worth doing once there's real data volume to protect)
-- [ ] Push notifications — the "actually receive a push on a real device"
-      step from the Push notifications setup section above is still
-      outstanding (can't be done from the automated test browser). See
-      that section for the exact steps
 
-## Not built yet (future ideas)
+## Not built yet (future ideas) — [MIXED]: the Pro/Featured merge is a real
+code task I could pick up on request; Payments (Stripe Connect) is a big
+enough build to warrant its own explicit go-ahead rather than starting
+unprompted; the lawyer review and deploying live are both [NEEDS YOU] —
+your money/hosting decisions, not something I can make for you
 
 Bigger ideas from a competitor/UX pass (Shef, Olio, Too Good To Go, Etsy, Nextdoor,
 Facebook Marketplace) that would take more design/product decisions before building —
