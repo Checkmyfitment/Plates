@@ -74,6 +74,9 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: 'Work Sans', -apple-system, sans-serif;
+  /* viewport-fit=cover draws content under the status bar/notch — push it
+     back down so headers don't render underneath the clock/camera cutout */
+  padding-top: env(safe-area-inset-top);
 }
 
 .font-display {
