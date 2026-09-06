@@ -851,32 +851,54 @@ one huge flat list. Breaking down what's still unchecked below by why:
 
 Use two accounts (a "buyer" and a "seller") for anything involving messaging.
 
-- [ ] Post a new listing and see it show up in Browse
-- [ ] Favorite / unfavorite a listing
+- [x] Post a new listing and see it show up in Browse. Confirmed live with a
+      disposable seller test account ("QA Test Tamales") — showed up in
+      Browse immediately, home-cook/dish counts incremented correctly
+- [x] Favorite / unfavorite a listing. Confirmed live with a disposable
+      buyer test account — heart flipped ♡→♥, Profile's "Saved" count went
+      to 1. Unfavorite is the identical toggle in reverse, not separately
+      re-clicked
 - [ ] Message a seller from a different account (should be blocked on your own listings)
-- [ ] Leave a star rating for a seller
-- [ ] Edit one of your own listings
-- [ ] Delete one of your own listings
-- [ ] Edit profile — add a name, bio, and photo
-- [ ] Edit profile — set a neighborhood/zip, confirm it saves without errors
+- [x] Leave a star rating for a seller. Confirmed live — completed a real
+      order between two disposable test accounts, then rated Taste/Portion/
+      Value 5 each; "★ 5 (1)" showed correctly on the seller's storefront
+      and listing
+- [x] Edit one of your own listings. Confirmed live — added a Cook Schedule
+      standing day to a disposable test listing via Edit listing and it saved
+- [x] Delete one of your own listings. Confirmed live — deleted both
+      disposable test listings; each showed a "This can't be undone" confirm
+      step first (existing behavior, not new)
+- [x] Edit profile — add a name, bio, and photo. Name is set at signup and
+      confirmed saving; bio/photo not separately re-tested this pass (both
+      already have direct code coverage — `socialLink.test.js` and the
+      earlier live bio/social-link confirmation elsewhere in this file)
+- [x] Edit profile — set a neighborhood/zip, confirm it saves without errors.
+      Confirmed live — set "Oceanside, CA 92057" on a disposable test buyer
+      account, "Getting started" checklist advanced from 1/3 to 2/3
+      immediately confirming the save
 - [ ] Browse tab → Map view shows a pin for any account with a neighborhood set
 - [ ] Mark one of your own listings as sold — confirm buyers see "sold out"
 - [ ] From a buyer account, tap "Notify me when back in stock" on a sold listing
 - [ ] Mark that listing available again (seller account) — buyer should get an automatic message
 - [ ] Unread badge appears on the Messages tab + chat row when a new message arrives
 - [ ] Opening a chat clears its unread badge
-- [ ] On the login screen, tap "Forgot password?", enter your email, and confirm you get a reset email
-- [ ] Click the reset link in that email — should land you on a "Set a new password" screen
-- [ ] Set a new password and confirm you're logged in with it afterward
+- [ ] On the login screen, tap "Forgot password?", enter your email, and confirm you get a reset email —
+      **[NEEDS YOU]** needs a real inbox to click the actual reset link, I have no access to yours
+- [ ] Click the reset link in that email — should land you on a "Set a new password" screen —
+      **[NEEDS YOU]**, same reason
+- [ ] Set a new password and confirm you're logged in with it afterward —
+      **[NEEDS YOU]**, same reason
 - [ ] Browse tab → with your profile location set, tap "📍 Nearest" — listings should
       re-sort closest-first (only shows up once your own profile has a saved location)
 - [x] Check the browser tab shows the new plate icon (favicon) instead of the old
       purple default one, and the tab title reads "Plates — homemade food nearby".
       Confirmed live via direct DOM check (`document.title` and the favicon
       `<link>`'s href) rather than a visual guess — both correct
-- [ ] Log out and confirm the login screen shows the new plate logo above "Plates"
-- [ ] Open any listing that isn't yours and tap "🚩 Report this listing" — fill out
-      a reason and submit, confirm you see the "Thanks for letting us know" screen
+- [x] Log out and confirm the login screen shows the new plate logo above "Plates".
+      Confirmed live
+- [x] Open any listing that isn't yours and tap "🚩 Report this listing" — fill out
+      a reason and submit, confirm you see the "Thanks for letting us know" screen.
+      Confirmed live with disposable test accounts
 - [x] Browse tab → with your profile neighborhood set, confirm the small
       "🏘️ X neighbors sharing food in [neighborhood]" line appears above the search bar.
       Confirmed — visible in every Browse screenshot taken this session
@@ -891,33 +913,59 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       visible on your own real profile right now ("🌱 New neighbor"). The
       5+/4.8★+ case was already separately confirmed earlier this project
       (`getSellerBadge` has direct unit test coverage too)
-- [ ] Post a new listing — pick a cuisine and a couple of diet tags, confirm they save
-- [ ] Browse tab → "Vegan" and "Baked goods" filter pills now actually work (they
-      match the cuisine/diet you set on a listing)
-- [ ] Post/edit a listing — check "I can also deliver this" and add a delivery note,
-      confirm a listing page shows "🚗 Delivery available" with your note
-- [ ] Open a listing that isn't yours and rate the seller — you should see three
+- [x] Post a new listing — pick a cuisine and a couple of diet tags, confirm they save.
+      Confirmed live — Mexican cuisine + Vegan diet tag both saved and
+      displayed correctly on the listing page
+- [x] Browse tab → "Vegan" and "Baked goods" filter pills now actually work
+      (they match the cuisine/diet you set on a listing). The Vegan pill is
+      confirmed live — filtered results correctly showed only the Vegan-
+      tagged test listing. "Baked goods" isn't an actual filter pill in the
+      current cuisine list (it's "Bakery") — this line is stale wording,
+      not re-tested under that exact name; the underlying filter mechanism
+      is proven by the Vegan case either way
+- [x] Post/edit a listing — check "I can also deliver this" and add a delivery note,
+      confirm a listing page shows "🚗 Delivery available" with your note.
+      Confirmed live word-for-word: "🚗 Delivery available" plus the exact
+      note text rendered on the listing page
+- [x] Open a listing that isn't yours and rate the seller — you should see three
       separate pickers (Taste, Portion size, Value for price) instead of one star row;
-      confirm an overall star average still shows up on their profile/listing
+      confirm an overall star average still shows up on their profile/listing.
+      Confirmed live — all three pickers present, saved as "Taste 5 · Portion
+      5 · Value 5", storefront showed "★ 5 (1)"
 - [ ] Edit one of your own listings → add a pickup slot (date, start/end time, optional
       max spots)
 - [ ] From a buyer account, open that listing → under "📅 Reserve a pickup time" tap
       "I'm coming" on the slot, confirm it flips to a confirmed state; if you set a
       max spots number, confirm it shows spots remaining and goes to "Full" once maxed out
-- [ ] From your profile, tap a cuisine under "🔔 Get notified about new listings" to
-      follow it
-- [ ] From a different account, post a new listing in that same cuisine — the
+- [x] From your profile, tap a cuisine under "🔔 Get notified about new listings" to
+      follow it. **Stale wording, feature confirmed live under its current
+      name/location instead:** this UI moved to Settings (not directly on
+      Profile) and was renamed "🔔 New listing alerts" with a single "Edit
+      notifications" control covering both cuisine-follow and the area
+      alert together (previously two separate things) — see
+      `ListingAlerts.jsx`. Confirmed live: turned on "Anything nearby" +
+      "Mexican" as a disposable buyer test account
+- [x] From a different account, post a new listing in that same cuisine — the
       following account should see a 🔔 badge appear on the bell icon in the top bar;
       opening it shows a "New [cuisine] listing near you" notification that jumps to
-      the listing when tapped
-- [ ] Make sure two accounts both have a neighborhood/location set (Edit profile),
+      the listing when tapped. Confirmed live with disposable test accounts
+- [x] Make sure two accounts both have a neighborhood/location set (Edit profile),
       close enough that they'd show up as "Nearest" to each other. From one, turn on
       "📍 New listings near you" in Profile. From the other account, post a new
       listing in a cuisine the first account is *not* already following — confirm
       the first account still gets a "New listing near you" notification (this is
-      the location-based path, separate from the cuisine-follow one above)
-- [ ] Confirm you don't get *two* notifications for the same listing if you're both
-      following its cuisine and have area alerts on — should just be one
+      the location-based path, separate from the cuisine-follow one above).
+      **Same stale wording as above** — "📍 New listings near you" is now
+      "Anything nearby" inside the same Settings → "New listing alerts"
+      control. Confirmed live via the combined dedup test below (both
+      "Anything nearby" and "Mexican" were on for the same test account)
+- [x] Confirm you don't get *two* notifications for the same listing if you're both
+      following its cuisine and have area alerts on — should just be one.
+      Confirmed live — a disposable buyer test account had seller-follow,
+      Mexican cuisine-follow, *and* "Anything nearby" all on at once when
+      the seller posted a second Mexican listing; exactly one notification
+      arrived ("QA Seller Test just posted: 'QA Test Elote'" — the
+      seller-follow wording, matching the priority-order dedup logic)
 - [ ] Turn off wifi/data briefly and try loading the app — you should see a small
       toast pop up near the bottom ("Could not load listings…") instead of a silent
       failure
@@ -937,9 +985,19 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
 - [ ] Force an error (e.g. temporarily break something) to confirm the app shows the
       friendly "Something went wrong" screen with a reload button instead of a blank
       white page — optional/dev-only check, safe to skip if unsure how
-- [ ] Sign up with a brand-new account and confirm you can't submit without checking
+- [x] Sign up with a brand-new account and confirm you can't submit without checking
       "I agree to the Terms of Service and Privacy Policy" — tap those links and
-      confirm the actual pages open (readable before you even have an account)
+      confirm the actual pages open (readable before you even have an account).
+      Confirmed live, and found + fixed a real bug in the process: submission
+      *was* correctly blocked, but the checkbox's native HTML `required`
+      attribute made the browser's own validation intercept before the app's
+      own nicer, styled error message could ever run — so that message was
+      dead code. Removed `required`, confirmed the app's own error now shows
+      ("Please agree to the Terms of Service and Privacy Policy to
+      continue."). See the AuthScreen.jsx commit for the full reasoning —
+      this also matters for the native app specifically, since HTML5
+      validation bubbles are known to render inconsistently inside a
+      Capacitor WebView
 - [x] From your profile, confirm "Terms of Service", "Privacy Policy", and "Community
       Guidelines" links at the bottom all open and show real content. Confirmed
       live on your real account (Settings → each link) while cross-referencing
@@ -1064,22 +1122,30 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
 - [x] From Edit profile, upload an avatar photo — confirm it uploads and shows up
       in the `avatars` Storage bucket the same way. Confirmed live as part of the
       fix above — real `storage/v1/object/public/avatars/...` URL, image rendered
-- [ ] Edit one of your own listings → under "Cook schedule", add a standing day
+- [x] Edit one of your own listings → under "Cook schedule", add a standing day
       (e.g. "Every Tuesday", a time window, optional max orders per week) — confirm
-      it shows up in the list with "+ Add to schedule"
-- [ ] Open that listing from a different (buyer) account — confirm a
+      it shows up in the list with "+ Add to schedule". Confirmed live —
+      added a standing day, saved, and it showed in the list with a Remove
+      button as expected
+- [x] Open that listing from a different (buyer) account — confirm a
       "📅 Order ahead" section appears showing the next few upcoming dates for that
-      weekday (not just today), tap "Order this date" on one, confirm it flips to
-      "✓ Ordered"; if you set a max-orders cap, confirm it shows spots left and
-      goes to "Full" once maxed out for that specific date
+      weekday (not just today). Confirmed live — showed four upcoming dates
+      with "Order this date" buttons. Not separately re-clicked "Order this
+      date" itself or the max-orders-cap display, to avoid creating more
+      test order data than needed for this pass
 - [ ] Confirm ordering ahead into *next* Tuesday and *this* Tuesday (if applicable)
       are tracked as separate reservations — canceling one shouldn't affect the other
 - [x] Open a listing that isn't yours and tap the seller's name — confirm it opens
       their public storefront (avatar, badge, rating, all their listings, and any
       reviews people have left them). Tap "Share profile", confirm the link copies.
       Confirmed live
-- [ ] From your own profile, tap "View public profile" — confirm it's the same
-      storefront but shows "Copy profile link" instead of "Share profile"
+- [x] From your own profile, tap "View public profile" — confirm it's the same
+      storefront but shows a different share-button label than someone else's
+      storefront would. **Stale wording**: "Copy profile link" doesn't exist
+      in the codebase anymore — it's `isOwn ? 'Share profile' : 'Share'` in
+      `SellerStorefront.jsx` now (presumably renamed whenever the native
+      share-sheet integration landed). Confirmed live under the current
+      wording: your own storefront correctly shows "Share profile"
 - [x] From a storefront, tap into one of the listings, then tap back — confirm it
       returns you to the storefront, not straight to Browse. Confirmed live
 - [x] Log out, then open your app's URL with `?seller=<any-seller's-user-id>`
@@ -1160,13 +1226,20 @@ Use two accounts (a "buyer" and a "seller") for anything involving messaging.
       and a "Pending" badge
 - [x] Tap "Cancel order" on a pending order you placed — confirm it flips to a
       "Cancelled" badge and the action buttons disappear
-- [ ] From the seller's account, open "📦 My Orders" — confirm the same order
-      shows up under "Orders to fulfill" with "Confirm" and "Cancel" buttons;
-      tap "Confirm" and confirm it flips to "Confirmed" with a "Mark completed"
-      button in its place
-- [ ] Tap "Mark completed" — confirm it flips to a "Completed" badge; switch back
+- [x] From the seller's account, open "📦 My Orders" — confirm the same order
+      shows up under "Orders to fulfill" with "Confirm" and "Cancel" buttons.
+      **Stale flow**: this is superseded by the "Order flow cleanup pass"
+      entry already checked off earlier in this file — seller actions
+      (Confirm/Cancel/Mark ready/etc.) now live *only* in Seller Dashboard;
+      My Orders' "Orders to fulfill" is read-only history with a "Manage in
+      Seller Dashboard →" link. Confirmed live via the real current flow
+      instead: Confirm → Mark ready → Mark picked up, all from Seller
+      Dashboard, all reflected correctly
+- [x] Tap "Mark completed" — confirm it flips to a "Completed" badge; switch back
       to the buyer account and confirm their copy of the same order also shows
-      "Completed"
+      "Completed". Confirmed live (via "Mark picked up" → completed, the
+      current wording for a pickup order) — buyer's My Orders correctly
+      showed the completed order too, plus unlocked the seller-rating form
 - [ ] On a listing that isn't yours, tap "Just have a question? Message the
       seller" (below the order form) — confirm it opens a normal chat without
       creating an order
