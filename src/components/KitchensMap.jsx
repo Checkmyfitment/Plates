@@ -4,10 +4,18 @@ import Placeholder from './Placeholder'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-const LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+// CARTO's free "basemaps.cartocdn.com" tiles (used here previously) started
+// requiring an API key partway through this project's life — every tile
+// came back as a watermarked "API KEY REQUIRED" placeholder instead of an
+// actual map. Standard OpenStreetMap tiles are the genuinely free,
+// no-signup fallback (the same tile server Leaflet's own docs default to),
+// so that's what actually renders now. OSM only ships one light-toned
+// tileset — there's no separate "dark" set the way CARTO offered — so dark
+// mode fakes it with a CSS filter on the tile images instead (a standard,
+// widely-used Leaflet trick), rather than dropping the auto-switching
+// dark map entirely.
+const TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
 // Tracks the app's resolved light/dark mode (system preference, overridden
 // by the in-app toggle's data-theme attribute) so the tile layer — the one
@@ -99,7 +107,17 @@ export default function KitchensMap({ listings, onSelect }) {
       style={{ height: '420px', width: '100%', borderRadius: '16px' }}
       scrollWheelZoom={false}
     >
-      <TileLayer attribution={TILE_ATTRIBUTION} url={isDark ? DARK_TILES : LIGHT_TILES} />
+      {/* Keyed on isDark so toggling Appearance while the map is already open
+          fully recreates the tile layer — Leaflet only applies a changed
+          className to newly-created tile images, not ones already sitting
+          in the DOM, so without this the filter would only "catch up" once
+          panning/zooming happened to load fresh tiles. */}
+      <TileLayer
+        key={isDark ? 'dark' : 'light'}
+        attribution={TILE_ATTRIBUTION}
+        url={TILES}
+        className={isDark ? 'plates-map-tiles-dark' : ''}
+      />
       {sellers.map((s) => (
         <Marker key={s.sellerId} position={[s.lat, s.lng]} icon={sellerIcon(s)}>
           <Popup>

@@ -151,6 +151,16 @@ body {
   font-family: inherit;
 }
 
+/* OpenStreetMap only ships one (light) tileset — this fakes a dark map
+   from the same tiles instead of needing a separate dark tile source.
+   Inverting flips light roads/dark land to dark roads/light land, then
+   hue-rotate corrects the resulting color-inverted hues (water, parks)
+   back to something natural-looking. Markers are separate DOM elements
+   (not part of the tile images), so they're untouched by this filter. */
+.plates-map-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9);
+}
+
 /* Seller marker: a photo/initial medallion on a drop-pin tail, replacing
    Leaflet's default blue teardrop so the map reads as part of the app
    rather than a bolted-on third-party widget. */
