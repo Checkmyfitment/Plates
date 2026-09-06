@@ -9,8 +9,12 @@ const tabs = [
 export default function BottomNav({ active, onChange, unreadCount = 0, avatarUrl, initials = '?' }) {
   return (
     <div
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[416px] flex justify-around rounded-2xl border bg-[var(--card)] py-2 z-20"
-      style={{ borderColor: 'var(--rule)', boxShadow: 'var(--shadow-float)' }}
+      className="fixed left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[416px] flex justify-around rounded-2xl border bg-[var(--card)] py-2 z-20"
+      style={{
+        borderColor: 'var(--rule)',
+        boxShadow: 'var(--shadow-float)',
+        bottom: 'calc(1rem + env(safe-area-inset-bottom))',
+      }}
     >
       {tabs.map((t) => {
         const isActive = active === t.id
