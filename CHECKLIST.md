@@ -2139,6 +2139,28 @@ first impression) are now done.
       calling their service and produces a token that enables the Sign up
       button — didn't complete an actual signup, since that would just
       create another test account to later clean up
+- [x] A real, working database backup script — see
+      [BACKUP_RESTORE.md](BACKUP_RESTORE.md) for the full writeup.
+      `./scripts/backup-db.sh` takes a genuine schema+data backup of the
+      live database (including real accounts in `auth.users`) to
+      `~/plates-backups/`, using `pg_dump` directly (installed via
+      Postgres.app, no Docker needed) against a short-lived connection the
+      already-authenticated Supabase CLI generates — never touches the
+      actual database password. Verified live: ran it for real, confirmed
+      both dumps contain real recognizable data. Attempted full unattended
+      weekly automation via `launchd` and hit two genuine, sequential
+      macOS security walls (this repo lives under the TCC-protected
+      `~/Downloads`, and separately the Supabase CLI's Keychain-stored
+      login token isn't accessible to a background `launchd` process) —
+      documented honestly in BACKUP_RESTORE.md rather than leaving a
+      silently-hanging scheduled job installed. The manual script is the
+      verified, working deliverable; true unattended automation needs a
+      persistent stored DB connection string instead (a further step, only
+      worth doing once there's real data volume to protect)
+- [ ] Push notifications — the "actually receive a push on a real device"
+      step from the Push notifications setup section above is still
+      outstanding (can't be done from the automated test browser). See
+      that section for the exact steps
 
 ## Not built yet (future ideas)
 
