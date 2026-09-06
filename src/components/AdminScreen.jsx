@@ -1806,7 +1806,37 @@ function ActivityPanel() {
   )
 }
 
-const TAB_COUNT_KEYS = { reports: 'reports', promotions: 'promotions', errors: 'errors' }
+// grouped by function instead of one flat, endlessly-scrolling row of 10
+// tabs (the previous layout cut off at the screen edge with no hint there
+// was more) -- wraps to as many rows as it needs, so every tab is visible
+// at once with no horizontal scrolling
+const ADMIN_GROUPS = [
+  {
+    label: 'Moderation',
+    tabs: [
+      { key: 'reports', label: 'Reports', icon: '🚩' },
+      { key: 'users', label: 'Users', icon: '👥' },
+      { key: 'listings', label: 'Listings', icon: '🍽️' },
+      { key: 'stores', label: 'Stores', icon: '🏪' },
+    ],
+  },
+  {
+    label: 'Growth',
+    tabs: [
+      { key: 'promotions', label: 'Promotions', icon: '🌟' },
+      { key: 'outreach', label: 'Outreach', icon: '📋' },
+      { key: 'broadcast', label: 'Broadcast', icon: '📢' },
+    ],
+  },
+  {
+    label: 'Insights',
+    tabs: [
+      { key: 'stats', label: 'Stats', icon: '📊' },
+      { key: 'errors', label: 'Errors', icon: '🐛' },
+      { key: 'activity', label: 'Activity', icon: '📜' },
+    ],
+  },
+]
 
 export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onEditListing }) {
   const [section, setSection] = useState('reports')
@@ -1836,38 +1866,49 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onE
         </h2>
       </div>
 
-      <div className="px-5 flex gap-2 mb-1 overflow-x-auto pb-1">
-        {['reports', 'users', 'listings', 'stores', 'promotions', 'outreach', 'broadcast', 'stats', 'errors', 'activity'].map((s) => {
-          const count = counts[TAB_COUNT_KEYS[s]] ?? 0
-          return (
-            <button
-              key={s}
-              onClick={() => setSection(s)}
-              className="pressable shrink-0 text-sm px-4 py-2 rounded-xl border capitalize font-medium flex items-center gap-1.5"
-              style={{
-                background: section === s ? 'var(--forest)' : 'transparent',
-                color: section === s ? 'white' : 'var(--ink-soft)',
-                borderColor: section === s ? 'var(--forest)' : 'var(--rule)',
-              }}
-            >
-              {s}
-              {count > 0 && (
-                <span
-                  className="text-[10px] leading-none px-1.5 py-0.5 rounded-full font-bold"
-                  style={{
-                    background: section === s ? 'rgba(255,255,255,0.25)' : 'var(--plum)',
-                    color: section === s ? 'white' : 'white',
-                  }}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          )
-        })}
+      <div className="px-5 flex flex-col gap-2.5 mb-2">
+        {ADMIN_GROUPS.map((group) => (
+          <div key={group.label}>
+            <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: 'var(--ink-soft)', opacity: 0.7 }}>
+              {group.label}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {group.tabs.map((t) => {
+                const count = counts[t.key] ?? 0
+                const active = section === t.key
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setSection(t.key)}
+                    className="pressable text-xs px-3 py-1.5 rounded-full border font-medium flex items-center gap-1.5"
+                    style={{
+                      background: active ? 'var(--forest)' : 'transparent',
+                      color: active ? 'white' : 'var(--ink-soft)',
+                      borderColor: active ? 'var(--forest)' : 'var(--rule)',
+                    }}
+                  >
+                    <span aria-hidden="true">{t.icon}</span>
+                    {t.label}
+                    {count > 0 && (
+                      <span
+                        className="text-[10px] leading-none px-1.5 py-0.5 rounded-full font-bold"
+                        style={{
+                          background: active ? 'rgba(255,255,255,0.25)' : 'var(--plum)',
+                          color: 'white',
+                        }}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="px-5 pt-3">
+      <div className="px-5 pt-1">
         {section === 'reports' && <ReportsPanel adminId={adminId} onSelfProfileChanged={onSelfProfileChanged} />}
         {section === 'users' && <UsersPanel adminId={adminId} onSelfProfileChanged={onSelfProfileChanged} />}
         {section === 'listings' && <ListingsPanel onEditListing={onEditListing} />}
