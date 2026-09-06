@@ -1,14 +1,9 @@
 import ListingCard from './ListingCard'
 import Placeholder from './Placeholder'
-import ListingAlerts from './ListingAlerts'
 import InviteFriends from './InviteFriends'
-import PushToggle from './PushToggle'
-import PhoneVerification from './PhoneVerification'
 import FollowedKitchens from './FollowedKitchens'
 import MySubscriptions from './MySubscriptions'
-import ThemeToggle from './ThemeToggle'
 import GettingStartedChecklist from './GettingStartedChecklist'
-import AccountSecurity from './AccountSecurity'
 import { getSellerBadge } from '../lib/badges'
 import { formatSocialLinkLabel } from '../lib/socialLink'
 
@@ -21,11 +16,10 @@ export default function ProfileScreen({
   sellerRating,
   sellerTrust,
   onSelect,
-  onLogout,
   onEditProfile,
   isAdmin,
   onOpenAdmin,
-  onOpenLegal,
+  onOpenSettings,
   onOpenStorefront,
   onOpenSeller,
   onOpenOrders,
@@ -34,7 +28,6 @@ export default function ProfileScreen({
   onGoBrowse,
   hasEverOrdered,
   signupIntent,
-  onProfileRefresh,
 }) {
   // null covers every account that signed up before this choice existed —
   // treated the same as 'both' so nobody loses a checklist they already had
@@ -95,13 +88,14 @@ export default function ProfileScreen({
               🛡️ Admin
             </button>
           )}
-          {onLogout && (
+          {onOpenSettings && (
             <button
-              onClick={onLogout}
+              onClick={onOpenSettings}
+              aria-label="Settings"
               className="pressable text-xs px-3 py-1.5 rounded-full border"
               style={{ borderColor: 'var(--rule)', color: 'var(--ink-soft)' }}
             >
-              Log out
+              ⚙️ Settings
             </button>
           )}
         </div>
@@ -124,12 +118,12 @@ export default function ProfileScreen({
         </a>
       )}
 
-      <div className="flex gap-2 mb-5">
+      <div className="flex flex-wrap gap-2 mb-5">
         {onEditProfile && (
           <button
             onClick={onEditProfile}
-            className="pressable text-xs px-3 py-1.5 rounded-full border"
-            style={{ borderColor: 'var(--rule)', color: 'var(--ink)' }}
+            className="pressable text-xs font-semibold px-3 py-1.5 rounded-full border-2"
+            style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
           >
             Edit profile
           </button>
@@ -137,8 +131,8 @@ export default function ProfileScreen({
         {onOpenStorefront && (
           <button
             onClick={onOpenStorefront}
-            className="pressable text-xs px-3 py-1.5 rounded-full border"
-            style={{ borderColor: 'var(--rule)', color: 'var(--ink)' }}
+            className="pressable text-xs font-semibold px-3 py-1.5 rounded-full border-2"
+            style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
           >
             View public profile
           </button>
@@ -146,8 +140,8 @@ export default function ProfileScreen({
         {onOpenOrders && (
           <button
             onClick={onOpenOrders}
-            className="pressable text-xs px-3 py-1.5 rounded-full border"
-            style={{ borderColor: 'var(--rule)', color: 'var(--ink)' }}
+            className="pressable text-xs font-semibold px-3 py-1.5 rounded-full border-2"
+            style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
           >
             📦 My Orders
           </button>
@@ -155,8 +149,8 @@ export default function ProfileScreen({
         {onOpenDashboard && yourListings.length > 0 && (
           <button
             onClick={onOpenDashboard}
-            className="pressable text-xs px-3 py-1.5 rounded-full border"
-            style={{ borderColor: 'var(--rule)', color: 'var(--ink)' }}
+            className="pressable text-xs font-semibold px-3 py-1.5 rounded-full border-2"
+            style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
           >
             📊 Seller Dashboard
           </button>
@@ -227,17 +221,7 @@ export default function ProfileScreen({
         </p>
       )}
 
-      <ThemeToggle />
-
-      {userId && <AccountSecurity email={email} />}
-
       {userId && <InviteFriends userId={userId} />}
-
-      {userId && <PhoneVerification phoneVerified={!!user.phoneVerified} onVerified={onProfileRefresh} />}
-
-      {userId && <PushToggle userId={userId} />}
-
-      {userId && <ListingAlerts userId={userId} />}
 
       {userId && onOpenSeller && <FollowedKitchens userId={userId} onOpenSeller={onOpenSeller} />}
       {userId && onSelect && (
@@ -254,23 +238,6 @@ export default function ProfileScreen({
           {yourListings.map((l) => (
             <ListingCard key={l.id} listing={l} onSelect={onSelect} />
           ))}
-        </div>
-      )}
-
-      {onOpenLegal && (
-        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-6 pt-4 border-t" style={{ borderColor: 'var(--rule)' }}>
-          <button onClick={() => onOpenLegal('terms')} className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-            Terms of Service
-          </button>
-          <button onClick={() => onOpenLegal('privacy')} className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-            Privacy Policy
-          </button>
-          <button onClick={() => onOpenLegal('guidelines')} className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-            Community Guidelines
-          </button>
-          <button onClick={() => onOpenLegal('states')} className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-            Cottage Food Laws by State
-          </button>
         </div>
       )}
     </div>

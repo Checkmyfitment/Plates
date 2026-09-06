@@ -44,6 +44,7 @@ const LegalScreen = lazy(() => import('./components/LegalScreen'))
 const SellerStorefront = lazy(() => import('./components/SellerStorefront'))
 const OrdersScreen = lazy(() => import('./components/OrdersScreen'))
 const SellerDashboard = lazy(() => import('./components/SellerDashboard'))
+const SettingsScreen = lazy(() => import('./components/SettingsScreen'))
 
 const screenFallback = (
   <div className="px-5 pt-6">
@@ -72,6 +73,7 @@ export default function App() {
   const [viewingSellerId, setViewingSellerId] = useState(null)
   const [showOrders, setShowOrders] = useState(false)
   const [showDashboard, setShowDashboard] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [listings, setListings] = useState([])
   const [listingsLoading, setListingsLoading] = useState(true)
   const [favoriteIds, setFavoriteIds] = useState(new Set())
@@ -355,6 +357,7 @@ export default function App() {
     setActiveChatId(null)
     setShowOrders(false)
     setShowDashboard(false)
+    setShowSettings(false)
     setTab(t)
   }
 
@@ -368,6 +371,7 @@ export default function App() {
     setActiveChatId(null)
     setShowOrders(false)
     setShowDashboard(false)
+    setShowSettings(false)
     setShowAdmin(true)
   }
 
@@ -381,6 +385,7 @@ export default function App() {
     setActiveChatId(null)
     setShowOrders(false)
     setShowDashboard(false)
+    setShowSettings(false)
     setLegalDoc(doc)
   }
 
@@ -394,6 +399,7 @@ export default function App() {
     setActiveChatId(null)
     setShowOrders(false)
     setShowDashboard(false)
+    setShowSettings(false)
     setViewingSellerId(sellerId)
   }
 
@@ -407,6 +413,7 @@ export default function App() {
     setViewingSellerId(null)
     setActiveChatId(null)
     setShowDashboard(false)
+    setShowSettings(false)
     setShowOrders(true)
   }
 
@@ -420,7 +427,22 @@ export default function App() {
     setViewingSellerId(null)
     setActiveChatId(null)
     setShowOrders(false)
+    setShowSettings(false)
     setShowDashboard(true)
+  }
+
+  const openSettings = () => {
+    setSelected(null)
+    setEditingListing(null)
+    setEditingProfile(false)
+    setShowNotifications(false)
+    setShowAdmin(false)
+    setLegalDoc(null)
+    setViewingSellerId(null)
+    setActiveChatId(null)
+    setShowOrders(false)
+    setShowDashboard(false)
+    setShowSettings(true)
   }
 
   const openNotifications = () => {
@@ -430,6 +452,7 @@ export default function App() {
     setActiveChatId(null)
     setShowOrders(false)
     setShowDashboard(false)
+    setShowSettings(false)
     setShowNotifications(true)
     const hadUnread = notifications.some((n) => !n.read)
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
@@ -821,6 +844,20 @@ export default function App() {
         />
       </Suspense>
     )
+  } else if (session && showSettings) {
+    body = (
+      <Suspense fallback={screenFallback}>
+        <SettingsScreen
+          userId={session.user.id}
+          email={session.user.email}
+          phoneVerified={!!profile?.phone_verified}
+          onProfileRefresh={refreshProfile}
+          onBack={() => setShowSettings(false)}
+          onLogout={signOut}
+          onOpenLegal={openLegal}
+        />
+      </Suspense>
+    )
   } else if (session && legalDoc) {
     body = (
       <Suspense fallback={screenFallback}>
@@ -963,11 +1000,10 @@ export default function App() {
         sellerRating={sellerRatings.get(session.user.id)}
         sellerTrust={sellerTrustStats.get(session.user.id)}
         onSelect={setSelected}
-        onLogout={signOut}
         onEditProfile={() => setEditingProfile(true)}
         isAdmin={!!profile?.is_admin}
         onOpenAdmin={openAdmin}
-        onOpenLegal={openLegal}
+        onOpenSettings={openSettings}
         onOpenStorefront={() => openSeller(session.user.id)}
         onOpenSeller={openSeller}
         onOpenOrders={openOrders}
@@ -975,7 +1011,6 @@ export default function App() {
         onGoToSell={() => setTab('post')}
         onGoBrowse={() => setTab('browse')}
         hasEverOrdered={hasEverOrdered}
-        onProfileRefresh={refreshProfile}
       />
     )
   } else {
@@ -997,7 +1032,7 @@ export default function App() {
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
-      {!selected && !editingListing && !editingProfile && !showNotifications && !showAdmin && !showOrders && !showDashboard && !legalDoc && !viewingSellerId && !(tab === 'messages' && activeChat) && (
+      {!selected && !editingListing && !editingProfile && !showNotifications && !showAdmin && !showOrders && !showDashboard && !showSettings && !legalDoc && !viewingSellerId && !(tab === 'messages' && activeChat) && (
         <TopBar
           title={titles[tab]}
           avatarUrl={profile?.avatar_url ?? null}
@@ -1010,7 +1045,7 @@ export default function App() {
       )}
       <div className="flex-1 overflow-y-auto pb-24">
         <div
-          key={`${tab}-${selected?.id ?? ''}-${editingListing?.id ?? ''}-${editingProfile}-${showNotifications}-${showAdmin}-${showOrders}-${showDashboard}-${legalDoc ?? ''}-${viewingSellerId ?? ''}-${activeChatId ?? ''}`}
+          key={`${tab}-${selected?.id ?? ''}-${editingListing?.id ?? ''}-${editingProfile}-${showNotifications}-${showAdmin}-${showOrders}-${showDashboard}-${showSettings}-${legalDoc ?? ''}-${viewingSellerId ?? ''}-${activeChatId ?? ''}`}
           className="screen-transition"
         >
           {body}
