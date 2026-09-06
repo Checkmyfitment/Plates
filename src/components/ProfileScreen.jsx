@@ -1,9 +1,8 @@
 import ListingCard from './ListingCard'
 import Placeholder from './Placeholder'
-import CuisineAlerts from './CuisineAlerts'
+import ListingAlerts from './ListingAlerts'
 import InviteFriends from './InviteFriends'
 import PushToggle from './PushToggle'
-import AreaAlertsToggle from './AreaAlertsToggle'
 import PhoneVerification from './PhoneVerification'
 import FollowedKitchens from './FollowedKitchens'
 import MySubscriptions from './MySubscriptions'
@@ -238,9 +237,7 @@ export default function ProfileScreen({
 
       {userId && <PushToggle userId={userId} />}
 
-      {userId && <AreaAlertsToggle userId={userId} />}
-
-      {userId && <CuisineAlerts userId={userId} />}
+      {userId && <ListingAlerts userId={userId} />}
 
       {userId && onOpenSeller && <FollowedKitchens userId={userId} onOpenSeller={onOpenSeller} />}
       {userId && onSelect && (
