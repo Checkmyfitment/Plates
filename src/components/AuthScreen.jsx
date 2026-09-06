@@ -197,7 +197,6 @@ export default function AuthScreen({ onClose, reason }) {
               checked={agreed}
               onChange={(e) => setAgreed(e.target.checked)}
               className="mt-0.5"
-              required
             />
             <span>
               I'm 18 or older, and I agree to the{' '}
