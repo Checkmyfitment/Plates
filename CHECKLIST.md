@@ -716,14 +716,24 @@ ever be you) or your own decisions (pricing, support contact, hosting):
       ready — just ask, and worth re-checking each store's own current
       exact spec at submission time since Apple in particular tends to
       shuffle required sizes as new device lines ship
-- [ ] Age rating questionnaire (both stores) and Play Console's "Data
-      Safety" declaration — both are content/policy forms filled out in
-      each console at submission time, not code. Worth having a plain-
-      English answer ready ahead of time for what Plates actually
-      collects: account email, an optional profile photo, a
-      user-typed neighborhood/zip (geocoded via Nominatim, not device
-      GPS), and listing/order data — no advertising ID, no third-party
-      tracking SDKs
+- [x] Apple's App Privacy / Google Play's Data Safety forms — both are
+      content/policy forms filled out in each console at submission time,
+      not code, but the actual answers are now fully worked out and
+      verified against the codebase (not just the Privacy Policy text):
+      [APP_STORE_PRIVACY.md](APP_STORE_PRIVACY.md) has a category-by-
+      category table for each store's exact questionnaire, a plain-English
+      summary, and a maintenance note for what to update when payments/
+      phone verification/IAP eventually ship. Filling out the real forms
+      at submission time is now a lookup against that table, not a
+      research project. Also found and fixed a real gap while
+      cross-referencing: the Privacy Policy listed Supabase/Nominatim/
+      MyMemory as processors but not Cloudflare Turnstile (the signup
+      bot-check, live since the abuse-protection work) — added it
+- [ ] Age rating questionnaire (both stores) — a content/policy form only,
+      nothing to prepare in advance the way Data Safety needed; Plates has
+      no age-restricted content (violence, gambling, etc.), so this should
+      be a quick "no mature content" pass through each store's
+      questionnaire at submission time
 
 ## Phone verification setup (optional — do this whenever you're ready)
 
