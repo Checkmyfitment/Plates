@@ -586,10 +586,12 @@ of the most commonly enforced app store rejection reasons there is.
       (manual billing on web, IAP on mobile) land in the same place
 - [ ] App Store Review Guideline 4.2 risk: Apple has gotten stricter about
       rejecting apps that are "just a wrapped website" with nothing native
-      about them. Worth leaning on native-feeling things Plates already
-      has the plumbing for — real push notifications, camera-based photo
-      upload, the native share sheet (`lib/share.js`) — once this is
-      actually running in Xcode/Android Studio
+      about them. Real push notifications (APNs/FCM, not just Web Push) are
+      now genuinely built — see "Native push" above — which is real
+      progress against this risk, on top of the camera-based photo upload
+      and native share sheet (`lib/share.js`) Plates already had. Still
+      worth a fresh look at the whole app once push is actually delivering
+      end-to-end on both platforms, to see if anything else feels thin
 - [ ] Guideline 5.1.1(v) (Apple requires in-app account deletion, not just
       an email request) — already satisfied, "Delete my account" already
       exists in Profile → Account & security
@@ -660,6 +662,68 @@ of the most commonly enforced app store rejection reasons there is.
       in the launcher dock, and the status bar clock/icons sit cleanly
       above the header with no overlap — no Android-specific regressions
       from either fix
+- [x] `ITSAppUsesNonExemptEncryption = false` set in `Info.plist` — Plates
+      only uses standard HTTPS/TLS, no proprietary encryption, so this is
+      accurate and skips App Store Connect's manual export-compliance
+      question on every future build upload
+- [x] Privacy manifest check — Apple requires a `PrivacyInfo.xcprivacy` for
+      any SDK touching a "required reason" API (things like UserDefaults,
+      disk space, file timestamps). Confirmed Capacitor already ships its
+      own for both `Capacitor.framework` and `Cordova.framework` — nothing
+      to add there. Once Firebase gets added for push (see above), its
+      SDKs ship their own manifests too; Xcode will warn at archive time if
+      anything's ever missing one, so this isn't a silent failure mode
+
+### What's left before either store submission is possible
+
+Everything code/config-level that doesn't need your own accounts is done —
+icons, safe-area/status-bar fixes, native push groundwork, entitlements,
+export compliance, permissions. What's left genuinely can't be done by me,
+either because it needs your own identity (Apple/Google enrollment can only
+ever be you) or your own decisions (pricing, support contact, hosting):
+
+- [ ] **Deploy the app somewhere public first.** A few things below need a
+      real, live URL and don't make sense before that: `SITE_URL` in
+      `lib/siteInfo.js` is still the `yourplatesapp.com` placeholder, and
+      until it's a real deployed address, App Store Connect's required
+      **Support URL** field and Play Console's required **Privacy Policy
+      URL** field (both must point to a real, reachable page — an email
+      address alone doesn't satisfy either) have nothing to point at. This
+      was already a "Not built yet" item at the bottom of this file — worth
+      pulling forward, since it's now the actual next blocker for
+      everything store-related, not just a someday task
+- [ ] Once deployed, replace the three placeholders in
+      [src/lib/siteInfo.js](src/lib/siteInfo.js): `SUPPORT_EMAIL`,
+      `SITE_URL`, and `TURNSTILE_SITE_KEY` (this last one already has its
+      own setup note earlier in this file, under abuse protection)
+- [ ] Apple Developer Program enrollment + Google Play Console account (see
+      above) — has to be your identity/payment
+- [ ] Pick the real, final bundle ID / package name (currently
+      `com.yourplatesapp.app` on both platforms — a placeholder from when
+      the Capacitor wrapper was first scaffolded) and update it in three
+      places that all have to match exactly: `capacitor.config.json`
+      (`appId`), the iOS project (`PRODUCT_BUNDLE_IDENTIFIER`, two places
+      in `project.pbxproj`), and the Android project (`namespace` +
+      `applicationId`, two places in `android/app/build.gradle`) — this is
+      the one that becomes a one-way door the moment you register the app
+      in either console, so it's worth getting right before that step, not
+      after
+- [ ] Screenshots for both store listings — Apple currently requires at
+      least the largest iPhone display size (6.9", 1320×2868) and Play
+      Console wants phone screenshots too (1080×1920 or similar). Both
+      simulators are proven working end-to-end now (see the icon/status-bar
+      verification above), so these are quick to generate once you're
+      ready — just ask, and worth re-checking each store's own current
+      exact spec at submission time since Apple in particular tends to
+      shuffle required sizes as new device lines ship
+- [ ] Age rating questionnaire (both stores) and Play Console's "Data
+      Safety" declaration — both are content/policy forms filled out in
+      each console at submission time, not code. Worth having a plain-
+      English answer ready ahead of time for what Plates actually
+      collects: account email, an optional profile photo, a
+      user-typed neighborhood/zip (geocoded via Nominatim, not device
+      GPS), and listing/order data — no advertising ID, no third-party
+      tracking SDKs
 
 ## Phone verification setup (optional — do this whenever you're ready)
 
@@ -2352,4 +2416,6 @@ noted here so they're not lost, not started yet:
       past friends/family — they're a reasonable starting draft, not legal advice,
       and cottage food law varies a lot by state/county. [LEGAL_REVIEW_BRIEF.md](LEGAL_REVIEW_BRIEF.md)
       now exists to make that first conversation faster
-- [ ] Deploy live
+- [ ] Deploy live — now the actual next blocker for the mobile app store
+      work too, not just a someday task; see "What's left before either
+      store submission is possible" under "Mobile app store setup" above
