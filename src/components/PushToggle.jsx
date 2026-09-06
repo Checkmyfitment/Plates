@@ -1,15 +1,29 @@
 import { useEffect, useState } from 'react'
 import { isPushSupported, getCurrentSubscription, subscribeToPush, unsubscribeFromPush } from '../lib/push'
+import {
+  isNativePushSupported,
+  getNativePushPermissionStatus,
+  registerNativePush,
+  unregisterNativePush,
+} from '../lib/nativePush'
 import { useToast } from '../context/ToastContext'
 
 export default function PushToggle({ userId }) {
   const toast = useToast()
+  const native = isNativePushSupported()
   const [supported, setSupported] = useState(true)
   const [subscribed, setSubscribed] = useState(false)
   const [checking, setChecking] = useState(true)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
+    if (native) {
+      getNativePushPermissionStatus()
+        .then((status) => setSubscribed(status === 'granted'))
+        .catch((err) => console.error('Failed to check native push permission', err))
+        .finally(() => setChecking(false))
+      return
+    }
     if (!isPushSupported()) {
       setSupported(false)
       setChecking(false)
@@ -19,12 +33,22 @@ export default function PushToggle({ userId }) {
       .then((sub) => setSubscribed(!!sub))
       .catch((err) => console.error('Failed to check push subscription', err))
       .finally(() => setChecking(false))
-  }, [])
+  }, [native])
 
   const toggle = async () => {
     setBusy(true)
     try {
-      if (subscribed) {
+      if (native) {
+        if (subscribed) {
+          await unregisterNativePush(userId)
+          setSubscribed(false)
+          toast.success('Push notifications turned off.')
+        } else {
+          await registerNativePush(userId)
+          setSubscribed(true)
+          toast.success('Push notifications turned on.')
+        }
+      } else if (subscribed) {
         await unsubscribeFromPush()
         setSubscribed(false)
         toast.success('Push notifications turned off.')
@@ -41,7 +65,8 @@ export default function PushToggle({ userId }) {
     }
   }
 
-  if (!supported || checking) return null
+  if (!native && !supported) return null
+  if (checking) return null
 
   return (
     <div className="card-elevated p-3 mb-3">

@@ -38,4 +38,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required on Android 13+ (API 33) to show push notifications at all —
+         the OS treats it as a runtime-requested permission, same as camera/
+         location, but it still has to be declared here too. Requested at
+         runtime by @capacitor/push-notifications' requestPermissions(). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
