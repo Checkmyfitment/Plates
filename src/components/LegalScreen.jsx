@@ -232,6 +232,10 @@ function Privacy() {
             <strong>MyMemory Translated</strong> — only when you tap "Translate" on a chat message,
             that message's text is sent to their API to translate it.
           </li>
+          <li>
+            <strong>Cloudflare Turnstile</strong> — runs a bot-check when you sign up, using
+            standard device/browser signals (not your personal data) to tell a human from a bot.
+          </li>
         </ul>
       </Section>
       <Section title="4. Location data">
