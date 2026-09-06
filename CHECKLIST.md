@@ -569,6 +569,13 @@ of the most commonly enforced app store rejection reasons there is.
       found the real Plates icon (not the old default) on the springboard,
       and launched the app itself into the onboarding screen showing the
       same icon
+- [x] Same two fixes (icon + status-bar overlap) re-verified on the
+      `Plates_Test` Android emulator (Pixel 7, API 36) — rebuilt with
+      `./gradlew assembleDebug`, `adb install -r`'d, and screenshotted via
+      `adb shell screencap`: the real icon shows correctly circle-masked
+      in the launcher dock, and the status bar clock/icons sit cleanly
+      above the header with no overlap — no Android-specific regressions
+      from either fix
 
 ## Phone verification setup (optional — do this whenever you're ready)
 
