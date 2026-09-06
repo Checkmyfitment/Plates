@@ -513,13 +513,9 @@ of the most commonly enforced app store rejection reasons there is.
       `ic_launcher_foreground.png` (padded/centered, transparent
       background) at all 5 densities, with `ic_launcher_background.xml`
       set to the real brand color `#1D3128`. `npm run cap:sync` and an
-      `xcodebuild` rebuild both ran clean afterward. Still needs: your
-      one-time `sudo xcode-select -s /Applications/Xcode.app/Contents/
-      Developer` (the automated simulator tool reports Xcode as
-      unselected even though `xcode-select -p` already shows the right
-      path — a real quirk, not something I can run myself) so I can
-      confirm on-screen that the new icon actually renders on the
-      springboard, not just that the right files are in place
+      `xcodebuild` rebuild both ran clean afterward, and confirmed
+      on-screen on the iPhone 17 simulator (see below) — the real icon
+      shows on the springboard and in-app, no leftover default logo
 - [ ] **Push notifications are wired for the web, not for the native app
       — this needs real work before "real push" is actually done on
       iOS/Android.** `src/lib/push.js` uses the standard browser Push API
@@ -558,6 +554,21 @@ of the most commonly enforced app store rejection reasons there is.
       missing `NSCameraUsageDescription`-style keys, though that's worth
       an empirical double-check on a real device since WKWebView file-
       input permission prompts can be finicky
+- [x] Status bar was overlapping the app header — caught live on the
+      iPhone 17 simulator once `sudo xcode-select` was fixed and I could
+      actually see the app on-screen: the clock was drawn directly on
+      top of the "Plates" wordmark. `viewport-fit=cover` tells the
+      WebView to draw edge-to-edge, but nothing was padding content back
+      down for it — the app's scroll container is a nested `<div>`, not
+      the page's own root scroll view, so WKWebView's automatic inset
+      handling never kicked in the way it would on a plain page. Fixed
+      with `padding-top: env(safe-area-inset-top)` on `body`
+      ([index.css](src/index.css)); rebuilt and confirmed fixed on the
+      same simulator
+- [x] New app icon confirmed on-screen — booted the iPhone 17 simulator,
+      found the real Plates icon (not the old default) on the springboard,
+      and launched the app itself into the onboarding screen showing the
+      same icon
 
 ## Phone verification setup (optional — do this whenever you're ready)
 
