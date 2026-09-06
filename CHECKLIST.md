@@ -499,6 +499,65 @@ of the most commonly enforced app store rejection reasons there is.
 - [ ] Guideline 5.1.1(v) (Apple requires in-app account deletion, not just
       an email request) — already satisfied, "Delete my account" already
       exists in Profile → Account & security
+- [x] Real app icons — both platforms were still shipping the generic
+      default Capacitor "X" logo, not Plates branding (confirmed by
+      directly viewing the installed PNGs, not assumed). Generated a
+      proper icon set matching `public/favicon.svg`'s exact colors/
+      geometry (no SVG renderer available on this machine — no
+      `rsvg-convert`/ImageMagick, and `cairosvg` failed at runtime with
+      no libcairo — so it was hand-drawn geometrically in Python/Pillow
+      instead, then resized with macOS's built-in `sips`). Installed:
+      iOS `AppIcon-512@2x.png` (single full-bleed 1024×1024, no baked-in
+      corner rounding — the OS masks it); Android legacy `ic_launcher.png`/
+      `ic_launcher_round.png` at all 5 densities plus adaptive-icon
+      `ic_launcher_foreground.png` (padded/centered, transparent
+      background) at all 5 densities, with `ic_launcher_background.xml`
+      set to the real brand color `#1D3128`. `npm run cap:sync` and an
+      `xcodebuild` rebuild both ran clean afterward. Still needs: your
+      one-time `sudo xcode-select -s /Applications/Xcode.app/Contents/
+      Developer` (the automated simulator tool reports Xcode as
+      unselected even though `xcode-select -p` already shows the right
+      path — a real quirk, not something I can run myself) so I can
+      confirm on-screen that the new icon actually renders on the
+      springboard, not just that the right files are in place
+- [ ] **Push notifications are wired for the web, not for the native app
+      — this needs real work before "real push" is actually done on
+      iOS/Android.** `src/lib/push.js` uses the standard browser Push API
+      (VAPID keys + a service worker + `PushManager.subscribe()`). That's
+      confirmed working in an actual mobile browser (tested earlier this
+      project), but there's no `@capacitor/push-notifications` plugin
+      installed (checked `package.json` — only `@capacitor/core/cli/ios/
+      android` are there), and Web Push inside a Capacitor-wrapped
+      WKWebView/Android WebView does not reliably work the way it does in
+      a real browser tab. Getting push working in the actual App Store/
+      Play Store build will need: installing
+      `@capacitor/push-notifications`, registering for real APNs (iOS)/
+      FCM (Android) device tokens instead of a browser subscription, and
+      a matching change to how the Supabase edge function sends the
+      notification (it currently POSTs a Web Push payload). Worth doing
+      as its own focused session once you're ready to test on a real
+      device
+- [x] Phone-sizing pass — checked for horizontal overflow at 375px width
+      (none found) and audited every `position: fixed` element for the
+      iOS "home indicator" safe-area gotcha: `position:fixed` elements
+      don't get iOS's automatic safe-area inset the way scrollable
+      content does, so a flat `bottom: 16px` sits right at the true
+      screen edge, not 16px above the home-indicator gesture zone, on
+      every notched iPhone. Found and fixed one real instance — the
+      floating bottom nav bar (`BottomNav.jsx`) — by adding
+      `env(safe-area-inset-bottom)` to its offset; verified no visual
+      regression on a normal (non-notched) viewport via computed style
+      + screenshot. The other two fixed-position elements (the cart
+      summary panel, the toast container) already sit far enough up
+      (96px / 80px) that they clear the indicator with margin, so left
+      alone. Also confirmed `viewport-fit=cover` is set in `index.html`
+      (needed for `env(safe-area-inset-*)` to resolve at all) and that
+      Info.plist/AndroidManifest.xml permissions already match actual
+      API usage — no camera/location plugin, no GPS calls, just a plain
+      file `<input>` and Nominatim geocoding of user-typed text — so no
+      missing `NSCameraUsageDescription`-style keys, though that's worth
+      an empirical double-check on a real device since WKWebView file-
+      input permission prompts can be finicky
 
 ## Phone verification setup (optional — do this whenever you're ready)
 
