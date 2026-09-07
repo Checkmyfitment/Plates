@@ -2,12 +2,11 @@
 // placeholder used across the legal pages and the suspended-account screen.
 export const SUPPORT_EMAIL = 'support@yourplatesapp.com'
 
-// TODO: replace with your real deployed app URL once you go live. Used to
-// build rich link-preview cards (photo/title/price) when a listing is
-// shared — see supabase/functions/share-listing. Until this is changed from
-// the placeholder, sharing a listing just copies a plain in-app link
-// instead (still works, just no preview card).
-export const SITE_URL = 'https://yourplatesapp.com'
+// Live deploy on Vercel (platesapp project). Used to build rich
+// link-preview cards (photo/title/price) when a listing is shared — see
+// supabase/functions/share-listing. Update this again if/when a custom
+// domain is connected instead of the default *.vercel.app one.
+export const SITE_URL = 'https://platesapp-lyart.vercel.app'
 
 // TODO: replace with your real Cloudflare Turnstile site key before launch
 // (free at dash.cloudflare.com/?to=/:account/turnstile — takes about 2
