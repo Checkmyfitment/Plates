@@ -2,11 +2,11 @@
 // placeholder used across the legal pages and the suspended-account screen.
 export const SUPPORT_EMAIL = 'support@yourplatesapp.com'
 
-// Live deploy on Vercel (platesapp project). Used to build rich
-// link-preview cards (photo/title/price) when a listing is shared — see
-// supabase/functions/share-listing. Update this again if/when a custom
-// domain is connected instead of the default *.vercel.app one.
-export const SITE_URL = 'https://platesapp-lyart.vercel.app'
+// Live custom domain (passtheplates.app apex redirects here to www, so
+// this is the actual canonical URL browsers/crawlers land on). Used to
+// build rich link-preview cards (photo/title/price) when a listing is
+// shared — see supabase/functions/share-listing.
+export const SITE_URL = 'https://www.passtheplates.app'
 
 // TODO: replace with your real Cloudflare Turnstile site key before launch
 // (free at dash.cloudflare.com/?to=/:account/turnstile — takes about 2
