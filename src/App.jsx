@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react'
+import { useEffect, useState, useRef, lazy, Suspense } from 'react'
 import Logo from './components/Logo'
 import TopBar from './components/TopBar'
 import BottomNav from './components/BottomNav'
@@ -90,6 +90,7 @@ export default function App() {
   const [claimAttempted, setClaimAttempted] = useState(false)
   const [sellerLinkOpened, setSellerLinkOpened] = useState(false)
   const [listingLinkOpened, setListingLinkOpened] = useState(false)
+  const [legalLinkOpened, setLegalLinkOpened] = useState(false)
   const [onboarded, setOnboarded] = useState(() => hasSeenOnboarding())
   const [authPromptOpen, setAuthPromptOpen] = useState(false)
   const [authPromptReason, setAuthPromptReason] = useState(null)
@@ -109,12 +110,20 @@ export default function App() {
   // browsing works without an account; anything that needs one is gated by
   // requireAuth() below. Once someone logs in, close the prompt; once they
   // log out, fall back to a clean guest view of Browse instead of leaving
-  // them stranded on a screen (Profile, Chats, ...) that assumes a session
+  // them stranded on a screen (Profile, Chats, ...) that assumes a session.
+  // hadSession guards this to an actual logout transition -- without it,
+  // this also fired on the very first mount for a guest who was never
+  // signed in, wiping out a same-mount ?legal=/?listing=/?seller= deep link
+  // before the effect that reads it got a chance to run
+  const hadSession = useRef(false)
   useEffect(() => {
     if (session) {
       setAuthPromptOpen(false)
+      hadSession.current = true
       return
     }
+    if (!hadSession.current) return
+    hadSession.current = false
     setTab('browse')
     setEditingListing(null)
     setEditingProfile(false)
@@ -321,6 +330,23 @@ export default function App() {
     window.history.replaceState({}, '', window.location.pathname + (search ? `?${search}` : ''))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listingLinkOpened, listingsLoading])
+
+  // ?legal=privacy or ?legal=terms -- lets the Terms/Privacy Policy be linked
+  // directly (App Store Connect, Play Console, and anyone else need a real
+  // standalone URL for these, not just the in-app buttons). Works whether or
+  // not the visitor is signed in -- see the matching change to the legalDoc
+  // render branch below, which used to require a session.
+  useEffect(() => {
+    if (legalLinkOpened) return
+    const params = new URLSearchParams(window.location.search)
+    const doc = params.get('legal')
+    if (doc !== 'privacy' && doc !== 'terms') return
+    setLegalLinkOpened(true)
+    setLegalDoc(doc)
+    params.delete('legal')
+    const search = params.toString()
+    window.history.replaceState({}, '', window.location.pathname + (search ? `?${search}` : ''))
+  }, [legalLinkOpened])
 
   const requireAuth = (reason) => {
     setAuthPromptReason(reason || null)
@@ -774,6 +800,17 @@ export default function App() {
     return <DeletedScreen onLogout={signOut} />
   }
 
+  // a direct ?legal= link (App Store Connect, Play Console, anyone else
+  // linking to the Privacy Policy/Terms) should show the document right
+  // away, not the onboarding walkthrough a fresh visitor would otherwise see
+  if (!onboarded && legalDoc) {
+    return (
+      <Suspense fallback={screenFallback}>
+        <LegalScreen doc={legalDoc} onBack={() => setLegalDoc(null)} />
+      </Suspense>
+    )
+  }
+
   if (!onboarded) {
     return (
       <OnboardingWalkthrough
@@ -858,7 +895,9 @@ export default function App() {
         />
       </Suspense>
     )
-  } else if (session && legalDoc) {
+  } else if (legalDoc) {
+    // no session gate -- a direct ?legal= link (see the effect above) has to
+    // work for a signed-out visitor, same as the onboarding-bypass branch
     body = (
       <Suspense fallback={screenFallback}>
         <LegalScreen doc={legalDoc} onBack={() => setLegalDoc(null)} />
