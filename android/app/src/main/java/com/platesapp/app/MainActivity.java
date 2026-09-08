@@ -1,4 +1,4 @@
-package com.yourplatesapp.app;
+package com.platesapp.app;
 
 import com.getcapacitor.BridgeActivity;
 

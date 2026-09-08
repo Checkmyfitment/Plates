@@ -1,5 +1,5 @@
 {
-  "appId": "com.yourplatesapp.app",
+  "appId": "com.platesapp.app",
   "appName": "Plates",
   "webDir": "dist",
   "server": {
