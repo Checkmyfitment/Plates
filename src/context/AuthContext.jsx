@@ -46,8 +46,8 @@ export function AuthProvider({ children }) {
     })
   }
 
-  const signIn = async (email, password) => {
-    return supabase.auth.signInWithPassword({ email, password })
+  const signIn = async (email, password, captchaToken) => {
+    return supabase.auth.signInWithPassword({ email, password, options: { captchaToken } })
   }
 
   const signOut = () => {
@@ -55,8 +55,8 @@ export function AuthProvider({ children }) {
     return supabase.auth.signOut()
   }
 
-  const resetPassword = (email) =>
-    supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+  const resetPassword = (email, captchaToken) =>
+    supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin, captchaToken })
 
   const updatePassword = async (password) => {
     const result = await supabase.auth.updateUser({ password })

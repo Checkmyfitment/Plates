@@ -36,6 +36,10 @@ export default function AuthScreen({ onClose, reason }) {
     setMode(next)
     setError('')
     setNotice('')
+    // a Turnstile token is single-use and tied to the widget instance that
+    // issued it -- switching modes remounts the widget, so the old token
+    // would just be rejected as stale if we kept it around
+    setCaptchaToken(null)
   }
 
   const submit = async (e) => {
@@ -57,12 +61,12 @@ export default function AuthScreen({ onClose, reason }) {
       if (error) setError(error.message)
       else if (!data.session) setNotice('Check your email for a confirmation link, then log in.')
     } else if (mode === 'reset') {
-      const { error } = await resetPassword(email)
+      const { error } = await resetPassword(email, captchaToken)
       if (error) setError(error.message)
       else setNotice('Check your email for a password reset link.')
     } else {
       setRememberMe(remember)
-      const { error } = await signIn(email, password)
+      const { error } = await signIn(email, password, captchaToken)
       if (error) setError(error.message)
     }
     setBusy(false)
@@ -213,9 +217,7 @@ export default function AuthScreen({ onClose, reason }) {
           </label>
         )}
 
-        {mode === 'signup' && (
-          <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
-        )}
+        <TurnstileWidget key={mode} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
 
         {error && (
           <p className="text-xs" style={{ color: 'var(--plum)' }}>
@@ -230,7 +232,7 @@ export default function AuthScreen({ onClose, reason }) {
 
         <button
           type="submit"
-          disabled={busy || (mode === 'signup' && !captchaToken)}
+          disabled={busy || !captchaToken}
           className="pressable w-full mt-2 py-3 rounded-xl font-medium text-sm disabled:opacity-60 hover:opacity-90 active:opacity-80 transition-opacity"
           style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}
         >
