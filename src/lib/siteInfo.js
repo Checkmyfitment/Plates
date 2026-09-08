@@ -1,6 +1,7 @@
-// TODO: replace with your real support inbox before launch — this is a
-// placeholder used across the legal pages and the suspended-account screen.
-export const SUPPORT_EMAIL = 'support@yourplatesapp.com'
+// Interim support inbox — your personal email, until hello@passtheplates.app
+// (business email) is set up. Swap this the moment that's live; shown across
+// the legal pages and the suspended-account screen.
+export const SUPPORT_EMAIL = 'chinmichael705@gmail.com'
 
 // Live custom domain (passtheplates.app apex redirects here to www, so
 // this is the actual canonical URL browsers/crawlers land on). Used to
