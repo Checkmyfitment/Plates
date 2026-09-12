@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getSellerBadge, getReferralBadge, hasCottageLawConfirmed } from './badges'
+import { getSellerBadge, getReferralBadge, getPioneerBadge, hasCottageLawConfirmed } from './badges'
 
 describe('getSellerBadge', () => {
   it('shows "New neighbor" when there are no ratings at all', () => {
@@ -36,6 +36,14 @@ describe('getReferralBadge', () => {
     expect(getReferralBadge(2)).toBeNull()
     expect(getReferralBadge(3)).toEqual({ icon: '🎉', label: 'Community Builder' })
     expect(getReferralBadge(10)).toEqual({ icon: '🎉', label: 'Community Builder' })
+  })
+})
+
+describe('getPioneerBadge', () => {
+  it('requires at least 1 pioneer referral', () => {
+    expect(getPioneerBadge(0)).toBeNull()
+    expect(getPioneerBadge(1)).toEqual({ icon: '🧭', label: 'Neighborhood Pioneer' })
+    expect(getPioneerBadge(5)).toEqual({ icon: '🧭', label: 'Neighborhood Pioneer' })
   })
 })
 

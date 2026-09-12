@@ -56,3 +56,12 @@ export async function fetchReferralCount(userId) {
   if (error) throw error
   return count ?? 0
 }
+
+// how many of the caller's own referrals became an active seller in a
+// neighborhood that had real, demonstrated demand (an area waitlist
+// signup) but no seller yet — always scoped server-side to auth.uid()
+export async function fetchPioneerReferralCount() {
+  const { data, error } = await supabase.rpc('get_pioneer_referral_count')
+  if (error) throw error
+  return data ?? 0
+}

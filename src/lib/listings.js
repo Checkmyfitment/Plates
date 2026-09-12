@@ -2,6 +2,37 @@ import { supabase, SUPABASE_URL } from './supabaseClient'
 import { fetchPublicStores } from './stores'
 import { SITE_URL } from './siteInfo'
 
+// every listing is created with the same literal '🍽️' photo and
+// 'var(--paper-dim)' bg (a seller never picks these) -- without a real
+// photo, that made every placeholder thumbnail on the app identical: same
+// flat dark tile, same generic fork-and-knife icon, in a grid where
+// Marketplace-style apps show varied real photos. Picking a cuisine-matched
+// emoji and a deterministic accent color (from the app's own theme tokens,
+// so it's already theme-aware) gives a grid of placeholders some actual
+// visual variety instead of everything looking the same and receding.
+const CUISINE_EMOJI = {
+  Homemade: '🍽️',
+  'Meal Prep': '🍱',
+  Bakery: '🍞',
+  Mexican: '🌮',
+  Italian: '🍝',
+  Indian: '🍛',
+  Chinese: '🥟',
+  'Middle Eastern': '🧆',
+  Caribbean: '🍤',
+  'Southern / Soul food': '🍗',
+  Desserts: '🍰',
+  Vegan: '🥗',
+  Other: '🍽️',
+}
+const PLACEHOLDER_BGS = ['var(--forest-soft)', 'var(--mustard-soft)', 'var(--plum-soft)']
+function placeholderBg(id) {
+  let hash = 0
+  const s = String(id ?? '')
+  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) | 0
+  return PLACEHOLDER_BGS[Math.abs(hash) % PLACEHOLDER_BGS.length]
+}
+
 function mapListing(row, store) {
   return {
     id: row.id,
@@ -22,10 +53,10 @@ function mapListing(row, store) {
     tagType: row.tag_type,
     cuisine: row.cuisine ?? '',
     diet: row.diet ?? [],
-    photo: row.photo ?? '🍽️',
+    photo: row.photo && row.photo !== '🍽️' ? row.photo : (CUISINE_EMOJI[row.cuisine] ?? '🍽️'),
     photoUrl: row.photo_url,
     photoUrls: row.photo_urls ?? [],
-    bg: row.bg ?? 'var(--paper-dim)',
+    bg: row.bg && row.bg !== 'var(--paper-dim)' ? row.bg : placeholderBg(row.id),
     allergens: row.allergens ?? [],
     allergensConfirmed: row.allergens_confirmed ?? false,
     minOrderAmount: row.min_order_amount != null ? Number(row.min_order_amount) : null,
@@ -52,6 +83,7 @@ function mapListing(row, store) {
     sellerIsPro: store ? false : (row.seller?.is_pro ?? false),
     unclaimedStoreId: row.unclaimed_store_id ?? null,
     unclaimedContactNote: store?.contact_note ?? null,
+    createdAt: row.created_at,
   }
 }
 

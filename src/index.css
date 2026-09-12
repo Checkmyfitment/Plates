@@ -19,6 +19,18 @@
   --mustard-soft: #FBEAD2;
   --shadow-card: 0 1px 2px rgba(27,24,21,0.04), 0 3px 12px -4px rgba(27,24,21,0.10);
   --shadow-float: 0 1px 2px rgba(27,24,21,0.06), 0 10px 24px -10px rgba(27,24,21,0.22);
+
+  /* Toast-only colors — deliberately NOT redefined in the dark-mode blocks
+     below. Every other token here flips (dark-on-light becomes
+     light-on-dark) so it keeps reading correctly as text/backgrounds
+     against a theme-flipped page. A toast is a solid colored chip with
+     hardcoded white text, so it needs a background that STAYS dark in both
+     themes -- reusing a flipping token like --forest-dark or --ink here
+     was the actual bug: in dark mode both resolve to a near-white color,
+     which against hardcoded white text was completely unreadable. */
+  --toast-success: #0B6B49;
+  --toast-error: #C23B3B;
+  --toast-info: #1B1815;
 }
 
 /* Dark palette — follows the system by default; :root[data-theme] below
@@ -201,6 +213,18 @@ body {
 .plates-map-pin--sold-out .plates-map-pin__badge,
 .plates-map-pin--sold-out .plates-map-pin__tail {
   background: var(--ink-soft);
+}
+
+/* "You are here" dot for the walking/biking-distance radius circle — a
+   plain dot on purpose, distinct from the seller medallion pins above so
+   it never reads as another kitchen. */
+.plates-map-me-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--mustard-deep);
+  border: 2.5px solid var(--paper);
+  box-shadow: 0 1px 4px rgba(27, 24, 21, 0.4);
 }
 
 /* Restyle Leaflet's default gray zoom squares to match the app's rounded,

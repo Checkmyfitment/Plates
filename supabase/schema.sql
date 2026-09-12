@@ -2008,6 +2008,33 @@ $$;
 
 grant execute on function public.get_waitlist_count(text) to anon, authenticated;
 
+-- Recognizes a referral that brought an active seller into a neighborhood
+-- with real, demonstrated demand (an area_waitlist signup there) but no
+-- seller yet. area_waitlist itself is admin-only to read directly, so this
+-- has to be a security-definer function rather than a client-side join —
+-- it exposes only a count, scoped to the caller's own referrals via
+-- auth.uid(), never another user's.
+create function public.get_pioneer_referral_count()
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select count(distinct p.id)::integer
+  from public.profiles p
+  where p.referred_by = auth.uid()
+    and p.neighborhood is not null
+    and trim(p.neighborhood) <> ''
+    and exists (select 1 from public.listings l where l.seller_id = p.id)
+    and exists (
+      select 1 from public.area_waitlist w
+      where w.neighborhood ilike '%' || trim(p.neighborhood) || '%'
+    );
+$$;
+
+grant execute on function public.get_pioneer_referral_count() to authenticated;
+
 -- whenever a new listing is posted, notify: everyone directly following
 -- that seller, everyone following that cuisine, and everyone within 10
 -- miles with area alerts on (skipping unclaimed-store listings for the

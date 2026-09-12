@@ -1,8 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import Placeholder from './Placeholder'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+
+const MILES_TO_METERS = 1609.34
+// rough box around a lat/lng + radius, in degrees -- good enough to fold
+// into the map's bounds calculation so the "walking distance" circle isn't
+// cropped out, not meant for precise geometry
+function radiusBoundsBox(lat, lng, miles) {
+  const dLat = miles / 69
+  const dLng = miles / (69 * Math.cos((lat * Math.PI) / 180) || 1)
+  return [
+    [lat - dLat, lng - dLng],
+    [lat + dLat, lng + dLng],
+  ]
+}
+
+function meIcon() {
+  return L.divIcon({
+    className: 'plates-map-pin-wrapper',
+    html: '<div class="plates-map-me-dot"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  })
+}
 
 // CARTO's free "basemaps.cartocdn.com" tiles (used here previously) started
 // requiring an API key partway through this project's life — every tile
@@ -60,7 +82,7 @@ function sellerIcon(seller) {
   })
 }
 
-export default function KitchensMap({ listings, onSelect }) {
+export default function KitchensMap({ listings, onSelect, userLocation, radiusMiles }) {
   const isDark = useIsDarkMode()
 
   const sellers = useMemo(() => {
@@ -97,11 +119,16 @@ export default function KitchensMap({ listings, onSelect }) {
     )
   }
 
+  const showRadius = userLocation && radiusMiles != null
   const bounds = sellers.map((s) => [s.lat, s.lng])
+  // fold the radius circle's extent into the fit-bounds calculation so a
+  // small "walking distance" circle around an empty-ish area isn't cropped
+  // out just because the visible sellers happen to cluster elsewhere
+  if (showRadius) bounds.push(...radiusBoundsBox(userLocation.lat, userLocation.lng, radiusMiles))
 
   return (
     <MapContainer
-      key={sellers.map((s) => s.sellerId).join(',')}
+      key={`${sellers.map((s) => s.sellerId).join(',')}-${showRadius ? radiusMiles : 'none'}`}
       bounds={bounds}
       boundsOptions={{ padding: [30, 30], maxZoom: 13 }}
       style={{ height: '420px', width: '100%', borderRadius: '16px' }}
@@ -118,6 +145,18 @@ export default function KitchensMap({ listings, onSelect }) {
         url={TILES}
         className={isDark ? 'plates-map-tiles-dark' : ''}
       />
+      {showRadius && (
+        <>
+          <Circle
+            center={[userLocation.lat, userLocation.lng]}
+            radius={radiusMiles * MILES_TO_METERS}
+            pathOptions={{ color: 'var(--forest)', fillColor: 'var(--forest)', fillOpacity: 0.08, weight: 1.5 }}
+          />
+          <Marker position={[userLocation.lat, userLocation.lng]} icon={meIcon()}>
+            <Popup>You are here</Popup>
+          </Marker>
+        </>
+      )}
       {sellers.map((s) => (
         <Marker key={s.sellerId} position={[s.lat, s.lng]} icon={sellerIcon(s)}>
           <Popup>

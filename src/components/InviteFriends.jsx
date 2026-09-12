@@ -1,21 +1,26 @@
 import { useEffect, useState } from 'react'
-import { fetchReferralCount } from '../lib/profiles'
-import { getReferralBadge } from '../lib/badges'
+import { fetchReferralCount, fetchPioneerReferralCount } from '../lib/profiles'
+import { getReferralBadge, getPioneerBadge } from '../lib/badges'
 import { shareLink } from '../lib/share'
 import { useToast } from '../context/ToastContext'
 
 export default function InviteFriends({ userId }) {
   const toast = useToast()
   const [count, setCount] = useState(null)
+  const [pioneerCount, setPioneerCount] = useState(0)
 
   useEffect(() => {
     fetchReferralCount(userId)
       .then(setCount)
       .catch((err) => console.error('Failed to load referral count', err))
+    fetchPioneerReferralCount()
+      .then(setPioneerCount)
+      .catch((err) => console.error('Failed to load pioneer referral count', err))
   }, [userId])
 
   const inviteLink = `${window.location.origin}${window.location.pathname}?ref=${userId}`
   const referralBadge = getReferralBadge(count ?? 0)
+  const pioneerBadge = getPioneerBadge(pioneerCount)
 
   const share = async () => {
     try {
@@ -33,7 +38,7 @@ export default function InviteFriends({ userId }) {
 
   return (
     <div className="card-elevated p-3 mb-3">
-      <p className="text-sm font-medium" style={{ color: 'var(--forest-dark)' }}>
+      <p className="text-base font-bold" style={{ color: 'var(--forest-dark)' }}>
         🎉 Invite your neighbors
       </p>
       <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>
@@ -43,14 +48,31 @@ export default function InviteFriends({ userId }) {
             {count} {count === 1 ? 'neighbor has' : 'neighbors have'} joined from your invite so far.
           </span>
         )}
+        {pioneerCount > 0 && (
+          <span className="block mt-1 font-medium" style={{ color: 'var(--forest-dark)' }}>
+            🧭 {pioneerCount} of your invites brought food to a neighborhood that didn't have any yet.
+          </span>
+        )}
       </p>
-      {referralBadge && (
-        <span
-          className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium mt-2"
-          style={{ background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' }}
-        >
-          {referralBadge.icon} {referralBadge.label}
-        </span>
+      {(referralBadge || pioneerBadge) && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {referralBadge && (
+            <span
+              className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium"
+              style={{ background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' }}
+            >
+              {referralBadge.icon} {referralBadge.label}
+            </span>
+          )}
+          {pioneerBadge && (
+            <span
+              className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium"
+              style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}
+            >
+              {pioneerBadge.icon} {pioneerBadge.label}
+            </span>
+          )}
+        </div>
       )}
       <button
         onClick={share}

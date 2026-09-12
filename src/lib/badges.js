@@ -35,3 +35,17 @@ export function getReferralBadge(referralCount) {
   }
   return null
 }
+
+// Separate, narrower recognition for a referral that did more than add one
+// more user — it brought an active seller into a neighborhood that had
+// real, demonstrated demand (an area waitlist signup there) but no seller
+// yet. Distinct from Community Builder on purpose: that one rewards
+// volume, this one rewards where the referral actually landed. A single
+// pioneer referral is already a meaningful thing to have caused, so the
+// threshold is 1, not 3.
+export function getPioneerBadge(pioneerReferralCount) {
+  if (pioneerReferralCount >= 1) {
+    return { icon: '🧭', label: 'Neighborhood Pioneer' }
+  }
+  return null
+}

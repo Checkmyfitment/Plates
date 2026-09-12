@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import ListingCard from './ListingCard'
 import ListingCardSkeleton from './ListingCardSkeleton'
+import WhatsCookingThisWeek from './WhatsCookingThisWeek'
 import TrendingKitchens from './TrendingKitchens'
 import NeighborhoodLeaderboard from './NeighborhoodLeaderboard'
 import SeasonalCollection from './SeasonalCollection'
@@ -141,6 +142,7 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
           title={`📍 No cooks in ${userNeighborhood} yet`}
         />
       )}
+      <WhatsCookingThisWeek listings={listings} favoriteIds={favoriteIds} onToggleFavorite={onToggleFavorite} onSelect={onSelect} />
       <SeasonalCollection listings={listings} favoriteIds={favoriteIds} onToggleFavorite={onToggleFavorite} onSelect={onSelect} />
       {onOpenSeller && <TrendingKitchens onOpenSeller={onOpenSeller} userLocation={userLocation} />}
       {onOpenSeller && userNeighborhood && (
@@ -199,6 +201,7 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
                 style={{ color: 'var(--ink-soft)', borderColor: 'var(--rule)' }}
               >
                 <option value="">Any distance</option>
+                <option value="1">🚶 Walking (1 mi)</option>
                 <option value="5">Within 5 mi</option>
                 <option value="10">Within 10 mi</option>
                 <option value="25">Within 25 mi</option>
@@ -249,7 +252,7 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
         </div>
       ) : view === 'map' ? (
         <Suspense fallback={<div className="skeleton h-96 w-full rounded-2xl" />}>
-          <KitchensMap listings={filtered} onSelect={onSelect} />
+          <KitchensMap listings={filtered} onSelect={onSelect} userLocation={userLocation} radiusMiles={radiusMiles} />
         </Suspense>
       ) : filtered.length === 0 ? (
         listings.length === 0 ? (
