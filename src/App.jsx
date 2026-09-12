@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, lazy, Suspense } from 'react'
+import { useEffect, useMemo, useState, useRef, lazy, Suspense } from 'react'
 import Logo from './components/Logo'
 import TopBar from './components/TopBar'
 import BottomNav from './components/BottomNav'
@@ -12,13 +12,16 @@ import AuthScreen from './components/AuthScreen'
 import BannedScreen from './components/BannedScreen'
 import DeletedScreen from './components/DeletedScreen'
 import OnboardingWalkthrough from './components/OnboardingWalkthrough'
-import { hasSeenOnboarding, markOnboardingSeen } from './lib/onboarding'
+import { hasSeenOnboarding, markOnboardingSeen, hasSeenCottageLawNotice, markCottageLawNoticeSeen } from './lib/onboarding'
+// lazy — pulls in react-usa-map, only needed for the small slice of
+// signups (sellers/"both") who ever hit this screen
+const CottageLawReviewScreen = lazy(() => import('./components/CottageLawReviewScreen'))
 import { useAuth } from './context/AuthContext'
 import { fetchListings, insertListing, updateListing, deleteListing, setListingAvailability } from './lib/listings'
 import { fetchFavoriteIds, addFavorite, removeFavorite } from './lib/favorites'
 import { fetchChats, startOrGetChat, sendMessage as sendChatMessage, markChatRead } from './lib/chats'
 import { subscribeToTable } from './lib/realtime'
-import { placeOrder, placeCartOrder, fetchHasEverOrdered } from './lib/orders'
+import { placeOrder, placeCartOrder, fetchHasEverOrdered, fetchOpenOrderCount } from './lib/orders'
 import { createSubscription } from './lib/subscriptions'
 import { fetchSellerRatings, fetchSellerTrustStats } from './lib/reviews'
 import { fetchRestockIds, addRestockAlert, removeRestockAlert, fetchRestockCounts } from './lib/restock'
@@ -65,6 +68,10 @@ export default function App() {
   const toast = useToast()
   const [tab, setTab] = useState('browse')
   const [selected, setSelected] = useState(null)
+  // set only by the "Order" shortcut on a Saved card -- tells ListingDetail
+  // to jump straight to the order form instead of opening at the top, since
+  // a saved listing was already deliberately picked, not being discovered
+  const [scrollToOrder, setScrollToOrder] = useState(false)
   const [editingListing, setEditingListing] = useState(null)
   const [editingProfile, setEditingProfile] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -78,6 +85,7 @@ export default function App() {
   const [listingsLoading, setListingsLoading] = useState(true)
   const [favoriteIds, setFavoriteIds] = useState(new Set())
   const [hasEverOrdered, setHasEverOrdered] = useState(false)
+  const [openOrderCount, setOpenOrderCount] = useState(0)
   const [chats, setChats] = useState([])
   const [chatsLoading, setChatsLoading] = useState(true)
   const [activeChatId, setActiveChatId] = useState(null)
@@ -92,6 +100,7 @@ export default function App() {
   const [listingLinkOpened, setListingLinkOpened] = useState(false)
   const [legalLinkOpened, setLegalLinkOpened] = useState(false)
   const [onboarded, setOnboarded] = useState(() => hasSeenOnboarding())
+  const [cottageLawSeen, setCottageLawSeen] = useState(() => hasSeenCottageLawNotice())
   const [authPromptOpen, setAuthPromptOpen] = useState(false)
   const [authPromptReason, setAuthPromptReason] = useState(null)
 
@@ -157,6 +166,29 @@ export default function App() {
       .catch((err) => console.error('Failed to check order history', err))
   }, [session])
 
+  // live count of the buyer's still-active orders — badges the My Orders
+  // entry point on the profile screen, since that's the one thing there
+  // that reflects something happening right now rather than a static setting
+  useEffect(() => {
+    if (!session) {
+      setOpenOrderCount(0)
+      return
+    }
+    const refresh = () => {
+      fetchOpenOrderCount(session.user.id)
+        .then(setOpenOrderCount)
+        .catch((err) => console.error('Failed to load open order count', err))
+    }
+    refresh()
+
+    const unsubscribe = subscribeToTable('orders', {
+      filter: `buyer_id=eq.${session.user.id}`,
+      onChange: refresh,
+    })
+    return unsubscribe
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session])
+
   useEffect(() => {
     if (!session) {
       setChats([])
@@ -204,13 +236,27 @@ export default function App() {
       .catch((err) => console.error('Failed to load seller ratings', err))
   }
 
+  // ratings are public data (RLS already allows anon reads) and matter
+  // most to someone who hasn't signed up yet -- fetch regardless of
+  // session instead of leaving guests seeing no ratings anywhere
   useEffect(() => {
-    if (!session) {
-      setSellerRatings(new Map())
-      return
-    }
     refreshSellerRatings()
-  }, [session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // one merge point rather than threading sellerRatings through every
+  // intermediate screen (Browse, Saved, Profile, SellerStorefront,
+  // SellerDashboard all just pass whatever `listings` array they're given
+  // straight to ListingCard) -- every card can show its seller's rating
+  // at a glance without any of those files needing a new prop
+  const listingsWithRatings = useMemo(
+    () =>
+      listings.map((l) => {
+        const r = sellerRatings.get(l.sellerId)
+        return r ? { ...l, sellerAvgRating: r.avgRating, sellerReviewCount: r.reviewCount } : l
+      }),
+    [listings, sellerRatings],
+  )
 
   useEffect(() => {
     if (!session) {
@@ -413,6 +459,11 @@ export default function App() {
     setShowDashboard(false)
     setShowSettings(false)
     setLegalDoc(doc)
+  }
+
+  const openQuickOrder = (listing) => {
+    setSelected(listing)
+    setScrollToOrder(true)
   }
 
   const openSeller = (sellerId) => {
@@ -800,6 +851,27 @@ export default function App() {
     return <DeletedScreen onLogout={signOut} />
   }
 
+  // one-time, seller-facing reference (not a gate — see the screen itself)
+  // shown right after a seller/"both" signup, once the profile (and its
+  // signup_intent) has actually loaded
+  if (
+    session &&
+    profile &&
+    (profile.signup_intent === 'seller' || profile.signup_intent === 'both') &&
+    !cottageLawSeen
+  ) {
+    return (
+      <Suspense fallback={screenFallback}>
+        <CottageLawReviewScreen
+          onDone={() => {
+            markCottageLawNoticeSeen()
+            setCottageLawSeen(true)
+          }}
+        />
+      </Suspense>
+    )
+  }
+
   // a direct ?legal= link (App Store Connect, Play Console, anyone else
   // linking to the Privacy Policy/Terms) should show the document right
   // away, not the onboarding walkthrough a fresh visitor would otherwise see
@@ -871,7 +943,7 @@ export default function App() {
       <Suspense fallback={screenFallback}>
         <SellerDashboard
           userId={session.user.id}
-          listings={listings}
+          listings={listingsWithRatings}
           sellerRating={sellerRatings.get(session.user.id)}
           profile={profile}
           onProfileRefresh={refreshProfile}
@@ -932,7 +1004,12 @@ export default function App() {
     body = (
       <ListingDetail
         listing={selected}
-        onBack={() => setSelected(null)}
+        onBack={() => {
+          setSelected(null)
+          setScrollToOrder(false)
+        }}
+        scrollToOrder={scrollToOrder}
+        onScrolledToOrder={() => setScrollToOrder(false)}
         isFavorite={favoriteIds.has(selected.id)}
         onToggleFavorite={() => (session ? toggleFavorite(selected.id) : requireAuth('Log in to save this listing.'))}
         onMessageSeller={() => (session ? startChat(selected) : requireAuth('Log in to message the seller.'))}
@@ -970,7 +1047,7 @@ export default function App() {
         <SellerStorefront
           sellerId={viewingSellerId}
           currentUserId={session?.user?.id ?? null}
-          listings={listings}
+          listings={listingsWithRatings}
           favoriteIds={favoriteIds}
           onToggleFavoriteListing={session ? toggleFavorite : () => requireAuth('Log in to save this listing.')}
           sellerRating={sellerRatings.get(viewingSellerId)}
@@ -1009,9 +1086,10 @@ export default function App() {
   } else if (session && tab === 'favorites') {
     body = (
       <SavedScreen
-        listings={listings.filter((l) => favoriteIds.has(l.id))}
+        listings={listingsWithRatings.filter((l) => favoriteIds.has(l.id))}
         loading={listingsLoading}
         onSelect={setSelected}
+        onQuickOrder={openQuickOrder}
         favoriteIds={favoriteIds}
         onToggleFavorite={toggleFavorite}
       />
@@ -1034,7 +1112,7 @@ export default function App() {
         signupIntent={profile?.signup_intent ?? null}
         userId={session.user.id}
         email={session.user.email}
-        listings={listings}
+        listings={listingsWithRatings}
         favoriteIds={favoriteIds}
         sellerRating={sellerRatings.get(session.user.id)}
         sellerTrust={sellerTrustStats.get(session.user.id)}
@@ -1050,6 +1128,7 @@ export default function App() {
         onGoToSell={() => setTab('post')}
         onGoBrowse={() => setTab('browse')}
         hasEverOrdered={hasEverOrdered}
+        openOrderCount={openOrderCount}
       />
     )
   } else {
@@ -1057,7 +1136,7 @@ export default function App() {
     // Browse is the only screen that never assumes a session
     body = (
       <BrowseScreen
-        listings={listings}
+        listings={listingsWithRatings}
         loading={listingsLoading}
         onSelect={setSelected}
         favoriteIds={favoriteIds}
@@ -1070,7 +1149,14 @@ export default function App() {
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
+    // h-dvh + overflow-hidden on the app shell (not min-h-screen) -- same
+    // fix as onboarding/login. TopBar is a sibling of the scrolling div
+    // below, not inside it, so it should never move -- but min-h-screen
+    // measures taller than the real visible viewport on a real device,
+    // which let the whole page itself rubber-band scroll on an overscroll
+    // swipe and drag the header along with it. Pinning the shell to the
+    // real viewport means only the flex-1 region below can ever scroll.
+    <div className="max-w-md mx-auto h-dvh overflow-hidden flex flex-col" style={{ background: 'var(--paper)' }}>
       {!selected && !editingListing && !editingProfile && !showNotifications && !showAdmin && !showOrders && !showDashboard && !showSettings && !legalDoc && !viewingSellerId && !(tab === 'messages' && activeChat) && (
         <TopBar
           title={titles[tab]}
@@ -1080,9 +1166,21 @@ export default function App() {
           unreadNotifications={notifications.filter((n) => !n.read).length}
           onBellClick={session ? openNotifications : undefined}
           isGuest={!session}
+          onLogout={session ? signOut : undefined}
         />
       )}
-      <div className="flex-1 overflow-y-auto pb-24">
+      {/* pb-24 (96px) used to be the only clearance every screen got below
+          the floating bottom nav -- not quite enough. BottomNav sits `1rem
+          + env(safe-area-inset-bottom)` above the edge, and on a device
+          with a tall safe area (iPhone Pro Max-class hardware) that alone
+          is ~34px, pushing its real occupied zone past 96px -- which is
+          exactly why a real device showed content clipped under the nav
+          bar (a seller's own listings on the You page, in this case) even
+          though nothing looked wrong in a browser/simulator with no safe
+          area to speak of. pb-40 (160px) gives real margin past the worst
+          case on any current device, applied once here so every tab gets
+          it rather than patching each screen's own padding individually. */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-40">
         <div
           key={`${tab}-${selected?.id ?? ''}-${editingListing?.id ?? ''}-${editingProfile}-${showNotifications}-${showAdmin}-${showOrders}-${showDashboard}-${showSettings}-${legalDoc ?? ''}-${viewingSellerId ?? ''}-${activeChatId ?? ''}`}
           className="screen-transition"

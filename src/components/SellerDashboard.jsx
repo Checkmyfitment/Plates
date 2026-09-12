@@ -2,14 +2,23 @@ import { useEffect, useState } from 'react'
 import Placeholder from './Placeholder'
 import OrderCard from './OrderCard'
 import WeeklyBarChart from './WeeklyBarChart'
-import { fetchSellerOrders, updateOrderStatus, updateCartStatus, groupOrders, markOrderPaid, ordersToIncomeCSV } from '../lib/orders'
+import {
+  fetchSellerOrders,
+  updateOrderStatus,
+  updateCartStatus,
+  approveCancellationRequest,
+  declineCancellationRequest,
+  groupOrders,
+  markOrderPaid,
+  ordersToIncomeCSV,
+} from '../lib/orders'
 import { fetchSellerStandingOrders, summarizeStandingOrdersByListing } from '../lib/subscriptions'
 import { fetchMyPromotionRequest } from '../lib/promotions'
 import { fetchRestockCounts } from '../lib/restock'
 import { setVacationMode } from '../lib/profiles'
 import { broadcastToBuyers } from '../lib/notifications'
 import { SUPPORT_EMAIL } from '../lib/siteInfo'
-import { fetchSellerWeeklyEarnings } from '../lib/analytics'
+import { fetchSellerWeeklyEarnings, fetchSellerInsights } from '../lib/analytics'
 import { subscribeToTable } from '../lib/realtime'
 import { useToast } from '../context/ToastContext'
 
@@ -36,10 +45,12 @@ export default function SellerDashboard({
   const [reposting, setReposting] = useState(null)
   const [vacationBusy, setVacationBusy] = useState(false)
   const [bulkConfirmBusy, setBulkConfirmBusy] = useState(false)
+  const [bulkReadyBusy, setBulkReadyBusy] = useState(false)
   const [broadcastOpen, setBroadcastOpen] = useState(false)
   const [broadcastText, setBroadcastText] = useState('')
   const [broadcastSending, setBroadcastSending] = useState(false)
   const [weeklyEarnings, setWeeklyEarnings] = useState(null)
+  const [insights, setInsights] = useState(null)
   const [standingOrders, setStandingOrders] = useState([])
 
   const yourListings = listings.filter((l) => l.sellerId === userId && !l.unclaimedStoreId)
@@ -61,6 +72,13 @@ export default function SellerDashboard({
     fetchSellerWeeklyEarnings()
       .then(setWeeklyEarnings)
       .catch((err) => console.error('Failed to load earnings trend', err))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
+
+  useEffect(() => {
+    fetchSellerInsights()
+      .then(setInsights)
+      .catch((err) => console.error('Failed to load seller insights', err))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
@@ -118,16 +136,42 @@ export default function SellerDashboard({
   const handleUpdateStatus = async (groupId, status, isCart, reason) => {
     try {
       if (isCart) {
-        const updated = await updateCartStatus(groupId, status, reason)
+        const updated = await updateCartStatus(groupId, status, reason, userId)
         const updatedIds = new Set(updated.map((o) => o.id))
         setOrders((prev) => prev.map((o) => (updatedIds.has(o.id) ? updated.find((u) => u.id === o.id) : o)))
       } else {
-        const updated = await updateOrderStatus(groupId, status, reason)
+        const updated = await updateOrderStatus(groupId, status, reason, userId)
         setOrders((prev) => prev.map((o) => (o.id === groupId ? updated : o)))
       }
     } catch (err) {
       console.error('Failed to update order', err)
       toast.error('Could not update that order — try again.')
+    }
+  }
+
+  // buyer's cancellation request (order was 'confirmed', may already be in
+  // prep) — the seller approves or declines it here, rather than the order
+  // just cancelling on its own
+  const mergeOrders = (updated) => {
+    const updatedIds = new Set(updated.map((o) => o.id))
+    setOrders((prev) => prev.map((o) => (updatedIds.has(o.id) ? updated.find((u) => u.id === o.id) : o)))
+  }
+
+  const handleApproveCancellation = async (groupId, isCart) => {
+    try {
+      mergeOrders(await approveCancellationRequest(groupId, isCart, userId))
+    } catch (err) {
+      console.error('Failed to approve cancellation', err)
+      toast.error('Could not approve that cancellation — try again.')
+    }
+  }
+
+  const handleDeclineCancellation = async (groupId, isCart) => {
+    try {
+      mergeOrders(await declineCancellationRequest(groupId, isCart, userId))
+    } catch (err) {
+      console.error('Failed to decline cancellation', err)
+      toast.error('Could not decline that cancellation — try again.')
     }
   }
 
@@ -150,7 +194,7 @@ export default function SellerDashboard({
   const today = todayLocalDateString()
   const prepMap = new Map()
   for (const o of orders) {
-    if (o.status !== 'confirmed' && o.status !== 'ready') continue
+    if (o.status !== 'confirmed' && o.status !== 'preparing' && o.status !== 'ready') continue
     const listing = listingsById.get(o.listingId)
     if (listing?.pickupDate !== today) continue
     const entry = prepMap.get(o.listingId) ?? { title: listing?.title ?? o.listingTitle, quantity: 0 }
@@ -165,12 +209,26 @@ export default function SellerDashboard({
     return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
   }
 
-  const openOrders = orders.filter((o) => o.status === 'pending' || o.status === 'confirmed' || o.status === 'ready')
+  const openOrders = orders.filter(
+    (o) =>
+      o.status === 'pending' ||
+      o.status === 'confirmed' ||
+      o.status === 'preparing' ||
+      o.status === 'ready' ||
+      o.status === 'cancel_requested',
+  )
   const openGroups = groupOrders(openOrders)
   const pendingCount = orders.filter((o) => o.status === 'pending').length
   const confirmedCount = orders.filter((o) => o.status === 'confirmed').length
+  const preparingCount = orders.filter((o) => o.status === 'preparing').length
   const readyCount = orders.filter((o) => o.status === 'ready').length
+  const cancelRequestedCount = orders.filter((o) => o.status === 'cancel_requested').length
   const pendingGroups = openGroups.filter((g) => g.orders[0].status === 'pending')
+  // orders already being prepared for the same pickup window tend to
+  // finish together (a seller doing a Saturday-morning batch, say) --
+  // clicking through "Mark ready" one order at a time for a dozen of them
+  // was the actual complaint this bulk action exists for
+  const preparingGroups = openGroups.filter((g) => g.orders[0].status === 'preparing')
 
   const handleConfirmAllPending = async () => {
     setBulkConfirmBusy(true)
@@ -178,6 +236,15 @@ export default function SellerDashboard({
       await Promise.all(pendingGroups.map((g) => handleUpdateStatus(g.groupId, 'confirmed', !!g.cartId)))
     } finally {
       setBulkConfirmBusy(false)
+    }
+  }
+
+  const handleMarkAllReady = async () => {
+    setBulkReadyBusy(true)
+    try {
+      await Promise.all(preparingGroups.map((g) => handleUpdateStatus(g.groupId, 'ready', !!g.cartId)))
+    } finally {
+      setBulkReadyBusy(false)
     }
   }
 
@@ -317,6 +384,48 @@ export default function SellerDashboard({
             valueKey="gmv"
             formatValue={(v) => `$${v.toFixed(2)}`}
           />
+        </div>
+      )}
+
+      {insights && completedOrderCount > 0 && (
+        // the weekly chart above says how much a seller made; this says
+        // something they can actually act on
+        <div className="card-elevated p-4 mb-3">
+          <p className="text-sm font-bold mb-3" style={{ color: 'var(--forest-dark)' }}>
+            📊 What's working
+          </p>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-[11px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
+                Best seller
+              </p>
+              <p className="text-xs font-bold mt-1 leading-tight line-clamp-2">{insights.topListingTitle ?? '—'}</p>
+              {insights.topListingQuantity != null && (
+                <p className="text-[10px] mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                  {insights.topListingQuantity} sold
+                </p>
+              )}
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
+                Busiest day
+              </p>
+              <p className="text-xs font-bold mt-1">{insights.busiestDayName ?? '—'}</p>
+              {insights.busiestDayCount != null && (
+                <p className="text-[10px] mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                  {insights.busiestDayCount} pickup{insights.busiestDayCount === 1 ? '' : 's'}
+                </p>
+              )}
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold" style={{ color: 'var(--ink-soft)' }}>
+                Repeat customers
+              </p>
+              <p className="text-xs font-bold mt-1">
+                {insights.repeatBuyerRate != null ? `${insights.repeatBuyerRate}%` : '—'}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -475,22 +584,35 @@ export default function SellerDashboard({
       <div className="flex items-center justify-between gap-3 mb-3">
         <h3 className="font-display text-base" style={{ color: 'var(--forest-dark)' }}>
           Orders needing attention{' '}
-          {pendingCount + confirmedCount + readyCount > 0 && (
+          {pendingCount + confirmedCount + preparingCount + readyCount + cancelRequestedCount > 0 && (
             <span className="font-normal text-xs" style={{ color: 'var(--ink-soft)' }}>
-              ({pendingCount} pending, {confirmedCount} confirmed, {readyCount} ready)
+              ({pendingCount} pending, {confirmedCount} confirmed, {preparingCount} preparing, {readyCount} ready
+              {cancelRequestedCount > 0 ? `, ${cancelRequestedCount} cancel request${cancelRequestedCount === 1 ? '' : 's'}` : ''})
             </span>
           )}
         </h3>
-        {pendingGroups.length > 1 && (
-          <button
-            onClick={handleConfirmAllPending}
-            disabled={bulkConfirmBusy}
-            className="pressable shrink-0 text-xs font-medium disabled:opacity-60"
-            style={{ color: 'var(--forest-dark)' }}
-          >
-            Confirm all pending
-          </button>
-        )}
+        <div className="flex items-center gap-3 shrink-0">
+          {pendingGroups.length > 1 && (
+            <button
+              onClick={handleConfirmAllPending}
+              disabled={bulkConfirmBusy}
+              className="pressable shrink-0 text-xs font-medium disabled:opacity-60"
+              style={{ color: 'var(--forest-dark)' }}
+            >
+              Confirm all pending
+            </button>
+          )}
+          {preparingGroups.length > 1 && (
+            <button
+              onClick={handleMarkAllReady}
+              disabled={bulkReadyBusy}
+              className="pressable shrink-0 text-xs font-medium disabled:opacity-60"
+              style={{ color: 'var(--forest-dark)' }}
+            >
+              Mark all ready
+            </button>
+          )}
+        </div>
       </div>
       {ordersLoading ? (
         <div className="skeleton h-20 w-full rounded-2xl" />
@@ -499,7 +621,15 @@ export default function SellerDashboard({
       ) : (
         <div className="flex flex-col gap-2.5">
           {openGroups.map((g) => (
-            <OrderCard key={g.groupId} group={g} role="seller" onUpdateStatus={handleUpdateStatus} onMarkPaid={handleMarkPaid} />
+            <OrderCard
+              key={g.groupId}
+              group={g}
+              role="seller"
+              onUpdateStatus={handleUpdateStatus}
+              onMarkPaid={handleMarkPaid}
+              onApproveCancellation={handleApproveCancellation}
+              onDeclineCancellation={handleDeclineCancellation}
+            />
           ))}
         </div>
       )}

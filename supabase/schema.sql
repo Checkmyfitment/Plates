@@ -542,6 +542,98 @@ create extension if not exists pg_cron with schema extensions;
 select cron.unschedule(jobid) from cron.job where jobname = 'expire-featured-listings';
 select cron.schedule('expire-featured-listings', '0 * * * *', 'select public.expire_featured_listings();');
 
+-- Wires a real payment to the "Featured listing" flow above. RevenueCat
+-- (iOS/Android IAP) and Stripe (web) webhooks both land here, through one
+-- shared, idempotent path.
+--
+-- One row per successful payment, keyed by the payment provider's own
+-- transaction id so a retried/duplicate webhook delivery (both RevenueCat
+-- and Stripe explicitly warn webhooks can be delivered more than once)
+-- can't double-apply -- the unique index on (provider, provider_transaction_id)
+-- is what makes apply_listing_boost() below safe to call twice with the
+-- same transaction.
+create table public.listing_boosts (
+  id uuid primary key default gen_random_uuid(),
+  listing_id uuid not null references public.listings(id) on delete cascade,
+  seller_id uuid not null references public.profiles(id) on delete cascade,
+  provider text not null check (provider in ('revenuecat', 'stripe')),
+  provider_transaction_id text not null,
+  platform text not null check (platform in ('ios', 'android', 'web')),
+  amount_cents integer not null check (amount_cents >= 0),
+  currency text not null default 'usd',
+  days integer not null default 7 check (days > 0),
+  created_at timestamptz not null default now()
+);
+
+create unique index listing_boosts_provider_txn_unique
+  on public.listing_boosts (provider, provider_transaction_id);
+
+create index listing_boosts_listing_id_idx on public.listing_boosts (listing_id);
+create index listing_boosts_seller_id_idx on public.listing_boosts (seller_id);
+
+alter table public.listing_boosts enable row level security;
+
+-- sellers can see their own purchase history (e.g. a "past boosts" list
+-- on their dashboard); nobody else can, and nothing here is writable by
+-- a client directly -- only apply_listing_boost() (service-role only,
+-- called from the webhook Edge Functions) ever inserts a row
+create policy "Sellers can view their own listing boosts"
+  on public.listing_boosts for select
+  using (auth.uid() = seller_id or public.is_admin(auth.uid()));
+
+-- Applies a paid boost: logs the payment (idempotently) and features the
+-- listing for `days`, extending from whichever is later -- now, or the
+-- listing's existing featured_until -- so a boost bought while already
+-- featured adds time instead of cutting the current run short.
+--
+-- security definer + revoked from authenticated/anon: this must only ever
+-- be called with the service-role key, from the apply-native-boost and
+-- stripe-webhook Edge Functions, after each has independently verified
+-- the payment is real (RevenueCat's own API lookup; Stripe's signed
+-- event). A client calling this directly could feature any listing for
+-- free, so it is never exposed to authenticated/anon.
+create function public.apply_listing_boost(
+  p_listing_id uuid,
+  p_seller_id uuid,
+  p_provider text,
+  p_provider_transaction_id text,
+  p_platform text,
+  p_amount_cents integer,
+  p_currency text,
+  p_days integer default 7
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_base timestamptz;
+begin
+  insert into public.listing_boosts
+    (listing_id, seller_id, provider, provider_transaction_id, platform, amount_cents, currency, days)
+  values
+    (p_listing_id, p_seller_id, p_provider, p_provider_transaction_id, p_platform, p_amount_cents, p_currency, p_days)
+  on conflict (provider, provider_transaction_id) do nothing;
+
+  -- on conflict means this exact transaction was already applied (a
+  -- redelivered webhook) -- do not extend featured_until a second time
+  if not found then
+    return;
+  end if;
+
+  select greatest(now(), coalesce(featured_until, now())) into v_base
+  from public.listings where id = p_listing_id;
+
+  update public.listings
+  set featured = true, featured_until = v_base + make_interval(days => p_days)
+  where id = p_listing_id;
+end;
+$$;
+
+revoke all on function public.apply_listing_boost(uuid, uuid, text, text, text, integer, text, integer) from public, authenticated, anon;
+grant execute on function public.apply_listing_boost(uuid, uuid, text, text, text, integer, text, integer) to service_role;
+
 -- anyone signed in can bump a listing's view count (it's just a counter,
 -- and a plain client update would fail RLS since the viewer isn't the
 -- seller), but nothing else about the row can change through this path
@@ -782,7 +874,7 @@ create table public.orders (
   quantity integer not null default 1 check (quantity > 0 and quantity <= 99),
   note text check (note is null or char_length(note) <= 500),
   price_at_order numeric not null,
-  status text not null default 'pending' check (status in ('pending', 'confirmed', 'ready', 'completed', 'cancelled', 'no_show')),
+  status text not null default 'pending' check (status in ('pending', 'confirmed', 'ready', 'completed', 'cancelled', 'no_show', 'cancel_requested', 'preparing')),
   -- tags order rows placed together in one multi-item checkout from the
   -- same seller, so the UI can group/act on them as one unit; null means
   -- "not part of a group" (every single-item order)
@@ -825,10 +917,17 @@ create policy "Buyers can place orders"
   on public.orders for insert
   with check (auth.uid() = buyer_id and buyer_id <> seller_id and not public.is_banned(auth.uid()));
 
-create policy "Buyers can cancel their own orders"
+-- Buyers can cancel a still-pending order directly (nothing's in motion
+-- yet), but a confirmed or preparing order only moves to
+-- 'cancel_requested' -- the seller may have already started (or finished)
+-- preparing it, so it becomes something the seller approves or declines
+-- rather than an instant cancel. See guard_order_status_transition() below
+-- for the actual state-machine enforcement (RLS's WITH CHECK alone can't
+-- see the row's old status).
+create policy "Buyers can cancel or request cancellation on their own orders"
   on public.orders for update
-  using (auth.uid() = buyer_id and status in ('pending', 'confirmed'))
-  with check (auth.uid() = buyer_id and status = 'cancelled');
+  using (auth.uid() = buyer_id and status in ('pending', 'confirmed', 'preparing', 'cancel_requested'))
+  with check (auth.uid() = buyer_id and status in ('cancelled', 'cancel_requested', 'confirmed'));
 
 create policy "Sellers can update status on their own orders"
   on public.orders for update
@@ -846,6 +945,46 @@ $$ language plpgsql;
 create trigger set_orders_updated_at
   before update on public.orders
   for each row execute function public.handle_orders_updated_at();
+
+-- the real guard behind the buyer/seller update policies above -- RLS's
+-- WITH CHECK only sees the proposed NEW row, so on its own the buyer
+-- policy would (for example) let a buyer "confirm" their own pending
+-- order. This trigger checks the full OLD -> NEW transition instead.
+create function public.guard_order_status_transition()
+returns trigger as $$
+begin
+  if new.status = old.status then
+    return new;
+  end if;
+
+  if auth.uid() = old.buyer_id then
+    if not (
+      (old.status = 'pending' and new.status = 'cancelled') or
+      (old.status in ('confirmed', 'preparing') and new.status = 'cancel_requested') or
+      (old.status = 'cancel_requested' and new.status = 'confirmed')
+    ) then
+      raise exception 'Buyers cannot change a % order to %', old.status, new.status;
+    end if;
+  elsif auth.uid() = old.seller_id then
+    if not (
+      (old.status = 'pending' and new.status in ('confirmed', 'cancelled')) or
+      (old.status = 'confirmed' and new.status in ('preparing', 'cancelled')) or
+      (old.status = 'preparing' and new.status in ('ready', 'cancelled')) or
+      (old.status = 'ready' and new.status in ('completed', 'no_show')) or
+      (old.status = 'cancel_requested' and new.status in ('cancelled', 'confirmed'))
+    ) then
+      raise exception 'Sellers cannot change a % order to %', old.status, new.status;
+    end if;
+  end if;
+  -- any other caller (admin tooling, service role) is left unrestricted
+  -- here — those paths go through their own RPCs already, not raw updates
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger guard_order_status_transition
+  before update on public.orders
+  for each row execute function public.guard_order_status_transition();
 
 -- non-binding "I paid" / "I got paid" recordkeeping toggle — no payment
 -- processing involved. Routed through this function rather than a direct
@@ -1185,8 +1324,15 @@ begin
     else ''
   end;
 
-  if new.status = 'confirmed' then
+  if new.status = 'confirmed' and old.status = 'cancel_requested' then
+    select 'The seller declined your cancellation request — your order from ' || p.name || ' is still confirmed'
+      into v_message
+    from public.profiles p where p.id = new.seller_id;
+  elsif new.status = 'confirmed' then
     select 'Your order from ' || p.name || ' has been confirmed' into v_message
+    from public.profiles p where p.id = new.seller_id;
+  elsif new.status = 'preparing' then
+    select 'Your order from ' || p.name || ' is being prepared!' into v_message
     from public.profiles p where p.id = new.seller_id;
   elsif new.status = 'ready' then
     select 'Your order from ' || p.name ||
@@ -1218,16 +1364,18 @@ begin
     end if;
   end if;
 
-  -- buyer cancelling an order the seller already confirmed (they may have
-  -- started preparing it) — let the seller know. A buyer cancelling while
-  -- still "pending" doesn't notify the seller, since nothing was in motion.
-  if new.status = 'cancelled' and auth.uid() = new.buyer_id and old.status = 'confirmed' then
+  -- buyer requesting to cancel an order the seller already confirmed (they
+  -- may have started preparing it) — the seller needs to approve or
+  -- decline this, so make sure they actually see it. A buyer cancelling
+  -- while still "pending" stays instant and doesn't notify the seller,
+  -- since nothing was in motion.
+  if new.status = 'cancel_requested' and auth.uid() = new.buyer_id then
     select b.name, l.title into v_buyer_name, v_listing_title
     from public.profiles b, public.listings l
     where b.id = new.buyer_id and l.id = new.listing_id;
 
     insert into public.notifications (user_id, listing_id, message)
-    values (new.seller_id, new.listing_id, v_buyer_name || ' cancelled their order for ' || v_listing_title || v_reason_suffix);
+    values (new.seller_id, new.listing_id, v_buyer_name || ' wants to cancel their order for ' || v_listing_title || v_reason_suffix || ' — approve or decline it');
 
     select email into v_seller_email from auth.users where id = new.seller_id;
     if v_seller_email is not null then
@@ -1236,7 +1384,7 @@ begin
         body := jsonb_build_object(
           'to', v_seller_email,
           'subject', 'Plates order update',
-          'message', v_buyer_name || ' cancelled their order for ' || v_listing_title || v_reason_suffix
+          'message', v_buyer_name || ' wants to cancel their order for ' || v_listing_title || v_reason_suffix || ' — approve or decline it'
         ),
         headers := jsonb_build_object('Content-Type', 'application/json')
       );
@@ -1840,6 +1988,26 @@ $$;
 
 grant execute on function public.join_area_waitlist(text, text) to anon, authenticated;
 
+-- Lets the "notify me" waitlist card show a real number ("14 neighbors are
+-- already waiting") instead of a vague appeal. Count-only and
+-- neighborhood-only: no email or other PII is exposed, so this is safe to
+-- grant to anon.
+create function public.get_waitlist_count(p_neighborhood text)
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select count(*)::integer
+  from public.area_waitlist
+  where p_neighborhood is not null
+    and trim(p_neighborhood) <> ''
+    and neighborhood ilike '%' || trim(p_neighborhood) || '%';
+$$;
+
+grant execute on function public.get_waitlist_count(text) to anon, authenticated;
+
 -- whenever a new listing is posted, notify: everyone directly following
 -- that seller, everyone following that cuisine, and everyone within 10
 -- miles with area alerts on (skipping unclaimed-store listings for the
@@ -2375,6 +2543,127 @@ end;
 $$;
 
 grant execute on function public.get_seller_weekly_earnings() to authenticated;
+
+-- Seller-facing business intelligence: best-selling item, busiest pickup
+-- day, and repeat-customer rate. The weekly earnings chart above tells a
+-- seller how much they made; this tells them something they can actually
+-- act on ("your dumplings sell way better than your tamales, and
+-- Saturday is your busiest day by far").
+--
+-- "Busiest day" is measured from when an order was actually marked
+-- completed (orders.updated_at, bumped by set_orders_updated_at), not the
+-- listing's advertised pickup window text -- that's free-form and
+-- inconsistent across sellers, while "when do completions actually
+-- happen" is exact and always available.
+create function public.get_seller_insights()
+returns table(
+  top_listing_title text,
+  top_listing_quantity bigint,
+  busiest_day_name text,
+  busiest_day_count bigint,
+  repeat_buyer_rate numeric
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_seller uuid := auth.uid();
+begin
+  return query
+  with completed as (
+    select o.quantity, o.updated_at, o.buyer_id, l.title as listing_title
+    from public.orders o
+    join public.listings l on l.id = o.listing_id
+    where o.seller_id = v_seller and o.status = 'completed'
+  ),
+  by_listing as (
+    select listing_title, sum(quantity) as qty
+    from completed
+    group by listing_title
+    order by qty desc
+    limit 1
+  ),
+  by_day as (
+    select trim(to_char(updated_at, 'Day')) as day_name, count(*) as cnt
+    from completed
+    group by day_name
+    order by cnt desc
+    limit 1
+  ),
+  by_buyer as (
+    select buyer_id, count(*) as cnt from completed group by buyer_id
+  )
+  select
+    (select listing_title from by_listing),
+    (select qty from by_listing),
+    (select day_name from by_day),
+    (select cnt from by_day),
+    (select case when count(*) = 0 then 0
+       else round(100.0 * count(*) filter (where cnt > 1) / count(*), 0)
+     end from by_buyer);
+end;
+$$;
+
+grant execute on function public.get_seller_insights() to authenticated;
+
+-- Automated weekly "what's cooking" digest for buyers who follow a
+-- seller's kitchen (public.seller_follows) -- the existing
+-- broadcast_to_buyers() only fires when a seller manually chooses to
+-- message their followers; this runs on its own every week and tells a
+-- follower about new listings from kitchens they follow, without the
+-- seller having to remember to say anything.
+--
+-- Reuses the exact same delivery path broadcast_to_buyers() already
+-- uses: insert into public.notifications, which the existing
+-- "insert on public.notifications" Database Webhook already turns into a
+-- real push notification (see supabase/functions/send-push) -- nothing
+-- new to wire up there.
+--
+-- One notification per follower per week (not one per listing), grouping
+-- every kitchen they follow that posted something new in the last 7 days.
+create or replace function public.send_weekly_kitchen_digest()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer;
+begin
+  insert into public.notifications (user_id, listing_id, message)
+  select
+    digest.follower_id,
+    null::uuid,
+    case
+      when digest.seller_count = 1 then
+        digest.seller_names || ' posted ' || digest.listing_count || ' new dish' ||
+        (case when digest.listing_count = 1 then '' else 'es' end) || ' this week — take a look?'
+      else
+        digest.seller_count || ' kitchens you follow posted new dishes this week: ' || digest.seller_names
+    end
+  from (
+    select
+      f.follower_id,
+      count(distinct l.seller_id) as seller_count,
+      count(l.id) as listing_count,
+      string_agg(distinct p.name, ', ' order by p.name) as seller_names
+    from public.seller_follows f
+    join public.listings l on l.seller_id = f.seller_id
+    join public.profiles p on p.id = l.seller_id
+    where l.created_at >= now() - interval '7 days'
+      and l.unclaimed_store_id is null
+      and coalesce(l.available, true) = true
+    group by f.follower_id
+  ) digest;
+
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$$;
+
+select cron.unschedule(jobid) from cron.job where jobname = 'weekly-kitchen-digest';
+select cron.schedule('weekly-kitchen-digest', '0 17 * * 0', 'select public.send_weekly_kitchen_digest();');
 
 -- top 5 sellers by completed GMV
 create function public.get_top_sellers()

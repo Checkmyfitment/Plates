@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function ListingCard({ listing, onSelect, isFavorite, onToggleFavorite, distanceLabel }) {
+export default function ListingCard({ listing, onSelect, isFavorite, onToggleFavorite, distanceLabel, onQuickOrder }) {
   const manuallySold = listing.available === false
   const away = listing.sellerOnVacation && !manuallySold
   const sold = manuallySold || listing.sellerOnVacation
@@ -83,10 +83,20 @@ export default function ListingCard({ listing, onSelect, isFavorite, onToggleFav
       </div>
       <div className="p-2.5">
         <p className="text-sm font-bold leading-tight tracking-tight line-clamp-2 break-words">{listing.title}</p>
-        <p className="text-xs mt-1 font-medium truncate" style={{ color: 'var(--ink-soft)' }}>
-          {listing.seller}
-          {distanceLabel && <span> · {distanceLabel}</span>}
-        </p>
+        <div className="flex items-center gap-1 mt-1 min-w-0">
+          <p className="text-xs font-medium truncate" style={{ color: 'var(--ink-soft)' }}>
+            {listing.seller}
+            {distanceLabel && <span> · {distanceLabel}</span>}
+          </p>
+          {listing.sellerAvgRating != null && (
+            <span
+              className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-bold"
+              style={{ color: 'var(--mustard-deep)' }}
+            >
+              ★ {listing.sellerAvgRating}
+            </span>
+          )}
+        </div>
         {listing.unclaimedStoreId && (
           <span
             className="inline-block text-[9px] px-1.5 py-0.5 rounded-md font-bold mt-1"
@@ -99,6 +109,22 @@ export default function ListingCard({ listing, onSelect, isFavorite, onToggleFav
           <p className="text-[10px] mt-0.5 font-medium" style={{ color: 'var(--plum)' }}>
             {listing.quantityAvailable === 0 ? 'None left' : `Only ${listing.quantityAvailable} left`}
           </p>
+        )}
+        {!sold && onQuickOrder && (
+          // you already deliberately saved this one -- skip re-reading the
+          // full listing and jump straight to the order form instead of
+          // making every order start back at the top of the page
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onQuickOrder(listing)
+            }}
+            className="pressable w-full mt-1.5 py-1.5 rounded-lg text-[11px] font-bold"
+            style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}
+          >
+            Order
+          </button>
         )}
       </div>
     </div>

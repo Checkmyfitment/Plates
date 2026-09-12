@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import SellerRatingForm from './SellerRatingForm'
 import SellerCard from './SellerCard'
 import ListingCard from './ListingCard'
@@ -39,10 +39,22 @@ export default function ListingDetail({
   onOpenSeller,
   onRequireAuth,
   onPlaceOrder,
+  scrollToOrder,
+  onScrolledToOrder,
 }) {
   const toast = useToast()
   const [reporting, setReporting] = useState(false)
   const [imgLoaded, setImgLoaded] = useState(false)
+  const orderSectionRef = useRef(null)
+
+  // the "Order" shortcut on a Saved card sets this -- the listing was
+  // already deliberately picked, so jump straight to the order form
+  // instead of making the buyer scroll past the description/reviews again
+  useEffect(() => {
+    if (!scrollToOrder || !orderSectionRef.current) return
+    orderSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    onScrolledToOrder?.()
+  }, [scrollToOrder, onScrolledToOrder])
   const [featured, setFeatured] = useState(listing?.featured ?? false)
   const [togglingFeatured, setTogglingFeatured] = useState(false)
   const isOwnListing = listing?.sellerId === currentUserId
@@ -388,7 +400,7 @@ export default function ListingDetail({
         )}
 
         {!isOwnListing && !isUnclaimed && !sold && currentUserId && onPlaceOrder && (
-          <>
+          <div ref={orderSectionRef}>
             {isOrderingClosed(listing) ? (
               <p
                 className="mt-6 text-sm text-center rounded-2xl border p-3.5"
@@ -416,7 +428,7 @@ export default function ListingDetail({
             >
               Just have a question? Message the seller
             </button>
-          </>
+          </div>
         )}
 
         {!isOwnListing && !isUnclaimed && !sold && !currentUserId && (

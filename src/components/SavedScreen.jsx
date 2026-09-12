@@ -2,7 +2,7 @@ import ListingCard from './ListingCard'
 import ListingCardSkeleton from './ListingCardSkeleton'
 import Placeholder from './Placeholder'
 
-export default function SavedScreen({ listings, loading, onSelect, favoriteIds, onToggleFavorite }) {
+export default function SavedScreen({ listings, loading, onSelect, favoriteIds, onToggleFavorite, onQuickOrder }) {
   if (loading) {
     return (
       <div className="px-5 pb-4">
@@ -29,6 +29,7 @@ export default function SavedScreen({ listings, loading, onSelect, favoriteIds, 
             onSelect={onSelect}
             isFavorite={favoriteIds.has(l.id)}
             onToggleFavorite={onToggleFavorite}
+            onQuickOrder={onQuickOrder}
           />
         ))}
       </div>

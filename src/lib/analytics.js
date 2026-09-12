@@ -64,6 +64,19 @@ export async function fetchSellerWeeklyEarnings() {
   }))
 }
 
+export async function fetchSellerInsights() {
+  const { data, error } = await supabase.rpc('get_seller_insights')
+  if (error) throw error
+  const row = data[0]
+  return {
+    topListingTitle: row.top_listing_title,
+    topListingQuantity: row.top_listing_quantity,
+    busiestDayName: row.busiest_day_name,
+    busiestDayCount: row.busiest_day_count,
+    repeatBuyerRate: row.repeat_buyer_rate != null ? Number(row.repeat_buyer_rate) : null,
+  }
+}
+
 export async function fetchTopSellers() {
   const { data, error } = await supabase.rpc('get_top_sellers')
   if (error) throw error
