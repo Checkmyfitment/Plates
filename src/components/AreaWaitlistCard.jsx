@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { joinAreaWaitlist } from '../lib/waitlist'
+import { useEffect, useState } from 'react'
+import { joinAreaWaitlist, fetchWaitlistCount } from '../lib/waitlist'
 import { useToast } from '../context/ToastContext'
 
 export default function AreaWaitlistCard({ defaultNeighborhood = '', title = "ðŸ“ Not in your neighborhood yet?" }) {
@@ -8,6 +8,25 @@ export default function AreaWaitlistCard({ defaultNeighborhood = '', title = "ðŸ
   const [neighborhood, setNeighborhood] = useState(defaultNeighborhood)
   const [submitting, setSubmitting] = useState(false)
   const [joined, setJoined] = useState(false)
+  const [count, setCount] = useState(0)
+
+  // real demand, not a vague appeal -- refetched (debounced) as the typed
+  // neighborhood changes, so someone editing it sees an honest number for
+  // what they actually typed, not just the default they landed with
+  useEffect(() => {
+    let cancelled = false
+    const handle = setTimeout(() => {
+      fetchWaitlistCount(neighborhood)
+        .then((n) => {
+          if (!cancelled) setCount(n)
+        })
+        .catch((err) => console.error('Failed to load waitlist count', err))
+    }, 300)
+    return () => {
+      cancelled = true
+      clearTimeout(handle)
+    }
+  }, [neighborhood])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -15,6 +34,7 @@ export default function AreaWaitlistCard({ defaultNeighborhood = '', title = "ðŸ
     setSubmitting(true)
     try {
       await joinAreaWaitlist({ email, neighborhood })
+      setCount((c) => c + 1)
       setJoined(true)
     } catch (err) {
       console.error('Failed to join waitlist', err)
@@ -29,6 +49,7 @@ export default function AreaWaitlistCard({ defaultNeighborhood = '', title = "ðŸ
       <div className="card-elevated p-4 text-center mb-4">
         <p className="text-sm font-medium">âœ“ You're on the list!</p>
         <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>
+          {count > 1 && `You're one of ${count} neighbors waiting â€” `}
           We'll email you the moment a cook joins {neighborhood ? `near ${neighborhood}` : 'near you'}.
         </p>
       </div>
@@ -38,9 +59,14 @@ export default function AreaWaitlistCard({ defaultNeighborhood = '', title = "ðŸ
   return (
     <form onSubmit={submit} className="card-elevated p-4 mb-4">
       <p className="text-sm font-medium">{title}</p>
-      <p className="text-xs mt-1 mb-3" style={{ color: 'var(--ink-soft)' }}>
+      <p className="text-xs mt-1 mb-1" style={{ color: 'var(--ink-soft)' }}>
         Tell us where you are and we'll email you the moment a cook joins nearby.
       </p>
+      {count > 0 && (
+        <p className="text-xs mb-2 font-medium" style={{ color: 'var(--forest-dark)' }}>
+          ðŸ™‹ {count} neighbor{count === 1 ? '' : 's'} already waiting{neighborhood ? ` near ${neighborhood}` : ''}
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         <input
           value={neighborhood}

@@ -1,4 +1,6 @@
 import { SUPPORT_EMAIL } from '../lib/siteInfo'
+import { STATES } from '../lib/cottageFoodStates'
+import CottageFoodMap from './CottageFoodMap'
 
 const LAST_UPDATED = 'September 12, 2026'
 
@@ -417,16 +419,6 @@ function Guidelines() {
   )
 }
 
-const STATES = [
-  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
-  'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
-  'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',
-  'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
-  'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon',
-  'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah',
-  'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
-]
-
 function StateLaws() {
   return (
     <>
@@ -469,7 +461,11 @@ function StateLaws() {
         </p>
       </Section>
       <Section title="States with a cottage food program">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+        <CottageFoodMap />
+        <p className="mt-3 text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Full list (screen-reader friendly):
+        </p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1">
           {STATES.map((s) => (
             <p key={s}>{s}</p>
           ))}

@@ -20,11 +20,20 @@
     "@capacitor/core": "^8.5.1",
     "@capacitor/ios": "^8.5.1",
     "@capacitor/push-notifications": "^8.1.2",
+    "@revenuecat/purchases-capacitor": "^13.5.0",
     "@supabase/supabase-js": "^2.45.4",
     "leaflet": "^1.9.4",
+    "prop-types": "^15.8.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "react-usa-map": "^1.5.0"
+  },
+  "overrides": {
+    "react-usa-map": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

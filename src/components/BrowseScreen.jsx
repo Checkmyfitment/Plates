@@ -51,6 +51,7 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
   const [query, setQuery] = useState('')
   const [view, setView] = useState(() => getSavedBrowseFilters()?.view ?? 'list')
   const [nearestFirst, setNearestFirst] = useState(false)
+  const [topRatedFirst, setTopRatedFirst] = useState(false)
   const [radiusMiles, setRadiusMiles] = useState(() => getSavedBrowseFilters()?.radiusMiles ?? null)
 
   useEffect(() => {
@@ -97,6 +98,14 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
       if (b.distance == null) return -1
       return a.distance - b.distance
     })
+  } else if (topRatedFirst) {
+    // unrated listings sink to the bottom rather than being treated as a
+    // 0 -- an unrated seller isn't worse than a 1-star one, just unproven
+    filtered = [...filtered].sort((a, b) => {
+      const ra = a.sellerAvgRating ?? -1
+      const rb = b.sellerAvgRating ?? -1
+      return rb - ra
+    })
   } else if (words.length > 0) {
     filtered = [...filtered].sort((a, b) => relevanceScore(searchFields(b), words) - relevanceScore(searchFields(a), words))
   } else {
@@ -105,12 +114,25 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
   }
 
   return (
-    <div className="px-5 pb-4">
+    <div className="px-5 pt-4 pb-4">
       {totalSellers > 0 && (
-        <p className="text-xs mb-2" style={{ color: 'var(--ink-soft)' }}>
-          {neighborhoodSellers > 0
-            ? `🏘️ ${neighborhoodSellers} neighbor${neighborhoodSellers === 1 ? '' : 's'} sharing food in ${userNeighborhood}`
-            : `🏘️ ${totalSellers} home cook${totalSellers === 1 ? '' : 's'} · ${listings.length} dish${listings.length === 1 ? '' : 'es'} up for grabs`}
+        <p className="text-sm mb-4" style={{ color: 'var(--ink)' }}>
+          🏘️{' '}
+          {neighborhoodSellers > 0 ? (
+            <>
+              <span className="font-bold">{neighborhoodSellers}</span>{' '}
+              <span className="font-bold">neighbor{neighborhoodSellers === 1 ? '' : 's'}</span>{' '}
+              <span style={{ color: 'var(--ink-soft)' }}>sharing food in</span>{' '}
+              <span className="font-bold">{userNeighborhood}</span>
+            </>
+          ) : (
+            <>
+              <span className="font-bold">{totalSellers}</span>{' '}
+              <span style={{ color: 'var(--ink-soft)' }}>home cook{totalSellers === 1 ? '' : 's'} ·</span>{' '}
+              <span className="font-bold">{listings.length}</span>{' '}
+              <span style={{ color: 'var(--ink-soft)' }}>dish{listings.length === 1 ? '' : 'es'} up for grabs</span>
+            </>
+          )}
         </p>
       )}
       {userNeighborhood && neighborhoodSellers === 0 && totalSellers > 0 && (
@@ -155,36 +177,47 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
         ))}
       </div>
       <div className="flex items-center justify-between gap-2 mb-4">
-        {userLocation ? (
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              onClick={() => setNearestFirst((v) => !v)}
-              className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full border-2 whitespace-nowrap"
-              style={{
-                background: nearestFirst ? 'var(--ink)' : 'var(--card)',
-                color: nearestFirst ? 'var(--paper)' : 'var(--ink-soft)',
-                borderColor: nearestFirst ? 'var(--ink)' : 'var(--rule)',
-              }}
-            >
-              📍 Nearest
-            </button>
-            <select
-              value={radiusMiles ?? ''}
-              onChange={(e) => setRadiusMiles(e.target.value === '' ? null : Number(e.target.value))}
-              aria-label="Search radius"
-              className="pressable shrink-0 text-xs font-bold pl-3 pr-2 py-2 rounded-full border-2 bg-[var(--card)]"
-              style={{ color: 'var(--ink-soft)', borderColor: 'var(--rule)' }}
-            >
-              <option value="">Any distance</option>
-              <option value="5">Within 5 mi</option>
-              <option value="10">Within 10 mi</option>
-              <option value="25">Within 25 mi</option>
-              <option value="50">Within 50 mi</option>
-            </select>
-          </div>
-        ) : (
-          <span />
-        )}
+        <div className="flex items-center gap-2 min-w-0 overflow-x-auto">
+          {userLocation && (
+            <>
+              <button
+                onClick={() => setNearestFirst((v) => !v)}
+                className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full border-2 whitespace-nowrap"
+                style={{
+                  background: nearestFirst ? 'var(--ink)' : 'var(--card)',
+                  color: nearestFirst ? 'var(--paper)' : 'var(--ink-soft)',
+                  borderColor: nearestFirst ? 'var(--ink)' : 'var(--rule)',
+                }}
+              >
+                📍 Nearest
+              </button>
+              <select
+                value={radiusMiles ?? ''}
+                onChange={(e) => setRadiusMiles(e.target.value === '' ? null : Number(e.target.value))}
+                aria-label="Search radius"
+                className="pressable shrink-0 text-xs font-bold pl-3 pr-2 py-2 rounded-full border-2 bg-[var(--card)]"
+                style={{ color: 'var(--ink-soft)', borderColor: 'var(--rule)' }}
+              >
+                <option value="">Any distance</option>
+                <option value="5">Within 5 mi</option>
+                <option value="10">Within 10 mi</option>
+                <option value="25">Within 25 mi</option>
+                <option value="50">Within 50 mi</option>
+              </select>
+            </>
+          )}
+          <button
+            onClick={() => setTopRatedFirst((v) => !v)}
+            className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full border-2 whitespace-nowrap"
+            style={{
+              background: topRatedFirst ? 'var(--ink)' : 'var(--card)',
+              color: topRatedFirst ? 'var(--paper)' : 'var(--ink-soft)',
+              borderColor: topRatedFirst ? 'var(--ink)' : 'var(--rule)',
+            }}
+          >
+            ⭐ Top rated
+          </button>
+        </div>
         <div className="flex shrink-0 rounded-full border-2 overflow-hidden text-xs font-bold" style={{ borderColor: 'var(--rule)' }}>
           <button
             onClick={() => setView('list')}

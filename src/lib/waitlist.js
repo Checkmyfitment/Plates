@@ -9,3 +9,12 @@ export async function joinAreaWaitlist({ email, neighborhood }) {
   const { error } = await supabase.rpc('join_area_waitlist', { p_email: email, p_neighborhood: neighborhood })
   if (error) throw error
 }
+
+// count-only, no PII -- safe to call before signup, used to turn "notify
+// me" into a real number ("14 neighbors are already waiting")
+export async function fetchWaitlistCount(neighborhood) {
+  if (!neighborhood || !neighborhood.trim()) return 0
+  const { data, error } = await supabase.rpc('get_waitlist_count', { p_neighborhood: neighborhood })
+  if (error) throw error
+  return data ?? 0
+}

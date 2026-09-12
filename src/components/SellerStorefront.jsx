@@ -13,6 +13,12 @@ import { useToast } from '../context/ToastContext'
 import ReviewItem from './ReviewItem'
 import ReportModal from './ReportModal'
 
+// "On Plates since March 2026" -- month-level precision reads as genuine
+// tenure without implying a day-exact anniversary nobody's tracking
+function memberSince(iso) {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+}
+
 function StorefrontListingTile({ listing, quantity, onIncrement, onDecrement, onOpen }) {
   const manuallySold = listing.available === false
   const closed = isOrderingClosed(listing)
@@ -277,6 +283,11 @@ export default function SellerStorefront({
             {seller.neighborhood && (
               <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
                 {seller.neighborhood}
+              </p>
+            )}
+            {seller.created_at && (
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                On Plates since {memberSince(seller.created_at)}
               </p>
             )}
             <div className="flex items-center flex-wrap gap-1.5 mt-1">
