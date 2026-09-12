@@ -1,6 +1,6 @@
 import { SUPPORT_EMAIL } from '../lib/siteInfo'
 
-const LAST_UPDATED = 'September 5, 2026'
+const LAST_UPDATED = 'September 12, 2026'
 
 function Section({ title, children }) {
   return (
@@ -91,8 +91,9 @@ function Terms() {
       <Section title="7. Prohibited conduct">
         <p>
           Don't use Plates to: harass, threaten, or abuse other users; post spam, scams, or
-          fraudulent listings; misrepresent what a listing contains; sell anything illegal to sell;
-          or attempt to circumvent moderation, reporting, or account suspension.
+          fraudulent listings; misrepresent what a listing contains; sell anything illegal to sell,
+          or anything listed as not allowed under "What you can't sell or post" in our Community
+          Guidelines; or attempt to circumvent moderation, reporting, or account suspension.
         </p>
       </Section>
       <Section title="8. Content you post">
@@ -233,8 +234,18 @@ function Privacy() {
             that message's text is sent to their API to translate it.
           </li>
           <li>
-            <strong>Cloudflare Turnstile</strong> — runs a bot-check when you sign up, using
-            standard device/browser signals (not your personal data) to tell a human from a bot.
+            <strong>Cloudflare Turnstile</strong> — runs a bot-check when you sign up or log in,
+            using standard device/browser signals (not your personal data) to tell a human from a
+            bot. It runs invisibly, with no puzzle or checkbox to interact with. See Cloudflare's{' '}
+            <a
+              href="https://www.cloudflare.com/turnstileprivacypolicy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--forest-dark)', textDecoration: 'underline' }}
+            >
+              Turnstile Privacy Policy
+            </a>{' '}
+            for details.
           </li>
         </ul>
       </Section>
@@ -313,11 +324,36 @@ function Guidelines() {
           legally sell, how much, and almost always require a specific disclosure statement (exact
           wording set by your state, not something you can paraphrase) somewhere the buyer sees it.
           These rules vary a lot by state and county — see "Cottage Food Laws by State" below to
-          start looking up your own state's requirements. List allergens and ingredients honestly
-          and completely. Keep your kitchen clean and don't sell if you're sick. Don't sell
-          anything that isn't safe or legal to sell from home. Consider carrying general liability
-          insurance — ask your insurer whether a cottage food policy or a rider on your existing
-          homeowners/renters policy covers selling food from home.
+          start looking up your own state's requirements. Many states also require (or strongly
+          expect) a food handler or food safety certification course before you sell — check
+          whether yours does, and keep a current certificate even if your state doesn't strictly
+          require one; it's a fast, cheap way to sell more safely and it's what other home-food
+          marketplaces ask of their cooks too. List allergens and ingredients honestly and
+          completely. Keep your kitchen clean and don't sell if you're sick. Don't sell anything
+          that isn't safe or legal to sell from home — see "What you can't sell or post" below for
+          specifics. Consider carrying general liability insurance — ask your insurer whether a
+          cottage food policy or a rider on your existing homeowners/renters policy covers selling
+          food from home.
+        </p>
+      </Section>
+      <Section title="What you can't sell or post">
+        <p>
+          Beyond your own state's cottage food limits (which may be narrower than this list),
+          nothing on Plates may include:
+        </p>
+        <ul className="list-disc pl-5 mt-1.5 space-y-1">
+          <li>Alcohol, or anything containing alcohol as a selling point (a splash of wine in a sauce isn't the issue — a listing built around alcohol is).</li>
+          <li>Cannabis, THC/CBD-infused food, or any other controlled substance — even where legal to consume, these fall outside every state's cottage food law and outside what Plates is for.</li>
+          <li>Meat, poultry, seafood, raw/unpasteurized dairy, or other food your state's cottage food law doesn't cover — most states exclude these from home-kitchen sales entirely; check "Cottage Food Laws by State" before you assume something's allowed.</li>
+          <li>Anything already recalled or subject to a safety warning.</li>
+          <li>Health, medical, or "cures/treats a condition" claims about any food.</li>
+          <li>Counterfeit or trademark-infringing packaging, branding, or labels.</li>
+          <li>Weapons, drugs or drug paraphernalia, or anything else illegal to sell where you live.</li>
+          <li>Anything that isn't food — Plates is a food marketplace, not a general classifieds app.</li>
+        </ul>
+        <p className="mt-2">
+          We remove listings like these on sight when reported, and repeat or deliberate violations
+          lead to account suspension — see "How we enforce this" below.
         </p>
       </Section>
       <Section title="If you're buying">
@@ -332,6 +368,20 @@ function Guidelines() {
           No harassment, scams, spam, or fake listings. Show up for pickups you've confirmed, or
           message the seller if your plans change. Treat this like the neighborhood it's meant to
           be.
+        </p>
+      </Section>
+      <Section title="How we enforce this">
+        <p>
+          What happens depends on what happened, not a fixed script — a first-time, low-severity
+          slip (say, a listing that's missing an allergen note) usually gets a warning and a chance
+          to fix it; a prohibited listing gets removed on sight; anything involving a real safety
+          risk to another person — theft, threats, assault, or a pattern of scamming — gets the
+          account suspended immediately, before we've finished looking into it, not after. We can
+          act on an account at any point in that range without warning when the situation calls for
+          it, and reinstating a suspended account requires us to actually believe the issue is
+          resolved. Every report gets reviewed by a real person, not just an automated filter. None
+          of this requires you to prove your case beyond doubt first — flagging what you saw is
+          enough to start.
         </p>
       </Section>
       <Section title="Meeting up safely">

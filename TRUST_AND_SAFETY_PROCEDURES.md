@@ -34,7 +34,10 @@ by date:
 3. **Food safety concern** — an allergen wasn't disclosed, someone got sick.
    Same-day if the seller has other active listings (stop new orders from
    reaching them while you look into it).
-4. **Inappropriate behavior / spam / inaccurate listing / something else** —
+4. **Prohibited item** (alcohol, drugs, weapons, or anything else outside
+   "What you can't sell or post") — same-day; remove the listing first, then
+   decide warn-vs-suspend per the scenario below.
+5. **Inappropriate behavior / spam / inaccurate listing / something else** —
    normal queue, no rush, but don't let it pile up indefinitely.
 
 ## What to actually do, by scenario
@@ -86,6 +89,22 @@ delivery.**
 - Consider pausing (not necessarily banning) the seller's other listings
   while you look into it, especially if there's any chance the same batch of
   food is still being sold to others.
+
+**Someone reports (or you notice) a prohibited listing — alcohol, drugs, weapons, meat/dairy/seafood
+outside cottage food coverage, a health/medical claim, counterfeit branding, or anything that isn't
+food.**
+- Remove the listing (Admin → the listing itself, or via the linked report) as soon as you confirm
+  it's actually prohibited — don't wait for a second report or a pattern first. See "What you can't
+  sell or post" in the in-app Community Guidelines for the current list.
+- First time, otherwise-normal account: remove the listing and send a short heads-up (what was
+  wrong, link to the Guidelines) rather than banning outright — most of these are a seller not
+  realizing something's out of bounds, not bad faith.
+- Deliberate or repeated (a re-listed item after a warning, multiple prohibited listings at once,
+  anything clearly not a mistake — e.g. alcohol, drugs, weapons): suspend the account. Don't wait
+  for a third strike on anything in that category.
+- If the item raises an actual legal question (unclear whether it's a real cottage-food violation
+  vs. just against Plates' own house rules), lean toward removing it and asking the seller to
+  clarify rather than leaving it up while you decide.
 
 **Someone reports harassment or unwanted contact (not a physical incident).**
 - Read the actual messages if the report is chat-based before deciding — the

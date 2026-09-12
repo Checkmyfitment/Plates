@@ -4,6 +4,7 @@ import { submitReport } from '../lib/reports'
 const reasons = [
   'Safety incident (theft, threats, or something happened in person)',
   'Food safety concern',
+  'Prohibited item (alcohol, drugs, weapons, or something not allowed on Plates)',
   'Inaccurate listing (photo, price, or description)',
   'Spam or scam',
   'Inappropriate behavior',
