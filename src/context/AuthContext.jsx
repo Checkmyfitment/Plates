@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { ensureIAPConfigured } from '../lib/iap'
 
 const AuthContext = createContext(null)
 
@@ -23,11 +24,15 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       loadProfile(session?.user?.id).finally(() => setLoading(false))
+      // no-ops on web, or if RevenueCat isn't configured for this build --
+      // see lib/iap.js
+      if (session?.user?.id) ensureIAPConfigured(session.user.id).catch((err) => console.error('IAP configure failed', err))
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       loadProfile(session?.user?.id)
+      if (session?.user?.id) ensureIAPConfigured(session.user.id).catch((err) => console.error('IAP configure failed', err))
       // fired when someone lands back here from a password-reset email link
       if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true)
     })

@@ -394,6 +394,27 @@ export default function App() {
     window.history.replaceState({}, '', window.location.pathname + (search ? `?${search}` : ''))
   }, [legalLinkOpened])
 
+  // ?boosted=1 / ?boost_cancelled=1 -- Stripe Checkout's success_url/
+  // cancel_url for the featured-listing purchase (see lib/checkout.js)
+  // redirect back here with one of these; the native/RevenueCat purchase
+  // path doesn't need this since it never leaves the app. Runs once per
+  // load, same pattern as the ?legal= handler above.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('boosted')) {
+      toast.success('This listing is now featured for 7 days!')
+    } else if (params.has('boost_cancelled')) {
+      toast.info('Checkout cancelled — your listing was not featured.')
+    } else {
+      return
+    }
+    params.delete('boosted')
+    params.delete('boost_cancelled')
+    const search = params.toString()
+    window.history.replaceState({}, '', window.location.pathname + (search ? `?${search}` : ''))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const requireAuth = (reason) => {
     setAuthPromptReason(reason || null)
     setAuthPromptOpen(true)

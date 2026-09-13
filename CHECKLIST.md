@@ -826,6 +826,80 @@ email function safely either way (it just no-ops until this is set up).
 - [ ] Run `supabase/migration_cottage_law.sql` in Supabase SQL Editor. Adds
       `listings.cottage_law_confirmed`
 
+## Paid featured listings setup (bigger lift) — [MIXED]: the RevenueCat and
+Stripe accounts (identity/payment) can only be yours, as are the App Store
+Connect / Play Console in-app purchase products; everything code-level —
+schema, Edge Functions, client wiring — is already written and waiting on
+the keys/product ids below
+
+Replaces the "Request to be featured" flow's manual off-platform payment
+(seller asks → admin arranges payment some other way → admin flips a
+toggle) with a real purchase: RevenueCat (wrapping StoreKit + Google Play
+Billing) on iOS/Android, Stripe Checkout on web. $4.99 for 7 days featured,
+matching the existing $5/week copy. The manual flow keeps working exactly
+as before until every box below is done — see `PAID_BOOSTS_LIVE` in
+`src/lib/siteInfo.js`, the one switch that turns real payment on.
+
+- [x] `listing_boosts` table + `apply_listing_boost()` written and run —
+      `supabase/migration_listing_boost_payments.sql`
+- [x] Edge Functions written and deployed — `apply-native-boost` (verifies
+      a native purchase against RevenueCat's API before crediting it),
+      `create-checkout-session` + `stripe-webhook` (the web/Stripe pair).
+      `stripe-webhook` is deployed with `--no-verify-jwt`, deliberately —
+      Stripe's own calls carry no Supabase auth token, only a
+      `stripe-signature` header, which the function verifies itself; the
+      other two keep Supabase's platform JWT check since the client always
+      calls them with the signed-in user's own access token
+- [x] Client wiring done — `src/lib/iap.js`, `src/lib/checkout.js`,
+      `PromotionRequestCard.jsx` (the seller-facing button on a listing)
+- [ ] Sign up for [RevenueCat](https://revenuecat.com) (free up to
+      $2.5k/mo tracked revenue). Create a Project called "Plates", then
+      add two Apps inside it: one iOS (bundle id `com.platesapp.app`), one
+      Android (same package name)
+- [ ] In App Store Connect: **Apps → Plates → In-App Purchases → +** —
+      create a **Consumable** product, e.g. name "Feature Listing (7
+      days)", product ID `feature_listing_7day`, price tier ~$4.99. Needs
+      a paid apps agreement accepted (Business → Agreements) if you
+      haven't already
+- [ ] In Play Console (once account verification — see "Mobile app store
+      setup" above — is done and the app exists there): **Monetize →
+      Products → In-app products → Create product** — same id
+      `feature_listing_7day`, one-time product, ~$4.99
+- [ ] In RevenueCat: connect App Store Connect (Project settings →
+      Integrations → App Store Connect, needs an App Store Connect API
+      key you generate at appstoreconnect.apple.com/access/api) and Play
+      Console (needs a Google Play service account — RevenueCat's own
+      docs walk through this exact step). Then Products → import the
+      `feature_listing_7day` product from each store, and create an
+      Offering with one Package (identifier `feature_listing_7day`,
+      matching `FEATURE_LISTING_PACKAGE_ID` in `src/lib/siteInfo.js`)
+      containing both
+- [ ] Copy the two **public** SDK keys (Project → [app] → API keys — NOT
+      the secret key) into `src/lib/siteInfo.js`:
+      `REVENUECAT_IOS_API_KEY`, `REVENUECAT_ANDROID_API_KEY`
+- [ ] Set the RevenueCat **secret** key (different from the public ones
+      above — Project settings → API keys → Secret key, starts `sk_`) as
+      a Supabase secret: `npx supabase secrets set
+      REVENUECAT_SECRET_API_KEY=sk_your_key_here`
+- [ ] Sign up for [Stripe](https://stripe.com) if you don't already have
+      an account for Plates (test mode works with no business details yet)
+- [ ] Set two secrets from Stripe's dashboard (Developers → API keys):
+      `npx supabase secrets set STRIPE_SECRET_KEY=sk_your_key_here` (test
+      key `sk_test_...` is fine to start)
+- [ ] In Stripe dashboard → Developers → Webhooks → **Add endpoint**,
+      pointing at `https://pexmyasywfqkswpblmrq.supabase.co/functions/v1/stripe-webhook`,
+      listening for `checkout.session.completed`. Copy the signing secret
+      it shows you (starts `whsec_`) and set it: `npx supabase secrets
+      set STRIPE_WEBHOOK_SECRET=whsec_your_secret_here`
+- [ ] Test all three paths for real before flipping the switch below:
+      an iOS sandbox purchase, an Android internal-testing-track purchase,
+      and a Stripe test-mode web checkout (card `4242 4242 4242 4242`) —
+      confirm `listings.featured_until` actually updates after each
+- [ ] Flip `PAID_BOOSTS_LIVE` to `true` in `src/lib/siteInfo.js` once all
+      three are confirmed working
+- [ ] Have a lawyer pass update the Terms of Service's "Payments & refunds"
+      section — see the note on this in "Not built yet" below
+
 ## Things to check — [MIXED], the messiest section to categorize since it's
 one huge flat list. Breaking down what's still unchecked below by why:
 - **Needs a second account** (most of them) — messaging, notifications
@@ -2536,12 +2610,13 @@ noted here so they're not lost, not started yet:
       until Featured/Pro have run for a bit and there's real signal on whether
       anyone actually pays for what exists now, rather than designing a third
       pricing tier in a vacuum
-- [ ] Payments (Stripe Connect or similar) — buyers and sellers currently arrange
-      payment and pickup entirely outside the app; this is also the prerequisite for
-      taking a commission and actually making money from the app. The seller-facing
-      "Request to be featured" flow (Admin → Promotions) now exists, but approving
-      a request is still a manual/off-platform arrangement — wiring it to an actual
-      Stripe charge at request time is what's still missing. When that lands, the
+- [ ] Payments for the food itself (Stripe Connect or similar) — buyers and sellers
+      still arrange payment and pickup entirely outside the app for actual orders;
+      this is also the prerequisite for taking a commission and actually making
+      money from the app. Separate and much bigger than the featured-listing payment
+      below — this one means holding buyer funds and paying sellers out, real Stripe
+      Connect marketplace territory. Not started.
+      NOTE: once *either* this or the featured-listing payment below is live, the
       "Payments & refunds" section in the Terms of Service needs another pass — it
       currently says Plates doesn't process payments, which won't be true anymore
 - [ ] Have an actual lawyer review the Terms of Service, Privacy Policy, and
