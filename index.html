@@ -5,7 +5,12 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icon-180.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- user-scalable=no + fixed initial/maximum-scale: this is a native-app-style
+         WebView (Capacitor), not a webpage -- without this, an accidental pinch or
+         double-tap while holding the phone (very easy mid-recording) zooms the whole
+         page in and leaves it needing to scroll in both directions to see content
+         that otherwise fits the screen exactly, like Marketplace's own app. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="description" content="Discover and order homemade food from home cooks near you." />
     <meta name="theme-color" content="#1D3128" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
