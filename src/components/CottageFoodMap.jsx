@@ -1,6 +1,16 @@
 import { useState } from 'react'
-import USAMap from 'react-usa-map'
+import USAMapImport from 'react-usa-map'
 import { ABBR_BY_STATE, hasCottageFoodProgram } from '../lib/cottageFoodStates'
+
+// react-usa-map is a CJS package with a UMD-wrapped default export. This
+// project's build (rolldown-vite) interops that as a *node-mode* require,
+// which unconditionally sets `.default` to the whole CJS exports object
+// instead of unwrapping it -- so a plain `import USAMap from 'react-usa-map'`
+// silently became the exports object itself in production (never in dev,
+// which is what let this ship: React then threw "invalid element type" the
+// moment CottageFoodMap rendered <USAMap>, since an object isn't a valid
+// component type). Unwrapping defensively here handles either shape.
+const USAMap = USAMapImport.default ?? USAMapImport
 
 // customize() is computed once per render, keyed by the two-letter
 // abbreviations react-usa-map's own geometry uses -- every state gets a

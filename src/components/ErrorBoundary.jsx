@@ -14,7 +14,13 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('Unhandled error in app tree', error, info)
-    logClientError({ message: error.message, stack: error.stack, context: 'react-render' })
+    // info.componentStack names the actual component tree that was
+    // rendering when this blew up (e.g. "at PromotionRequestCard\n  at
+    // ListingDetail\n  ...") -- appended here rather than as a separate
+    // column so this ships without a migration; it's the one piece of a
+    // minified production error that actually points at real source.
+    const stack = info?.componentStack ? `${error.stack}\n\n--- component stack ---\n${info.componentStack}` : error.stack
+    logClientError({ message: error.message, stack, context: 'react-render' })
   }
 
   render() {
