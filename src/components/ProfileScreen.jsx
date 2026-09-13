@@ -27,6 +27,7 @@ export default function ProfileScreen({
   onGoToSell,
   onGoBrowse,
   hasEverOrdered,
+  openOrderCount = 0,
   signupIntent,
 }) {
   // null covers every account that signed up before this choice existed —
@@ -37,7 +38,13 @@ export default function ProfileScreen({
   const badge = yourListings.length > 0 ? getSellerBadge(sellerRating, sellerTrust) : null
 
   return (
-    <div className="px-5 pb-4">
+    // pb-24 (not pb-4) -- this is the longest page in the app (profile
+    // header, checklists, My Orders, the stat row, Invite/Followed/
+    // Subscriptions cards, then a full listings grid), and its very last
+    // element -- a seller's own listing cards -- sat right where the
+    // floating bottom nav overlaps the page, reading as "cut off" even
+    // though technically still there. Same fix as Settings' Log out button.
+    <div className="px-5 pb-24">
       <div className="flex items-center gap-3 mb-2">
         <div
           className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-medium overflow-hidden shrink-0"
@@ -118,6 +125,46 @@ export default function ProfileScreen({
         </a>
       )}
 
+      {onOpenOrders && (
+        // a full stat-style box, not a small pill -- this is the one thing
+        // here that reflects something live (orders actually in progress
+        // right now) rather than a static setting, so it gets the same
+        // visual weight as the Listings/Saved/Rating boxes below, not
+        // buried among "Edit profile" and the rest.
+        <button
+          onClick={onOpenOrders}
+          className="pressable card-elevated w-full p-4 mb-3 flex items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-3">
+            <div className="icon-badge shrink-0" aria-hidden="true" style={{ background: 'var(--forest-soft)' }}>
+              📦
+            </div>
+            <div>
+              <p className="text-base font-bold" style={{ color: 'var(--forest-dark)' }}>
+                My Orders
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                {openOrderCount > 0
+                  ? `${openOrderCount} order${openOrderCount === 1 ? '' : 's'} in progress`
+                  : 'Nothing in progress right now'}
+              </p>
+            </div>
+          </div>
+          {openOrderCount > 0 ? (
+            <span
+              className="shrink-0 min-w-[26px] h-[26px] px-1.5 rounded-full text-xs font-bold flex items-center justify-center"
+              style={{ background: 'var(--forest)', color: 'white' }}
+            >
+              {openOrderCount > 9 ? '9+' : openOrderCount}
+            </span>
+          ) : (
+            <span className="shrink-0 text-lg" style={{ color: 'var(--ink-soft)' }} aria-hidden="true">
+              ›
+            </span>
+          )}
+        </button>
+      )}
+
       <div className="flex flex-wrap gap-2 mb-5">
         {onEditProfile && (
           <button
@@ -135,15 +182,6 @@ export default function ProfileScreen({
             style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
           >
             View public profile
-          </button>
-        )}
-        {onOpenOrders && (
-          <button
-            onClick={onOpenOrders}
-            className="pressable text-xs font-semibold px-3 py-1.5 rounded-full border-2"
-            style={{ borderColor: 'var(--forest)', color: 'var(--forest-dark)' }}
-          >
-            📦 My Orders
           </button>
         )}
         {onOpenDashboard && yourListings.length > 0 && (
@@ -187,7 +225,7 @@ export default function ProfileScreen({
           <p className="font-display text-2xl" style={{ color: 'var(--forest-dark)' }}>
             {yourListings.length}
           </p>
-          <p className="text-[11px] mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+          <p className="text-xs font-semibold mt-0.5" style={{ color: 'var(--ink-soft)' }}>
             Listings posted
           </p>
         </div>
@@ -198,7 +236,7 @@ export default function ProfileScreen({
           <p className="font-display text-2xl" style={{ color: 'var(--forest-dark)' }}>
             {favoriteIds.size}
           </p>
-          <p className="text-[11px] mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+          <p className="text-xs font-semibold mt-0.5" style={{ color: 'var(--ink-soft)' }}>
             Saved
           </p>
         </div>
@@ -209,7 +247,7 @@ export default function ProfileScreen({
           <p className="font-display text-2xl" style={{ color: 'var(--forest-dark)' }}>
             {sellerRating ? sellerRating.avgRating : '—'}
           </p>
-          <p className="text-[11px] mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+          <p className="text-xs font-semibold mt-0.5" style={{ color: 'var(--ink-soft)' }}>
             {sellerRating ? `${sellerRating.reviewCount} rating${sellerRating.reviewCount === 1 ? '' : 's'}` : 'Your rating'}
           </p>
         </div>
@@ -228,7 +266,7 @@ export default function ProfileScreen({
         <MySubscriptions userId={userId} onOpenListing={(id) => onSelect(listings.find((l) => l.id === id))} />
       )}
 
-      <h3 className="text-xs font-medium mb-2 mt-5" style={{ color: 'var(--ink-soft)' }}>
+      <h3 className="text-sm font-bold mb-2 mt-5" style={{ color: 'var(--forest-dark)' }}>
         Your listings
       </h3>
       {yourListings.length === 0 ? (

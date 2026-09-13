@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { startOrGetChat, sendMessage as sendChatMessage } from './chats'
 
 // 4-digit code the buyer shows and the seller enters at pickup to confirm
 // the right person is collecting the order — not a security boundary
@@ -141,6 +142,20 @@ export async function fetchHasEverOrdered(buyerId) {
   return (count ?? 0) > 0
 }
 
+// how many of a buyer's orders are still "live" right now -- used to give
+// the My Orders entry point a badge, since this is the one thing on the
+// profile screen that reflects something actively happening, not a static
+// setting
+export async function fetchOpenOrderCount(buyerId) {
+  const { count, error } = await supabase
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('buyer_id', buyerId)
+    .in('status', ['pending', 'confirmed', 'preparing', 'ready', 'cancel_requested'])
+  if (error) throw error
+  return count ?? 0
+}
+
 export async function fetchCompletedOrderCount(buyerId, sellerId) {
   const { count, error } = await supabase
     .from('orders')
@@ -152,20 +167,95 @@ export async function fetchCompletedOrderCount(buyerId, sellerId) {
   return count ?? 0
 }
 
-export async function updateOrderStatus(orderId, status, reason) {
-  const patch = { status }
-  if (status === 'cancelled' && reason) patch.cancellation_reason = reason
-  const { data, error } = await supabase.from('orders').update(patch).eq('id', orderId).select(ORDER_SELECT).single()
-  if (error) throw error
-  return mapOrder(data)
+// posts a short system-style chat message for an order status change the
+// other side should see in their inbox, not just the notifications bell —
+// mirrors the "🛒 New order: ..." message already sent when an order is
+// placed (see placeOrderAndNotify in App.jsx). Best-effort: a chat hiccup
+// here shouldn't surface as a failure of the status change itself, which
+// has already succeeded in the database by the time this runs.
+async function postOrderChatMessage(anchorOrder, actingUserId, text) {
+  try {
+    const chatId = await startOrGetChat({ id: anchorOrder.listingId }, anchorOrder.buyerId)
+    await sendChatMessage(chatId, actingUserId, text)
+  } catch (err) {
+    console.error('Failed to post order chat message', err)
+  }
 }
 
-export async function updateCartStatus(cartId, status, reason) {
+function summarizeItems(orders) {
+  return orders.length === 1
+    ? `${orders[0].quantity}x ${orders[0].listingTitle}`
+    : orders.map((o) => `${o.quantity}x ${o.listingTitle}`).join(', ')
+}
+
+export async function updateOrderStatus(orderId, status, reason, actingUserId) {
   const patch = { status }
-  if (status === 'cancelled' && reason) patch.cancellation_reason = reason
+  if ((status === 'cancelled' || status === 'cancel_requested') && reason) patch.cancellation_reason = reason
+  const { data, error } = await supabase.from('orders').update(patch).eq('id', orderId).select(ORDER_SELECT).single()
+  if (error) throw error
+  const order = mapOrder(data)
+  if (actingUserId && (status === 'cancelled' || status === 'cancel_requested')) {
+    const who = actingUserId === order.buyerId ? 'Buyer' : 'Seller'
+    const reasonSuffix = reason ? ` — "${reason}"` : ''
+    const text =
+      status === 'cancelled'
+        ? `🚫 ${who} cancelled the order (${summarizeItems([order])})${reasonSuffix}`
+        : `🚫 Requested to cancel (${summarizeItems([order])})${reasonSuffix}. Waiting on the seller to approve or decline.`
+    await postOrderChatMessage(order, actingUserId, text)
+  }
+  return order
+}
+
+export async function updateCartStatus(cartId, status, reason, actingUserId) {
+  const patch = { status }
+  if ((status === 'cancelled' || status === 'cancel_requested') && reason) patch.cancellation_reason = reason
   const { data, error } = await supabase.from('orders').update(patch).eq('cart_id', cartId).select(ORDER_SELECT)
   if (error) throw error
-  return data.map(mapOrder)
+  const orders = data.map(mapOrder)
+  if (actingUserId && orders.length && (status === 'cancelled' || status === 'cancel_requested')) {
+    const who = actingUserId === orders[0].buyerId ? 'Buyer' : 'Seller'
+    const reasonSuffix = reason ? ` — "${reason}"` : ''
+    const text =
+      status === 'cancelled'
+        ? `🚫 ${who} cancelled the order (${summarizeItems(orders)})${reasonSuffix}`
+        : `🚫 Requested to cancel (${summarizeItems(orders)})${reasonSuffix}. Waiting on the seller to approve or decline.`
+    await postOrderChatMessage(orders[0], actingUserId, text)
+  }
+  return orders
+}
+
+// seller approving a buyer's cancellation request (order was already
+// 'cancel_requested', not a fresh cancel) — separate from updateOrderStatus
+// above so its chat message reads correctly rather than colliding with the
+// generic "cancelled" phrasing
+export async function approveCancellationRequest(groupId, isCart, actingUserId) {
+  let query = supabase.from('orders').update({ status: 'cancelled' })
+  query = isCart ? query.eq('cart_id', groupId) : query.eq('id', groupId)
+  const { data, error } = await query.select(ORDER_SELECT)
+  if (error) throw error
+  const orders = data.map(mapOrder)
+  if (orders.length) {
+    await postOrderChatMessage(orders[0], actingUserId, `✅ Approved the cancellation request (${summarizeItems(orders)}).`)
+  }
+  return orders
+}
+
+// seller declining a buyer's cancellation request — order goes back to
+// 'confirmed' rather than staying stuck in limbo
+export async function declineCancellationRequest(groupId, isCart, actingUserId) {
+  let query = supabase.from('orders').update({ status: 'confirmed' })
+  query = isCart ? query.eq('cart_id', groupId) : query.eq('id', groupId)
+  const { data, error } = await query.select(ORDER_SELECT)
+  if (error) throw error
+  const orders = data.map(mapOrder)
+  if (orders.length) {
+    await postOrderChatMessage(
+      orders[0],
+      actingUserId,
+      `❌ Declined the cancellation request (${summarizeItems(orders)}) — order is still confirmed.`,
+    )
+  }
+  return orders
 }
 
 // non-binding "I paid" / "I got paid" recordkeeping toggle — no payment

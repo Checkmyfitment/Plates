@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react'
 import Placeholder from './Placeholder'
 import OrderCard from './OrderCard'
-import {
-  fetchBuyerOrders,
-  fetchSellerOrders,
-  updateOrderStatus,
-  updateCartStatus,
-  groupOrders,
-  markOrderPaid,
-} from '../lib/orders'
+import { fetchBuyerOrders, fetchSellerOrders, updateOrderStatus, updateCartStatus, groupOrders, markOrderPaid } from '../lib/orders'
 import { subscribeToTable } from '../lib/realtime'
 import { useToast } from '../context/ToastContext'
 
@@ -54,13 +47,13 @@ export default function OrdersScreen({ userId, onBack, onReorder, onOpenDashboar
   const handleUpdateStatus = async (groupId, status, isCart, reason) => {
     try {
       if (isCart) {
-        const updated = await updateCartStatus(groupId, status, reason)
+        const updated = await updateCartStatus(groupId, status, reason, userId)
         const updatedIds = new Set(updated.map((o) => o.id))
         const merge = (prev) => prev.map((o) => (updatedIds.has(o.id) ? updated.find((u) => u.id === o.id) : o))
         setBuying(merge)
         setSelling(merge)
       } else {
-        const updated = await updateOrderStatus(groupId, status, reason)
+        const updated = await updateOrderStatus(groupId, status, reason, userId)
         setBuying((prev) => prev.map((o) => (o.id === groupId ? updated : o)))
         setSelling((prev) => prev.map((o) => (o.id === groupId ? updated : o)))
       }

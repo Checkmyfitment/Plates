@@ -3,10 +3,12 @@ import { useState } from 'react'
 export const STATUS_STYLES = {
   pending: { background: 'var(--mustard-soft)', color: 'var(--mustard-deep)', label: 'Pending' },
   confirmed: { background: 'var(--forest-soft)', color: 'var(--forest-dark)', label: 'Confirmed' },
+  preparing: { background: 'var(--mustard-soft)', color: 'var(--mustard-deep)', label: 'Preparing' },
   ready: { background: 'var(--mustard)', color: 'var(--forest-dark)', label: 'Ready for pickup' },
   completed: { background: 'var(--paper-dim)', color: 'var(--ink-soft)', label: 'Completed' },
   cancelled: { background: 'var(--plum-soft)', color: 'var(--plum)', label: 'Cancelled' },
   no_show: { background: 'var(--plum-soft)', color: 'var(--plum)', label: 'No-show' },
+  cancel_requested: { background: 'var(--plum-soft)', color: 'var(--plum)', label: 'Cancellation requested' },
 }
 
 // "ready" is the one status whose meaning depends on how the buyer's
@@ -24,6 +26,67 @@ function timeAgo(iso) {
   return `${days} days ago`
 }
 
+// a Domino's-tracker-style progress strip for an order that's still
+// actively moving — pending/confirmed/preparing/ready/completed only.
+// Cancelled, no-show, and cancel_requested orders skip it entirely and
+// rely on the status pill above instead, since "step 3 of 5" doesn't mean
+// anything once an order's off the normal track.
+// icon choice matters here: an inactive step's icon has to actually read
+// as inactive. ✅ was here originally for "Confirmed" and looked wrong —
+// most emoji fonts render it with its own baked-in green checkmark badge,
+// so even the muted/not-yet-reached circle looked like a completed step.
+const TRACKER_STEPS = [
+  { status: 'pending', label: 'Placed', icon: '📝' },
+  { status: 'confirmed', label: 'Confirmed', icon: '👍' },
+  { status: 'preparing', label: 'Preparing', icon: '👩‍🍳' },
+  { status: 'ready', label: 'Ready', icon: '📦' },
+  { status: 'completed', label: 'Done', icon: '🎉' },
+]
+
+function OrderTracker({ status, fulfillmentMethod }) {
+  const isDelivery = fulfillmentMethod === 'delivery'
+  const steps = TRACKER_STEPS.map((s) => {
+    if (!isDelivery) return s
+    if (s.status === 'ready') return { ...s, label: 'Out for delivery', icon: '🚗' }
+    if (s.status === 'completed') return { ...s, label: 'Delivered' }
+    return s
+  })
+  const currentIndex = steps.findIndex((s) => s.status === status)
+  if (currentIndex === -1) return null
+
+  return (
+    <div className="flex items-start mt-3 mb-1" aria-label={`Order status: ${steps[currentIndex].label}`}>
+      {steps.map((s, i) => (
+        <div key={s.status} className={`flex items-center ${i === steps.length - 1 ? '' : 'flex-1'}`}>
+          <div className="flex flex-col items-center gap-1 shrink-0" style={{ width: 40 }}>
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] shrink-0 transition-colors"
+              style={{
+                background: i <= currentIndex ? 'var(--forest)' : 'var(--paper-dim)',
+                color: i <= currentIndex ? 'white' : 'var(--ink-soft)',
+              }}
+            >
+              {i < currentIndex ? '✓' : s.icon}
+            </div>
+            <span
+              className="text-[9px] font-medium text-center leading-tight"
+              style={{ color: i <= currentIndex ? 'var(--ink)' : 'var(--ink-soft)' }}
+            >
+              {s.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div
+              className="flex-1 h-0.5 rounded-full mx-0.5 transition-colors"
+              style={{ background: i < currentIndex ? 'var(--forest)' : 'var(--rule)', marginBottom: 14 }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // `group` comes from lib/orders.js's groupOrders(): { groupId, cartId, orders }
 // — orders.length is 1 for a normal single-item order, or more for a
 // multi-item cart checkout. Every action here applies to the whole group at
@@ -31,14 +94,23 @@ function timeAgo(iso) {
 // `readOnly` hides all action buttons — used where a card is shown for
 // reference only (e.g. My Orders' seller history), so there's exactly one
 // place (Seller Dashboard) where a seller actually acts on an order.
-export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMarkPaid, readOnly }) {
+export default function OrderCard({
+  group,
+  role,
+  onUpdateStatus,
+  onReorder,
+  onMarkPaid,
+  onApproveCancellation,
+  onDeclineCancellation,
+  readOnly,
+}) {
   const { orders, cartId, groupId } = group
   const first = orders[0]
   const style = STATUS_STYLES[first.status]
   const total = orders.reduce((sum, o) => sum + o.priceAtOrder * o.quantity, 0)
   const [busy, setBusy] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
-  const [confirmingAction, setConfirmingAction] = useState(null) // 'cancelled' | 'no_show' | 'pickup_verify' | null
+  const [confirmingAction, setConfirmingAction] = useState(null) // 'cancelled' | 'cancel_requested' | 'no_show' | 'pickup_verify' | null
   const [pickupInput, setPickupInput] = useState('')
   const [pickupError, setPickupError] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -53,6 +125,15 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
       setPickupInput('')
       setPickupError(false)
       setCancelReason('')
+    }
+  }
+
+  const respondToCancellation = async (approve) => {
+    setBusy(true)
+    try {
+      await (approve ? onApproveCancellation : onDeclineCancellation)(groupId, !!cartId)
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -109,7 +190,7 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
           {role === 'buyer' &&
             !isDelivery &&
             first.pickupCode &&
-            (first.status === 'confirmed' || first.status === 'ready') && (
+            (first.status === 'confirmed' || first.status === 'preparing' || first.status === 'ready') && (
               <div className="mt-2 px-3 py-1.5 rounded-lg inline-block" style={{ background: 'var(--mustard-soft)' }}>
                 <p className="text-[10px] font-medium" style={{ color: 'var(--mustard-deep)' }}>
                   Show this code at pickup
@@ -124,7 +205,7 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
             )}
           {role === 'buyer' &&
             !isDelivery &&
-            (first.status === 'confirmed' || first.status === 'ready') && (
+            (first.status === 'confirmed' || first.status === 'preparing' || first.status === 'ready') && (
               <p className="text-[11px] mt-1.5" style={{ color: 'var(--ink-soft)' }}>
                 🤝 Meeting a neighbor for the first time? Pick somewhere well-lit and public if you
                 can, and take a look before you pay.
@@ -168,6 +249,8 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
           </span>
         </div>
       </div>
+
+      <OrderTracker status={first.status} fulfillmentMethod={first.fulfillmentMethod} />
 
       {!readOnly && confirmingAction === 'pickup_verify' && (
         <div className="rounded-xl border p-3 mt-2.5" style={{ borderColor: 'var(--rule)' }}>
@@ -229,10 +312,13 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
       {!readOnly && confirmingAction && confirmingAction !== 'pickup_verify' && (
         <div className="rounded-xl border p-3 mt-2.5" style={{ borderColor: 'var(--plum)' }}>
           <p className="text-xs" style={{ color: 'var(--plum)' }}>
-            {confirmingAction === 'no_show' ? 'Mark this order as a no-show?' : 'Cancel this order?'} This can't be
-            undone.
+            {confirmingAction === 'no_show'
+              ? "Mark this order as a no-show? This can't be undone."
+              : confirmingAction === 'cancel_requested'
+                ? "Request to cancel this order? The seller may have already started preparing it, so they'll need to approve or decline your request."
+                : "Cancel this order? This can't be undone."}
           </p>
-          {confirmingAction === 'cancelled' && (
+          {(confirmingAction === 'cancelled' || confirmingAction === 'cancel_requested') && (
             <input
               type="text"
               value={cancelReason}
@@ -245,12 +331,14 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
           )}
           <div className="flex gap-2 mt-2">
             <button
-              onClick={() => act(confirmingAction, confirmingAction === 'cancelled' ? cancelReason.trim() : undefined)}
+              onClick={() =>
+                act(confirmingAction, confirmingAction !== 'no_show' ? cancelReason.trim() : undefined)
+              }
               disabled={busy}
               className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
               style={{ background: 'var(--plum)', color: 'white' }}
             >
-              {confirmingAction === 'no_show' ? 'Yes, no-show' : 'Yes, cancel'}
+              {confirmingAction === 'no_show' ? 'Yes, no-show' : confirmingAction === 'cancel_requested' ? 'Send request' : 'Yes, cancel'}
             </button>
             <button
               onClick={() => {
@@ -269,7 +357,7 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
 
       {!readOnly && !confirmingAction && (
         <>
-          {role === 'buyer' && (first.status === 'pending' || first.status === 'confirmed') && (
+          {role === 'buyer' && first.status === 'pending' && (
             <button
               onClick={() => setConfirmingAction('cancelled')}
               className="pressable text-xs mt-2.5"
@@ -277,6 +365,42 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
             >
               Cancel order
             </button>
+          )}
+
+          {role === 'buyer' && (first.status === 'confirmed' || first.status === 'preparing') && (
+            <button
+              onClick={() => setConfirmingAction('cancel_requested')}
+              className="pressable text-xs mt-2.5"
+              style={{ color: 'var(--ink-soft)' }}
+            >
+              Request to cancel
+            </button>
+          )}
+
+          {role === 'seller' && first.status === 'cancel_requested' && (
+            <div className="mt-2.5">
+              <p className="text-xs mb-2" style={{ color: 'var(--plum)' }}>
+                The buyer asked to cancel this order — they may not have known you'd already started on it.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => respondToCancellation(true)}
+                  disabled={busy}
+                  className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
+                  style={{ background: 'var(--plum)', color: 'white' }}
+                >
+                  Approve cancellation
+                </button>
+                <button
+                  onClick={() => respondToCancellation(false)}
+                  disabled={busy}
+                  className="pressable text-xs px-3 py-1.5 rounded-full border disabled:opacity-60"
+                  style={{ borderColor: 'var(--rule)', color: 'var(--ink-soft)' }}
+                >
+                  Keep order
+                </button>
+              </div>
+            </div>
           )}
 
           {role === 'buyer' && first.status === 'completed' && onReorder && (
@@ -313,12 +437,32 @@ export default function OrderCard({ group, role, onUpdateStatus, onReorder, onMa
           {role === 'seller' && first.status === 'confirmed' && (
             <div className="flex gap-2 mt-2.5">
               <button
+                onClick={() => act('preparing')}
+                disabled={busy}
+                className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
+                style={{ background: 'var(--forest)', color: 'white' }}
+              >
+                Start preparing
+              </button>
+              <button
+                onClick={() => setConfirmingAction('cancelled')}
+                className="pressable text-xs px-3 py-1.5 rounded-full border"
+                style={{ borderColor: 'var(--rule)', color: 'var(--ink-soft)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {role === 'seller' && first.status === 'preparing' && (
+            <div className="flex gap-2 mt-2.5">
+              <button
                 onClick={() => act('ready')}
                 disabled={busy}
                 className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
                 style={{ background: 'var(--forest)', color: 'white' }}
               >
-                Mark ready
+                {isDelivery ? 'Ready for delivery' : 'Mark ready'}
               </button>
               <button
                 onClick={() => setConfirmingAction('cancelled')}
