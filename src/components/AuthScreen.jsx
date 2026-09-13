@@ -1,9 +1,19 @@
 import { useState, lazy, Suspense } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { useAuth } from '../context/AuthContext'
 import Logo from './Logo'
 import TurnstileWidget from './TurnstileWidget'
 import { savePendingClaim } from '../lib/stores'
 import { setRememberMe } from '../lib/supabaseClient'
+
+// Cloudflare Turnstile cannot complete its challenge inside Capacitor's iOS
+// WebView -- confirmed via Cloudflare's own widget analytics (0 of 168
+// challenges solved across both the Simulator and two signed TestFlight
+// builds, in both Managed and Invisible mode). That's a platform limitation,
+// not a config bug, so on native we skip requiring it rather than lock every
+// real user out of their own app. It still runs (and is still required) on
+// the web app, where it works fine.
+const isNative = Capacitor.isNativePlatform()
 
 // most people who land on this screen never tap Terms/Privacy — no reason
 // to make every guest download it upfront
@@ -83,48 +93,56 @@ export default function AuthScreen({ onClose, reason }) {
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen flex flex-col justify-center px-6" style={{ background: 'var(--paper)' }}>
+    // h-dvh (not min-h-screen) + overflow-hidden on the outer shell pins this
+    // to the real visible viewport instead of letting the page scroll, so it
+    // reads as one static, centered screen (same fix as the onboarding
+    // carousel). The centered content gets its own overflow-y-auto as a
+    // safety net -- signup mode has enough fields + an open keyboard could
+    // still need it on a short device, but it should never be the whole
+    // page that scrolls.
+    <div className="max-w-md mx-auto h-dvh overflow-hidden flex flex-col px-6" style={{ background: 'var(--paper)' }}>
       {onClose && (
         <button
           onClick={onClose}
-          className="pressable self-start text-xs mb-2"
+          className="pressable self-start text-xs mt-6 shrink-0"
           style={{ color: 'var(--ink-soft)' }}
         >
           ← Continue browsing
         </button>
       )}
-      <div className="flex justify-center mb-3">
-        <Logo size={52} />
-      </div>
-      <h1 className="font-display text-3xl text-center mb-1" style={{ color: 'var(--forest-dark)' }}>
-        Plates
-      </h1>
-      <p className="text-sm text-center mb-6" style={{ color: 'var(--ink-soft)' }}>
-        {mode === 'signin' && (reason || 'Log in to browse and order.')}
-        {mode === 'signup' && 'Create an account to start buying and selling.'}
-        {mode === 'reset' && "We'll email you a link to reset your password."}
-      </p>
-
-      {claimCode ? (
-        <p
-          className="text-xs text-center mb-4 rounded-full px-3 py-1.5 mx-auto"
-          style={{ background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' }}
-        >
-          🏪 Sign up or log in to claim your store
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col justify-center py-4">
+        <div className="flex justify-center mb-3">
+          <Logo size={52} />
+        </div>
+        <h1 className="font-display text-3xl text-center mb-1" style={{ color: 'var(--forest-dark)' }}>
+          Plates
+        </h1>
+        <p className="text-sm text-center mb-6" style={{ color: 'var(--ink-soft)' }}>
+          {mode === 'signin' && (reason || 'Log in to browse and order.')}
+          {mode === 'signup' && 'Create an account to start buying and selling.'}
+          {mode === 'reset' && "We'll email you a link to reset your password."}
         </p>
-      ) : (
-        mode === 'signup' &&
-        referredBy && (
+
+        {claimCode ? (
           <p
             className="text-xs text-center mb-4 rounded-full px-3 py-1.5 mx-auto"
-            style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}
+            style={{ background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' }}
           >
-            🎉 You were invited by a neighbor
+            🏪 Sign up or log in to claim your store
           </p>
-        )
-      )}
+        ) : (
+          mode === 'signup' &&
+          referredBy && (
+            <p
+              className="text-xs text-center mb-4 rounded-full px-3 py-1.5 mx-auto"
+              style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}
+            >
+              🎉 You were invited by a neighbor
+            </p>
+          )
+        )}
 
-      <form onSubmit={submit} className="flex flex-col gap-3">
+        <form onSubmit={submit} className="flex flex-col gap-3">
         {mode === 'signup' && (
           <input
             value={name}
@@ -217,7 +235,9 @@ export default function AuthScreen({ onClose, reason }) {
           </label>
         )}
 
-        <TurnstileWidget key={mode} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
+        {!isNative && (
+          <TurnstileWidget key={mode} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
+        )}
 
         {error && (
           <p className="text-xs" style={{ color: 'var(--plum)' }}>
@@ -232,29 +252,30 @@ export default function AuthScreen({ onClose, reason }) {
 
         <button
           type="submit"
-          disabled={busy || !captchaToken}
+          disabled={busy || (!isNative && !captchaToken)}
           className="pressable w-full mt-2 py-3 rounded-xl font-medium text-sm disabled:opacity-60 hover:opacity-90 active:opacity-80 transition-opacity"
           style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}
         >
           {busy ? 'Please wait…' : mode === 'signin' ? 'Log in' : mode === 'signup' ? 'Sign up' : 'Send reset link'}
         </button>
-      </form>
+        </form>
 
-      {mode === 'signin' && (
-        <button onClick={() => switchMode('reset')} className="text-xs text-center mt-3" style={{ color: 'var(--ink-soft)' }}>
-          Forgot password?
+        {mode === 'signin' && (
+          <button onClick={() => switchMode('reset')} className="text-xs text-center mt-3" style={{ color: 'var(--ink-soft)' }}>
+            Forgot password?
+          </button>
+        )}
+
+        <button
+          onClick={() => switchMode(mode === 'signup' ? 'signin' : mode === 'reset' ? 'signin' : 'signup')}
+          className="text-xs text-center mt-2"
+          style={{ color: 'var(--ink-soft)' }}
+        >
+          {mode === 'signin' && "Don't have an account? Sign up"}
+          {mode === 'signup' && 'Already have an account? Log in'}
+          {mode === 'reset' && 'Back to log in'}
         </button>
-      )}
-
-      <button
-        onClick={() => switchMode(mode === 'signup' ? 'signin' : mode === 'reset' ? 'signin' : 'signup')}
-        className="text-xs text-center mt-2"
-        style={{ color: 'var(--ink-soft)' }}
-      >
-        {mode === 'signin' && "Don't have an account? Sign up"}
-        {mode === 'signup' && 'Already have an account? Log in'}
-        {mode === 'reset' && 'Back to log in'}
-      </button>
+      </div>
     </div>
   )
 }
