@@ -3,10 +3,13 @@ import { createContext, useCallback, useContext, useRef, useState } from 'react'
 const ToastContext = createContext(null)
 
 const icons = { success: '✓', error: '!', info: 'ⓘ' }
+// dedicated --toast-* tokens (not the general --forest-dark/--ink/--plum
+// ones) -- those flip with dark mode for text/background use elsewhere,
+// which made success and info toasts render as near-white on white
 const colors = {
-  success: { bg: 'var(--forest-dark)', fg: 'white' },
-  error: { bg: 'var(--plum)', fg: 'white' },
-  info: { bg: 'var(--ink)', fg: 'white' },
+  success: { bg: 'var(--toast-success)', fg: 'white' },
+  error: { bg: 'var(--toast-error)', fg: 'white' },
+  info: { bg: 'var(--toast-info)', fg: 'white' },
 }
 
 export function ToastProvider({ children }) {
