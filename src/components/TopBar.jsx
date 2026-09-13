@@ -1,12 +1,41 @@
+import { useEffect, useRef, useState } from 'react'
 import Logo from './Logo'
 
-export default function TopBar({ title, avatarUrl, initials = '?', onAvatarClick, unreadNotifications = 0, onBellClick, isGuest = false }) {
+export default function TopBar({
+  title,
+  avatarUrl,
+  initials = '?',
+  onAvatarClick,
+  unreadNotifications = 0,
+  onBellClick,
+  isGuest = false,
+  onLogout,
+}) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  // logout used to live only inside the full Profile screen -- one tap
+  // away from here, but easy to lose track of. A quick menu right on the
+  // avatar means signing out doesn't require navigating anywhere first.
+  useEffect(() => {
+    if (!menuOpen) return
+    const onClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    document.addEventListener('touchstart', onClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside)
+      document.removeEventListener('touchstart', onClickOutside)
+    }
+  }, [menuOpen])
+
   return (
     <div className="sticky top-0 z-10 bg-[var(--paper)]">
       <div className="flex items-center justify-between px-5 pt-6 pb-3">
         <div className="flex items-center gap-2">
-          <Logo size={26} />
-          <h1 className="font-display text-2xl" style={{ color: 'var(--forest-dark)' }}>
+          <Logo size={30} />
+          <h1 className="font-display text-3xl" style={{ color: 'var(--forest-dark)' }}>
             {title}
           </h1>
         </div>
@@ -38,18 +67,44 @@ export default function TopBar({ title, avatarUrl, initials = '?', onAvatarClick
               Log in
             </button>
           ) : (
-            <button
-              onClick={onAvatarClick}
-              aria-label="Open profile"
-              className="pressable w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium overflow-hidden shrink-0"
-              style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                initials
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => (onLogout ? setMenuOpen((v) => !v) : onAvatarClick())}
+                aria-label="Account menu"
+                aria-expanded={menuOpen}
+                className="pressable w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium overflow-hidden shrink-0"
+                style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}
+              >
+                {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : initials}
+              </button>
+              {menuOpen && (
+                <div
+                  className="absolute right-0 top-11 w-44 rounded-xl border py-1.5 z-30"
+                  style={{ background: 'var(--card)', borderColor: 'var(--rule)', boxShadow: 'var(--shadow-float)' }}
+                >
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onAvatarClick()
+                    }}
+                    className="pressable w-full text-left text-sm px-3.5 py-2.5 hover:bg-[var(--paper-dim)] transition-colors"
+                    style={{ color: 'var(--ink)' }}
+                  >
+                    👤 Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onLogout()
+                    }}
+                    className="pressable w-full text-left text-sm px-3.5 py-2.5 hover:bg-[var(--paper-dim)] transition-colors"
+                    style={{ color: 'var(--plum)' }}
+                  >
+                    ⏻ Log out
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
           )}
         </div>
       </div>
