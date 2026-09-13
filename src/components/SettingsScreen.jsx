@@ -10,7 +10,13 @@ import AccountSecurity from './AccountSecurity'
 // already work.
 export default function SettingsScreen({ userId, email, phoneVerified, onProfileRefresh, onBack, onLogout, onOpenLegal }) {
   return (
-    <div className="px-5 pt-6 pb-8">
+    // pb-28 (not the pb-4/pb-8 other screens use) -- Log out is the very
+    // last element on this screen with nothing below it, so it sat right
+    // where the floating bottom nav bar overlaps the page and couldn't be
+    // tapped. Every other screen has enough trailing content that this
+    // never came up, but this one needs real clearance of its own on top
+    // of the shared scroll region's own padding.
+    <div className="px-5 pt-6 pb-28">
       <div className="flex items-center gap-3 mb-5">
         <button
           onClick={onBack}
