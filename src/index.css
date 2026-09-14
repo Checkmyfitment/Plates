@@ -215,6 +215,18 @@ body {
   background: var(--ink-soft);
 }
 
+/* react-usa-map renders a fixed-size SVG (width/height attrs default to
+   959x593px) that ignores a parent's max-width entirely -- on a phone
+   that's several times the actual viewport, forcing the whole page to
+   scroll sideways and reading as comically oversized. The svg does carry
+   viewBox="0 0 959 593" though, so overriding its own width/height to
+   scale (not the attributes react-usa-map sets, CSS wins) makes it a
+   normal responsive SVG that fills whatever container it's given. */
+.us-state-map {
+  width: 100%;
+  height: auto;
+}
+
 /* "You are here" dot for the walking/biking-distance radius circle — a
    plain dot on purpose, distinct from the seller medallion pins above so
    it never reads as another kitchen. */

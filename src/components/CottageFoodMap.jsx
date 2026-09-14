@@ -44,16 +44,29 @@ export default function CottageFoodMap() {
       <div className="flex items-center gap-4 mb-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--forest)' }} />
-          Has a cottage food program
+          Program exists — rules still apply
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: 'var(--plum)' }} />
           No program currently
         </span>
       </div>
+      {/* Green covers most of the country here (49 of 50 states), which
+          reads at a glance like "no restrictions apply" -- exactly
+          backwards from what this map means. Having a program is the
+          minimum bar to sell home-kitchen food *at all*; every green
+          state still has its own permit rules, sales caps, and allowed-
+          food lists on top of that. This line has to sit right next to
+          the map itself, not just in the surrounding page copy or the
+          tap-a-state caption below -- most people will see the map
+          without reading either. */}
+      <p className="text-xs text-center mb-2 leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+        Green means home-kitchen sales are possible there, not unrestricted — every state still
+        limits what and how much you can sell.
+      </p>
       <div
         role="img"
-        aria-label="Map of the United States color-coded by whether each state currently has a cottage food program. New Jersey is the only state without one; see the text list below for every state by name."
+        aria-label="Map of the United States color-coded by whether each state currently has a cottage food program. New Jersey is the only state without one — every other state still sets its own permit, sales-cap, and allowed-food rules on top of having a program. See the text list below for every state by name."
         style={{ maxWidth: 480, margin: '0 auto' }}
       >
         <USAMap customize={buildCustomize(setPicked)} onClick={() => {}} />
