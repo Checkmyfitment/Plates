@@ -1502,6 +1502,7 @@ select
   row_number() over (order by t.trending_score desc) as rank
 from totals t
 join public.profiles p on p.id = t.seller_id
+where p.deleted_at is null
 order by t.trending_score desc
 limit 20;
 

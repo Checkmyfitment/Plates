@@ -8,6 +8,11 @@
 -- Returns the top 20 (not just 5) with each seller's lat/lng, so the client
 -- can re-rank down to a final top-5 blending in the viewer's own location
 -- for "trending near you" — plain trending-by-score when they have none set.
+-- Excludes deleted sellers (deleted_at is not null) -- their name/avatar are
+-- anonymized on deletion (see account deletion below), and without this
+-- filter a seller who deletes their account mid-trending-window would
+-- surface here as "Deleted user" linking to a profile that no longer works.
+--
 -- Standalone and safe to run — does not touch or delete existing data.
 
 drop view if exists public.trending_sellers;
@@ -57,5 +62,6 @@ select
   row_number() over (order by t.trending_score desc) as rank
 from totals t
 join public.profiles p on p.id = t.seller_id
+where p.deleted_at is null
 order by t.trending_score desc
 limit 20;
