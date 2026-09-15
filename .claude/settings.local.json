@@ -133,7 +133,8 @@
       "Bash(tar -xzOf react-usa-map-1.5.0.tgz package/README.md)",
       "Bash(tar -xzOf /tmp/react-usa-map-1.5.0.tgz package/dist/components/USAState.js)",
       "Bash(npx vitest *)",
-      "mcp__claude-in-chrome__form_input"
+      "mcp__claude-in-chrome__form_input",
+      "Bash(./gradlew bundleRelease)"
     ]
   }
 }
