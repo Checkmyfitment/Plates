@@ -34,48 +34,54 @@
 }
 
 /* Dark palette — follows the system by default; :root[data-theme] below
-   lets the in-app toggle override that either direction. Kept close in
-   character to the light palette (warm charcoal instead of warm cream) so
-   the app still reads as "Plates" rather than a generic dark UI. */
+   lets the in-app toggle override that either direction. Deliberately
+   moved away from a generic "flat charcoal + mint-green" dark UI: a
+   richer, warmer espresso-black base (not a neutral gray) and a deeper
+   jewel-toned emerald accent in the same hue family as the light theme's
+   forest green (not a shifted-toward-cyan mint), so dark mode still reads
+   as "Plates" rather than a template SaaS dashboard. Gold and wine-red
+   secondary accents follow the same logic — warmer and more saturated
+   than a washed pastel. Every value below re-checked against WCAG AA
+   (4.5:1 normal text) against the surface it's actually used on. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #1C1917;
-    --paper-dim: #262220;
-    --card: #262220;
-    --skeleton-shine: rgba(255, 255, 255, 0.06);
-    --ink: #F2EDE6;
-    --ink-soft: #A69C8F;
-    --forest: #34C98A;
-    --forest-dark: #EAF7F0;
-    --mustard: #E8B84B;
-    --mustard-deep: #F0C868;
-    --plum: #E8807D;
-    --plum-soft: #3A2020;
-    --rule: #3A3532;
-    --forest-soft: #16302A;
-    --mustard-soft: #3A2E14;
-    --shadow-card: 0 1px 2px rgba(0,0,0,0.25), 0 3px 12px -4px rgba(0,0,0,0.35);
-    --shadow-float: 0 1px 2px rgba(0,0,0,0.3), 0 10px 24px -10px rgba(0,0,0,0.5);
+    --paper: #18130F;
+    --paper-dim: #221B16;
+    --card: #261E18;
+    --skeleton-shine: rgba(255, 255, 255, 0.05);
+    --ink: #F7F1E7;
+    --ink-soft: #AFA091;
+    --forest: #22B573;
+    --forest-dark: #EFFAF4;
+    --mustard: #E2AC4C;
+    --mustard-deep: #F3CB74;
+    --plum: #E07872;
+    --plum-soft: #34201C;
+    --rule: #3A2E25;
+    --forest-soft: #123024;
+    --mustard-soft: #382610;
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 3px 14px -4px rgba(0,0,0,0.42);
+    --shadow-float: 0 2px 4px rgba(0,0,0,0.35), 0 12px 28px -10px rgba(0,0,0,0.58);
   }
 }
 :root[data-theme="dark"] {
-  --paper: #1C1917;
-  --paper-dim: #262220;
-  --card: #262220;
-  --skeleton-shine: rgba(255, 255, 255, 0.06);
-  --ink: #F2EDE6;
-  --ink-soft: #A69C8F;
-  --forest: #34C98A;
-  --forest-dark: #EAF7F0;
-  --mustard: #E8B84B;
-  --mustard-deep: #F0C868;
-  --plum: #E8807D;
-  --plum-soft: #3A2020;
-  --rule: #3A3532;
-  --forest-soft: #16302A;
-  --mustard-soft: #3A2E14;
-  --shadow-card: 0 1px 2px rgba(0,0,0,0.25), 0 3px 12px -4px rgba(0,0,0,0.35);
-  --shadow-float: 0 1px 2px rgba(0,0,0,0.3), 0 10px 24px -10px rgba(0,0,0,0.5);
+  --paper: #18130F;
+  --paper-dim: #221B16;
+  --card: #261E18;
+  --skeleton-shine: rgba(255, 255, 255, 0.05);
+  --ink: #F7F1E7;
+  --ink-soft: #AFA091;
+  --forest: #22B573;
+  --forest-dark: #EFFAF4;
+  --mustard: #E2AC4C;
+  --mustard-deep: #F3CB74;
+  --plum: #E07872;
+  --plum-soft: #34201C;
+  --rule: #3A2E25;
+  --forest-soft: #123024;
+  --mustard-soft: #382610;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 3px 14px -4px rgba(0,0,0,0.42);
+  --shadow-float: 0 2px 4px rgba(0,0,0,0.35), 0 12px 28px -10px rgba(0,0,0,0.58);
 }
 
 html, body, #root {

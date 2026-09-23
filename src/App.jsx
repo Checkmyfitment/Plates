@@ -1327,9 +1327,9 @@ export default function App() {
           unreadNotifications={notifications.filter((n) => !n.read).length}
           onBellClick={session ? openNotifications : undefined}
           unreadChats={chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}
-          onChatClick={session ? () => setTab('messages') : () => requireAuth('Log in to message sellers.')}
+          onChatClick={session ? () => changeTab('messages') : () => requireAuth('Log in to message sellers.')}
           isSeller={profile?.signup_intent === 'seller' || profile?.signup_intent === 'both'}
-          onAddListingClick={session ? () => setTab('post') : undefined}
+          onAddListingClick={session ? () => changeTab('post') : undefined}
           isGuest={!session}
           onLogout={session ? signOut : undefined}
         />
