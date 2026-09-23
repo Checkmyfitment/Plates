@@ -1,24 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+/* Light palette — same "crisp, one bold accent" language as the dark
+   palette below, just inverted: a clean near-white base (a hair of cool
+   tint, not the previous warm cream) instead of true black, true crisp
+   near-black text instead of crisp near-white, and a deeper, more
+   saturated hero green so it reads as bold rather than muted. Gold and
+   red stay as secondary accents, unchanged. */
 :root {
-  --paper: #FAF7F2;
-  --paper-dim: #F1ECE0;
+  --paper: #FCFCFD;
+  --paper-dim: #F1F1F3;
   --card: #FFFFFF;
   --skeleton-shine: rgba(255, 255, 255, 0.6);
-  --ink: #1B1815;
-  --ink-soft: #746C62;
-  --forest: #0F8A5F;
-  --forest-dark: #17130F;
+  --ink: #0A0A0C;
+  --ink-soft: #6E6E73;
+  --forest: #0C7A52;
+  --forest-dark: #0A0A0C;
   --mustard: #E3A72B;
   --mustard-deep: #B8811A;
   --plum: #C23B3B;
   --plum-soft: #FBEAEA;
-  --rule: #ECE6DD;
-  --forest-soft: #E3F3EC;
+  --rule: #E8E8EA;
+  --forest-soft: #E6F5EE;
   --mustard-soft: #FBEAD2;
-  --shadow-card: 0 1px 2px rgba(27,24,21,0.04), 0 3px 12px -4px rgba(27,24,21,0.10);
-  --shadow-float: 0 1px 2px rgba(27,24,21,0.06), 0 10px 24px -10px rgba(27,24,21,0.22);
+  --shadow-card: 0 1px 2px rgba(10,10,12,0.05), 0 2px 8px -3px rgba(10,10,12,0.10);
+  --shadow-float: 0 1px 3px rgba(10,10,12,0.08), 0 8px 20px -8px rgba(10,10,12,0.16);
 
   /* Toast-only colors — deliberately NOT redefined in the dark-mode blocks
      below. Every other token here flips (dark-on-light becomes
