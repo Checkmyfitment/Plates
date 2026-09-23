@@ -34,6 +34,7 @@ import { subscribeToTable } from './lib/realtime'
 import { placeOrder, placeCartOrder, fetchHasEverOrdered, fetchOpenOrderCount } from './lib/orders'
 import { createSubscription } from './lib/subscriptions'
 import { fetchSellerRatings, fetchSellerTrustStats } from './lib/reviews'
+import { fetchAllSchedulesByListing, isOpenNow } from './lib/schedules'
 import { fetchRestockIds, addRestockAlert, removeRestockAlert, fetchRestockCounts } from './lib/restock'
 import { fetchResponseStats } from './lib/responseStats'
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from './lib/notifications'
@@ -106,6 +107,7 @@ export default function App() {
   const [chatsLoading, setChatsLoading] = useState(true)
   const [activeChatId, setActiveChatId] = useState(null)
   const [sellerRatings, setSellerRatings] = useState(new Map())
+  const [schedulesByListing, setSchedulesByListing] = useState(new Map())
   const [sellerTrustStats, setSellerTrustStats] = useState(new Map())
   const [restockIds, setRestockIds] = useState(new Set())
   const [restockCounts, setRestockCounts] = useState(new Map())
@@ -264,6 +266,14 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // same reasoning as ratings above -- public, fetched once regardless of
+  // session, and merged in below rather than threaded through every screen
+  useEffect(() => {
+    fetchAllSchedulesByListing()
+      .then(setSchedulesByListing)
+      .catch((err) => console.error('Failed to load listing schedules', err))
+  }, [])
+
   // one merge point rather than threading sellerRatings through every
   // intermediate screen (Browse, Saved, Profile, SellerStorefront,
   // SellerDashboard all just pass whatever `listings` array they're given
@@ -273,9 +283,10 @@ export default function App() {
     () =>
       listings.map((l) => {
         const r = sellerRatings.get(l.sellerId)
-        return r ? { ...l, sellerAvgRating: r.avgRating, sellerReviewCount: r.reviewCount } : l
+        const openNow = isOpenNow(schedulesByListing.get(l.id))
+        return { ...l, ...(r && { sellerAvgRating: r.avgRating, sellerReviewCount: r.reviewCount }), openNow }
       }),
-    [listings, sellerRatings],
+    [listings, sellerRatings, schedulesByListing],
   )
 
   useEffect(() => {

@@ -80,6 +80,15 @@ export default function ListingCard({ listing, onSelect, isFavorite, onToggleFav
         >
           ${listing.price}
         </span>
+        {!sold && listing.openNow && (
+          <span
+            className="absolute bottom-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1"
+            style={{ background: 'rgba(27,24,21,0.82)', color: 'var(--forest)' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--forest)' }} />
+            Open now
+          </span>
+        )}
       </div>
       <div className="p-2.5">
         <p className="text-sm font-bold leading-tight tracking-tight line-clamp-2 break-words">{listing.title}</p>

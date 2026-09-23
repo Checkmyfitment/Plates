@@ -23,6 +23,39 @@ export async function fetchSchedules(listingId) {
   return data.map(mapSchedule)
 }
 
+// every schedule row across every listing, grouped by listing -- powers the
+// "Open now" badge shown wherever listings are browsed (Browse/Search/Map),
+// same one-query-then-merge pattern as fetchSellerRatings/fetchRestockCounts
+export async function fetchAllSchedulesByListing() {
+  const { data, error } = await supabase.from('listing_schedules').select('*')
+  if (error) throw error
+  const byListing = new Map()
+  for (const row of data) {
+    const schedule = mapSchedule(row)
+    if (!byListing.has(schedule.listingId)) byListing.set(schedule.listingId, [])
+    byListing.get(schedule.listingId).push(schedule)
+  }
+  return byListing
+}
+
+// true if `now` falls within any of this listing's weekly recurring pickup
+// windows. Listings with no schedules at all (most of them -- schedules are
+// an opt-in, post-creation step) simply never show a badge either way,
+// rather than being implied "closed".
+export function isOpenNow(schedules, now = new Date()) {
+  if (!schedules || schedules.length === 0) return false
+  const weekday = now.getDay()
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  return schedules.some((s) => {
+    if (s.weekday !== weekday) return false
+    const [startH, startM] = s.pickupStart.split(':').map(Number)
+    const [endH, endM] = s.pickupEnd.split(':').map(Number)
+    const startMinutes = startH * 60 + startM
+    const endMinutes = endH * 60 + endM
+    return nowMinutes >= startMinutes && nowMinutes <= endMinutes
+  })
+}
+
 export async function createSchedule({ listingId, weekday, pickupStart, pickupEnd, capacity }) {
   const { data, error } = await supabase
     .from('listing_schedules')

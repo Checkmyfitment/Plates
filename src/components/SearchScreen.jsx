@@ -4,6 +4,7 @@ import ListingCardSkeleton from './ListingCardSkeleton'
 import TrendingKitchens from './TrendingKitchens'
 import { CUISINES, CUISINE_EMOJI } from '../lib/listingOptions'
 import { searchFields, matchesAllWords, relevanceScore } from '../lib/searchListings'
+import { getRecentSearches, addRecentSearch, clearRecentSearches } from '../lib/recentSearches'
 
 // "Top categories" always shows the same cuisine vocabulary a seller could
 // have picked (see listingOptions.js, which already includes 'Vegan') plus
@@ -29,6 +30,7 @@ function matchesCategory(l, category) {
 export default function SearchScreen({ listings, loading, onSelect, favoriteIds, onToggleFavorite, userLocation, onOpenSeller }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState(null)
+  const [recentSearches, setRecentSearches] = useState(() => getRecentSearches())
   const inputRef = useRef(null)
 
   // this screen exists so someone can start typing the instant they tap
@@ -36,6 +38,19 @@ export default function SearchScreen({ listings, loading, onSelect, favoriteIds,
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  const runSearch = (text) => {
+    setQuery(text)
+    setCategory(null)
+  }
+
+  // saved on Enter (a deliberate "run this search" moment), not on every
+  // keystroke -- otherwise "recent" would fill up with every half-typed word
+  const submitSearch = () => {
+    if (!query.trim()) return
+    addRecentSearch(query)
+    setRecentSearches(getRecentSearches())
+  }
 
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const searching = words.length > 0
@@ -65,6 +80,8 @@ export default function SearchScreen({ listings, loading, onSelect, favoriteIds,
             setQuery(e.target.value)
             if (e.target.value.trim()) setCategory(null)
           }}
+          onKeyDown={(e) => e.key === 'Enter' && submitSearch()}
+          onBlur={submitSearch}
           placeholder="Tamales, sourdough, dumplings…"
           className="bg-transparent outline-none text-sm font-medium w-full placeholder:text-[var(--ink-soft)] placeholder:font-medium"
         />
@@ -101,24 +118,66 @@ export default function SearchScreen({ listings, loading, onSelect, favoriteIds,
             Search by dish, or browse a category to get started.
           </p>
 
+          {recentSearches.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2.5">
+                <h3 className="text-sm font-bold" style={{ color: 'var(--forest-dark)' }}>
+                  Recent searches
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearRecentSearches()
+                    setRecentSearches([])
+                  }}
+                  className="pressable text-xs font-medium"
+                  style={{ color: 'var(--ink-soft)' }}
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {recentSearches.map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => runSearch(q)}
+                    className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full whitespace-nowrap border-2"
+                    style={{ borderColor: 'var(--rule)', color: 'var(--ink)' }}
+                  >
+                    ⌕ {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <h3 className="text-sm font-bold mb-2.5" style={{ color: 'var(--forest-dark)' }}>
             Top categories
           </h3>
           <div className="grid grid-cols-3 gap-2.5 mb-6">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                className="pressable flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center"
-                style={{ borderColor: 'var(--rule)', background: 'var(--card)', boxShadow: 'var(--shadow-card)' }}
-              >
-                <span className="text-2xl leading-none">{categoryEmoji(c)}</span>
-                <span className="text-[11px] font-bold leading-tight" style={{ color: 'var(--ink)' }}>
-                  {c}
-                </span>
-              </button>
-            ))}
+            {CATEGORIES.map((c) => {
+              const hasResults = listings.some((l) => matchesCategory(l, c))
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className="pressable flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center"
+                  style={{
+                    borderColor: 'var(--rule)',
+                    background: 'var(--card)',
+                    boxShadow: 'var(--shadow-card)',
+                    opacity: hasResults ? 1 : 0.45,
+                  }}
+                >
+                  <span className="text-2xl leading-none">{categoryEmoji(c)}</span>
+                  <span className="text-[11px] font-bold leading-tight" style={{ color: 'var(--ink)' }}>
+                    {c}
+                  </span>
+                </button>
+              )
+            })}
           </div>
 
           {onOpenSeller && <TrendingKitchens onOpenSeller={onOpenSeller} userLocation={userLocation} />}

@@ -79,9 +79,17 @@ export default function NearbySheet({ listings, userLocation, onSelect }) {
                   {l.distance != null && ` · ${formatDistance(l.distance)}`}
                 </p>
               </div>
-              <span className="shrink-0 text-sm font-bold" style={{ color: 'var(--forest-dark)' }}>
-                ${l.price}
-              </span>
+              <div className="shrink-0 text-right">
+                <span className="text-sm font-bold" style={{ color: 'var(--forest-dark)' }}>
+                  ${l.price}
+                </span>
+                {l.openNow && (
+                  <p className="text-[10px] font-bold flex items-center justify-end gap-1" style={{ color: 'var(--forest)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--forest)' }} />
+                    Open
+                  </p>
+                )}
+              </div>
             </button>
           ))}
         </div>
@@ -103,6 +111,15 @@ export default function NearbySheet({ listings, userLocation, onSelect }) {
                     style={{ background: 'rgba(27,24,21,0.82)', color: 'white' }}
                   >
                     🚚
+                  </span>
+                )}
+                {l.openNow && (
+                  <span
+                    className="absolute bottom-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1"
+                    style={{ background: 'rgba(27,24,21,0.82)', color: 'var(--forest)' }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--forest)' }} />
+                    Open
                   </span>
                 )}
               </div>
