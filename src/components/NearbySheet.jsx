@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { distanceMiles, formatDistance } from '../lib/geo'
 
-// Draggable-feeling bottom sheet for the Map tab -- collapsed to a one-line
-// peek by default (so the map itself is the main event), expands to a full
-// scrollable list of nearby dishes on tap. A true physics-based drag was
-// more risk than this screen needs; a tap-to-toggle sheet gives the same
-// "slide up to see the list" feel with far less to get wrong.
+// Draggable-feeling bottom sheet for the Map tab. Collapsed, it peeks up
+// just enough to show a horizontally-scrolling carousel of big photo
+// preview cards -- a taste of what's actually nearby, not just a count --
+// and expands to a full scrollable list on tap. A true physics-based drag
+// was more risk than this screen needs; a tap-to-toggle sheet gives the
+// same "slide up to see more" feel with far less to get wrong.
 export default function NearbySheet({ listings, userLocation, onSelect }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -32,13 +33,13 @@ export default function NearbySheet({ listings, userLocation, onSelect }) {
         borderColor: 'var(--rule)',
         boxShadow: 'var(--shadow-float)',
         bottom: 'calc(5.75rem + env(safe-area-inset-bottom))',
-        height: expanded ? 'min(60vh, 420px)' : '76px',
+        height: expanded ? 'min(64vh, 460px)' : '224px',
       }}
     >
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="pressable shrink-0 w-full flex flex-col items-center pt-2 pb-3 px-4"
+        className="pressable shrink-0 w-full flex flex-col items-center pt-2 pb-2 px-4"
       >
         <span className="w-9 h-1 rounded-full mb-2.5" style={{ background: 'var(--rule)' }} />
         <span className="w-full flex items-center justify-between">
@@ -53,7 +54,8 @@ export default function NearbySheet({ listings, userLocation, onSelect }) {
           </span>
         </span>
       </button>
-      {expanded && (
+
+      {expanded ? (
         <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
           {withDistance.map((l) => (
             <button
@@ -79,6 +81,31 @@ export default function NearbySheet({ listings, userLocation, onSelect }) {
               <span className="shrink-0 text-sm font-bold" style={{ color: 'var(--forest-dark)' }}>
                 ${l.price}
               </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 flex gap-3 overflow-x-auto px-4 pb-4" style={{ scrollSnapType: 'x proximity' }}>
+          {withDistance.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => onSelect(l)}
+              className="pressable shrink-0 w-[132px] rounded-2xl border overflow-hidden text-left"
+              style={{ borderColor: 'var(--rule)', background: 'var(--card)', scrollSnapAlign: 'start' }}
+            >
+              <div className="w-full h-[100px] flex items-center justify-center text-4xl overflow-hidden" style={{ background: l.bg }}>
+                {l.photoUrl ? <img src={l.photoUrl} alt="" className="w-full h-full object-cover" /> : l.photo}
+              </div>
+              <div className="px-2 py-1.5">
+                <p className="text-xs font-bold leading-tight line-clamp-2">{l.title}</p>
+                <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--ink-soft)' }}>
+                  {l.distance != null ? formatDistance(l.distance) : l.seller}
+                </p>
+                <p className="text-xs font-bold mt-0.5" style={{ color: 'var(--forest-dark)' }}>
+                  ${l.price}
+                </p>
+              </div>
             </button>
           ))}
         </div>
