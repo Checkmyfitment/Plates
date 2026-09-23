@@ -3,6 +3,7 @@ import ListingCard from './ListingCard'
 import Placeholder from './Placeholder'
 import { getSellerBadge, hasCottageLawConfirmed } from '../lib/badges'
 import { fetchProfile } from '../lib/profiles'
+import { timeAgo } from '../lib/timeAgo'
 import { fetchSellerReviews } from '../lib/reviews'
 import { fetchFollowedSellerIds, followSeller, unfollowSeller } from '../lib/follows'
 import { fetchCompletedOrderCount } from '../lib/orders'
@@ -272,7 +273,8 @@ export default function SellerStorefront({
             )}
           </div>
           <div className="min-w-0">
-            <h2 className="font-display text-xl truncate" style={{ color: 'var(--forest-dark)' }}>
+            <h2 className="font-display text-xl truncate flex items-center gap-1" style={{ color: 'var(--forest-dark)' }}>
+              {seller.is_food_truck && <span title="Food truck">🚚</span>}
               {seller.name}
             </h2>
             {seller.kitchen && (
@@ -280,10 +282,17 @@ export default function SellerStorefront({
                 {seller.kitchen}
               </p>
             )}
-            {seller.neighborhood && (
+            {seller.is_food_truck && seller.truck_location_label ? (
               <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
-                {seller.neighborhood}
+                📍 {seller.truck_location_label}
+                {seller.truck_location_updated_at && ` · Updated ${timeAgo(seller.truck_location_updated_at)}`}
               </p>
+            ) : (
+              seller.neighborhood && (
+                <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                  {seller.neighborhood}
+                </p>
+              )
             )}
             {seller.created_at && (
               <p className="text-[11px] mt-0.5" style={{ color: 'var(--ink-soft)' }}>

@@ -23,6 +23,7 @@ export default function ProfileScreen({
   onOpenStorefront,
   onOpenSeller,
   onOpenOrders,
+  onOpenSaved,
   onOpenDashboard,
   onGoToSell,
   onGoBrowse,
@@ -165,6 +166,32 @@ export default function ProfileScreen({
         </button>
       )}
 
+      {onOpenSaved && (
+        <button
+          onClick={onOpenSaved}
+          className="pressable card-elevated w-full p-4 mb-3 flex items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-3">
+            <div className="icon-badge shrink-0" aria-hidden="true" style={{ background: 'var(--forest-soft)' }}>
+              ♡
+            </div>
+            <div>
+              <p className="text-base font-bold" style={{ color: 'var(--forest-dark)' }}>
+                Saved
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                {favoriteIds.size > 0
+                  ? `${favoriteIds.size} listing${favoriteIds.size === 1 ? '' : 's'} saved`
+                  : 'Tap the heart on a listing to save it'}
+              </p>
+            </div>
+          </div>
+          <span className="shrink-0 text-lg" style={{ color: 'var(--ink-soft)' }} aria-hidden="true">
+            ›
+          </span>
+        </button>
+      )}
+
       <div className="flex flex-wrap gap-2 mb-5">
         {onEditProfile && (
           <button
@@ -270,7 +297,7 @@ export default function ProfileScreen({
         Your listings
       </h3>
       {yourListings.length === 0 ? (
-        <Placeholder compact icon="🍽️" title="Nothing posted yet" body="Head to the Sell tab to list something." />
+        <Placeholder compact icon="🍽️" title="Nothing posted yet" body="Tap the ➕ up top to list something." />
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {yourListings.map((l) => (

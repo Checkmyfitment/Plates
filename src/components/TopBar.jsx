@@ -8,6 +8,10 @@ export default function TopBar({
   onAvatarClick,
   unreadNotifications = 0,
   onBellClick,
+  unreadChats = 0,
+  onChatClick,
+  isSeller = false,
+  onAddListingClick,
   isGuest = false,
   onLogout,
 }) {
@@ -56,6 +60,34 @@ export default function TopBar({
                   {unreadNotifications > 9 ? '9+' : unreadNotifications}
                 </span>
               )}
+            </button>
+          )}
+          {onChatClick && (
+            <button
+              onClick={onChatClick}
+              aria-label="Chats"
+              className="pressable relative w-9 h-9 rounded-full flex items-center justify-center text-base shrink-0 hover:bg-[var(--paper-dim)] transition-colors"
+              style={{ color: 'var(--forest-dark)' }}
+            >
+              💬
+              {unreadChats > 0 && (
+                <span
+                  className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full text-[10px] leading-[16px] font-medium text-center"
+                  style={{ background: 'var(--plum)', color: 'white' }}
+                >
+                  {unreadChats > 9 ? '9+' : unreadChats}
+                </span>
+              )}
+            </button>
+          )}
+          {isSeller && onAddListingClick && (
+            <button
+              onClick={onAddListingClick}
+              aria-label="Add listing"
+              className="pressable w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shrink-0 hover:bg-[var(--paper-dim)] transition-colors"
+              style={{ color: 'var(--forest-dark)' }}
+            >
+              ➕
             </button>
           )}
           {isGuest ? (

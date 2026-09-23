@@ -38,3 +38,25 @@ export function markCottageLawNoticeSeen() {
     // ignore — worst case they see it again next time
   }
 }
+
+// One-time "Allow Notifications" prompt shown right after a brand-new
+// signup — separate key so it survives independently of the general
+// walkthrough/cottage-law flags and never reappears for that device once
+// answered (Allow or Skip), even across sessions.
+const NOTIF_PROMPT_SEEN_KEY = 'plates_notif_prompt_seen'
+
+export function hasSeenNotifPrompt() {
+  try {
+    return localStorage.getItem(NOTIF_PROMPT_SEEN_KEY) === 'true'
+  } catch {
+    return true
+  }
+}
+
+export function markNotifPromptSeen() {
+  try {
+    localStorage.setItem(NOTIF_PROMPT_SEEN_KEY, 'true')
+  } catch {
+    // ignore — worst case they see it again next time
+  }
+}

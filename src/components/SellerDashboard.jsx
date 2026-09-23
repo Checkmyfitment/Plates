@@ -15,10 +15,12 @@ import {
 import { fetchSellerStandingOrders, summarizeStandingOrdersByListing } from '../lib/subscriptions'
 import { fetchMyPromotionRequest } from '../lib/promotions'
 import { fetchRestockCounts } from '../lib/restock'
-import { setVacationMode } from '../lib/profiles'
+import { setVacationMode, setFoodTruckStatus, updateTruckLocation } from '../lib/profiles'
+import { geocodeArea } from '../lib/geocode'
 import { broadcastToBuyers } from '../lib/notifications'
 import { SUPPORT_EMAIL } from '../lib/siteInfo'
 import { fetchSellerWeeklyEarnings, fetchSellerInsights } from '../lib/analytics'
+import { timeAgo } from '../lib/timeAgo'
 import { subscribeToTable } from '../lib/realtime'
 import { useToast } from '../context/ToastContext'
 
@@ -44,6 +46,9 @@ export default function SellerDashboard({
   const [restockCounts, setRestockCounts] = useState(new Map())
   const [reposting, setReposting] = useState(null)
   const [vacationBusy, setVacationBusy] = useState(false)
+  const [truckBusy, setTruckBusy] = useState(false)
+  const [truckLocationInput, setTruckLocationInput] = useState('')
+  const [truckLocationBusy, setTruckLocationBusy] = useState(false)
   const [bulkConfirmBusy, setBulkConfirmBusy] = useState(false)
   const [bulkReadyBusy, setBulkReadyBusy] = useState(false)
   const [broadcastOpen, setBroadcastOpen] = useState(false)
@@ -282,6 +287,42 @@ export default function SellerDashboard({
     }
   }
 
+  const toggleFoodTruck = async () => {
+    const next = !profile?.is_food_truck
+    setTruckBusy(true)
+    try {
+      await setFoodTruckStatus(userId, next)
+      await onProfileRefresh?.()
+      toast.success(next ? "You're set up as a food truck — post today's spot below." : 'Food truck mode turned off.')
+    } catch (err) {
+      console.error('Failed to update food truck status', err)
+      toast.error('Could not update that — try again.')
+    } finally {
+      setTruckBusy(false)
+    }
+  }
+
+  const submitTruckLocation = async () => {
+    if (!truckLocationInput.trim()) return
+    setTruckLocationBusy(true)
+    try {
+      const point = await geocodeArea(truckLocationInput.trim())
+      if (!point) {
+        toast.error("Couldn't find that address — try a more specific one.")
+        return
+      }
+      await updateTruckLocation(userId, { label: truckLocationInput.trim(), lat: point.lat, lng: point.lng })
+      await onProfileRefresh?.()
+      setTruckLocationInput('')
+      toast.success("Today's location updated.")
+    } catch (err) {
+      console.error('Failed to update truck location', err)
+      toast.error('Could not update your location — try again.')
+    } finally {
+      setTruckLocationBusy(false)
+    }
+  }
+
   const handleBroadcast = async () => {
     if (!broadcastText.trim()) return
     setBroadcastSending(true)
@@ -374,6 +415,63 @@ export default function SellerDashboard({
         >
           {profile?.on_vacation ? '🏖️ On vacation' : '🏖️ Pause listings'}
         </button>
+      </div>
+
+      <div className="card-elevated p-4 mb-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold" style={{ color: 'var(--forest-dark)' }}>
+              🚚 Food truck
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+              {profile?.is_food_truck
+                ? 'Buyers see a truck badge on your listings.'
+                : 'Turn on if you sell out of a truck rather than a fixed kitchen.'}
+            </p>
+          </div>
+          <button
+            onClick={toggleFoodTruck}
+            disabled={truckBusy}
+            className="pressable shrink-0 text-xs px-3 py-2 rounded-full font-medium disabled:opacity-60"
+            style={
+              profile?.is_food_truck
+                ? { background: 'var(--forest)', color: 'white' }
+                : { background: 'var(--paper-dim)', color: 'var(--ink)' }
+            }
+          >
+            {profile?.is_food_truck ? 'On' : 'Off'}
+          </button>
+        </div>
+        {profile?.is_food_truck && (
+          <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--rule)' }}>
+            <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--ink)' }}>
+              Where are you today?
+            </p>
+            {profile?.truck_location_label && (
+              <p className="text-xs mb-2" style={{ color: 'var(--ink-soft)' }}>
+                📍 {profile.truck_location_label}
+                {profile.truck_location_updated_at && ` · Updated ${timeAgo(profile.truck_location_updated_at)}`}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <input
+                value={truckLocationInput}
+                onChange={(e) => setTruckLocationInput(e.target.value)}
+                placeholder="e.g. 5th & Main St, Oceanside"
+                className="flex-1 min-w-0 text-sm px-3 py-2 rounded-full border-2 bg-[var(--card)] outline-none"
+                style={{ borderColor: 'var(--rule)' }}
+              />
+              <button
+                onClick={submitTruckLocation}
+                disabled={truckLocationBusy || !truckLocationInput.trim()}
+                className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full disabled:opacity-50"
+                style={{ background: 'var(--forest)', color: 'white' }}
+              >
+                {truckLocationBusy ? '…' : 'Update'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {weeklyEarnings && weeklyEarnings.some((w) => w.gmv > 0) && (
@@ -638,7 +736,7 @@ export default function SellerDashboard({
         Your listings
       </h3>
       {yourListings.length === 0 ? (
-        <Placeholder compact icon="🍽️" title="Nothing posted yet" body="Head to the Sell tab to list something." />
+        <Placeholder compact icon="🍽️" title="Nothing posted yet" body="Tap the ➕ up top to list something." />
       ) : (
         <div className="flex flex-col gap-2">
           {yourListings.map((l) => {

@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import Placeholder from './Placeholder'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { timeAgo } from '../lib/timeAgo'
 
 const MILES_TO_METERS = 1609.34
 // rough box around a lat/lng + radius, in degrees -- good enough to fold
@@ -70,9 +71,11 @@ function resolveIsDark() {
 function sellerIcon(seller) {
   const initial = (seller.name || '?').charAt(0).toUpperCase()
   const soldOutClass = seller.allSoldOut ? ' plates-map-pin--sold-out' : ''
-  const badgeContent = seller.avatar
-    ? `<img src="${seller.avatar}" alt="" />`
-    : initial
+  const badgeContent = seller.isFoodTruck
+    ? '🚚'
+    : seller.avatar
+      ? `<img src="${seller.avatar}" alt="" />`
+      : initial
   return L.divIcon({
     className: 'plates-map-pin-wrapper',
     html: `<div class="plates-map-pin${soldOutClass}"><div class="plates-map-pin__badge">${badgeContent}</div><div class="plates-map-pin__tail"></div></div>`,
@@ -88,15 +91,23 @@ export default function KitchensMap({ listings, onSelect, userLocation, radiusMi
   const sellers = useMemo(() => {
     const map = new Map()
     listings.forEach((l) => {
-      if (l.sellerLat == null || l.sellerLng == null) return
+      // a food truck's checked-in "today I'm at X" point takes priority
+      // over their fixed profile location, when they've set one
+      const isFoodTruck = !!l.sellerIsFoodTruck
+      const lat = isFoodTruck && l.sellerTruckLocationLat != null ? l.sellerTruckLocationLat : l.sellerLat
+      const lng = isFoodTruck && l.sellerTruckLocationLng != null ? l.sellerTruckLocationLng : l.sellerLng
+      if (lat == null || lng == null) return
       if (!map.has(l.sellerId)) {
         map.set(l.sellerId, {
           sellerId: l.sellerId,
           name: l.seller,
           avatar: l.sellerAvatar,
           neighborhood: l.sellerNeighborhood,
-          lat: l.sellerLat,
-          lng: l.sellerLng,
+          lat,
+          lng,
+          isFoodTruck,
+          truckLocationLabel: l.sellerTruckLocationLabel,
+          truckLocationUpdatedAt: l.sellerTruckLocationUpdatedAt,
           listings: [],
         })
       }
@@ -161,11 +172,21 @@ export default function KitchensMap({ listings, onSelect, userLocation, radiusMi
         <Marker key={s.sellerId} position={[s.lat, s.lng]} icon={sellerIcon(s)}>
           <Popup>
             <div className="min-w-[160px]">
-              <p className="text-sm font-medium">{s.name}</p>
-              {s.neighborhood && (
+              <p className="text-sm font-medium">
+                {s.isFoodTruck && '🚚 '}
+                {s.name}
+              </p>
+              {s.isFoodTruck && s.truckLocationLabel ? (
                 <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
-                  {s.neighborhood}
+                  📍 {s.truckLocationLabel}
+                  {s.truckLocationUpdatedAt && ` · ${timeAgo(s.truckLocationUpdatedAt)}`}
                 </p>
+              ) : (
+                s.neighborhood && (
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                    {s.neighborhood}
+                  </p>
+                )
               )}
               <div className="flex flex-col gap-1 mt-1.5">
                 {s.listings.map((l) => (

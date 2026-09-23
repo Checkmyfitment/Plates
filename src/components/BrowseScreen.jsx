@@ -1,19 +1,11 @@
-import { useEffect, useState, lazy, Suspense } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ListingCard from './ListingCard'
 import ListingCardSkeleton from './ListingCardSkeleton'
 import WhatsCookingThisWeek from './WhatsCookingThisWeek'
 import TrendingKitchens from './TrendingKitchens'
-import NeighborhoodLeaderboard from './NeighborhoodLeaderboard'
-import SeasonalCollection from './SeasonalCollection'
-import RecentlyViewed from './RecentlyViewed'
-import RecommendedForYou from './RecommendedForYou'
 import { distanceMiles, formatDistance } from '../lib/geo'
 import { getSavedBrowseFilters, saveBrowseFilters } from '../lib/browseFilters'
 import AreaWaitlistCard from './AreaWaitlistCard'
-
-// loads Leaflet (a sizeable dependency) only when someone actually taps
-// into map view, instead of shipping it in everyone's initial bundle
-const KitchensMap = lazy(() => import('./KitchensMap'))
 
 // same cuisine vocabulary as the listing form's own dropdown, so a chip
 // here always matches something a seller could actually have picked
@@ -47,17 +39,26 @@ function relevanceScore(fields, words) {
   return score
 }
 
-export default function BrowseScreen({ listings, loading, onSelect, favoriteIds, onToggleFavorite, userLocation, userNeighborhood, onOpenSeller }) {
+export default function BrowseScreen({ listings, loading, onSelect, favoriteIds, onToggleFavorite, userLocation, userNeighborhood, onOpenSeller, autoFocusSearch = false }) {
   const [active, setActive] = useState(() => getSavedBrowseFilters()?.active ?? 'All')
   const [query, setQuery] = useState('')
-  const [view, setView] = useState(() => getSavedBrowseFilters()?.view ?? 'list')
-  const [nearestFirst, setNearestFirst] = useState(false)
-  const [topRatedFirst, setTopRatedFirst] = useState(false)
+  const [sortBy, setSortBy] = useState(() => getSavedBrowseFilters()?.sortBy ?? 'default')
   const [radiusMiles, setRadiusMiles] = useState(() => getSavedBrowseFilters()?.radiusMiles ?? null)
+  const searchInputRef = useRef(null)
 
   useEffect(() => {
-    saveBrowseFilters({ active, view, radiusMiles })
-  }, [active, view, radiusMiles])
+    saveBrowseFilters({ active, sortBy, radiusMiles })
+  }, [active, sortBy, radiusMiles])
+
+  // "Search" bottom-nav tab lands here with a request to jump straight to
+  // typing, instead of making someone scroll past the rails/chips first
+  useEffect(() => {
+    if (autoFocusSearch) {
+      searchInputRef.current?.scrollIntoView({ block: 'center' })
+      searchInputRef.current?.focus()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // each unclaimed store counts as its own distinct "seller" here, since
   // sellerId alone would otherwise collapse every store an admin has
@@ -92,14 +93,14 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
     // than disappearing just because we can't measure it
     .filter((l) => radiusMiles == null || l.distance == null || l.distance <= radiusMiles)
 
-  if (nearestFirst) {
+  if (sortBy === 'nearest') {
     filtered = [...filtered].sort((a, b) => {
       if (a.distance == null && b.distance == null) return 0
       if (a.distance == null) return 1
       if (b.distance == null) return -1
       return a.distance - b.distance
     })
-  } else if (topRatedFirst) {
+  } else if (sortBy === 'rated') {
     // unrated listings sink to the bottom rather than being treated as a
     // 0 -- an unrated seller isn't worse than a 1-star one, just unproven
     filtered = [...filtered].sort((a, b) => {
@@ -143,19 +144,14 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
         />
       )}
       <WhatsCookingThisWeek listings={listings} favoriteIds={favoriteIds} onToggleFavorite={onToggleFavorite} onSelect={onSelect} />
-      <SeasonalCollection listings={listings} favoriteIds={favoriteIds} onToggleFavorite={onToggleFavorite} onSelect={onSelect} />
       {onOpenSeller && <TrendingKitchens onOpenSeller={onOpenSeller} userLocation={userLocation} />}
-      {onOpenSeller && userNeighborhood && (
-        <NeighborhoodLeaderboard neighborhood={userNeighborhood} onOpenSeller={onOpenSeller} />
-      )}
-      <RecentlyViewed listings={listings} favoriteIds={favoriteIds} onToggleFavorite={onToggleFavorite} onSelect={onSelect} />
-      <RecommendedForYou listings={listings} favoriteIds={favoriteIds} onToggleFavorite={onToggleFavorite} onSelect={onSelect} />
       <div
         className="flex items-center gap-2.5 rounded-2xl border bg-[var(--card)] px-4 py-3 mb-3"
         style={{ borderColor: 'var(--rule)', boxShadow: 'var(--shadow-card)' }}
       >
         <span style={{ color: 'var(--ink-soft)' }}>⌕</span>
         <input
+          ref={searchInputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Tamales, sourdough, dumplings…"
@@ -178,71 +174,34 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
           </button>
         ))}
       </div>
-      <div className="flex items-center justify-between gap-2 mb-4">
-        <div className="flex items-center gap-2 min-w-0 overflow-x-auto">
-          {userLocation && (
-            <>
-              <button
-                onClick={() => setNearestFirst((v) => !v)}
-                className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full border-2 whitespace-nowrap"
-                style={{
-                  background: nearestFirst ? 'var(--ink)' : 'var(--card)',
-                  color: nearestFirst ? 'var(--paper)' : 'var(--ink-soft)',
-                  borderColor: nearestFirst ? 'var(--ink)' : 'var(--rule)',
-                }}
-              >
-                📍 Nearest
-              </button>
-              <select
-                value={radiusMiles ?? ''}
-                onChange={(e) => setRadiusMiles(e.target.value === '' ? null : Number(e.target.value))}
-                aria-label="Search radius"
-                className="pressable shrink-0 text-xs font-bold pl-3 pr-2 py-2 rounded-full border-2 bg-[var(--card)]"
-                style={{ color: 'var(--ink-soft)', borderColor: 'var(--rule)' }}
-              >
-                <option value="">Any distance</option>
-                <option value="1">🚶 Walking (1 mi)</option>
-                <option value="5">Within 5 mi</option>
-                <option value="10">Within 10 mi</option>
-                <option value="25">Within 25 mi</option>
-                <option value="50">Within 50 mi</option>
-              </select>
-            </>
-          )}
-          <button
-            onClick={() => setTopRatedFirst((v) => !v)}
-            className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full border-2 whitespace-nowrap"
-            style={{
-              background: topRatedFirst ? 'var(--ink)' : 'var(--card)',
-              color: topRatedFirst ? 'var(--paper)' : 'var(--ink-soft)',
-              borderColor: topRatedFirst ? 'var(--ink)' : 'var(--rule)',
-            }}
+      <div className="flex items-center gap-2 mb-4">
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          aria-label="Sort by"
+          className="pressable shrink-0 text-xs font-bold pl-3 pr-2 py-2 rounded-full border-2 bg-[var(--card)]"
+          style={{ color: 'var(--ink-soft)', borderColor: 'var(--rule)' }}
+        >
+          {userLocation && <option value="nearest">📍 Nearest</option>}
+          <option value="rated">⭐ Top rated</option>
+          <option value="default">Newest</option>
+        </select>
+        {userLocation && (
+          <select
+            value={radiusMiles ?? ''}
+            onChange={(e) => setRadiusMiles(e.target.value === '' ? null : Number(e.target.value))}
+            aria-label="Search radius"
+            className="pressable shrink-0 text-xs font-bold pl-3 pr-2 py-2 rounded-full border-2 bg-[var(--card)]"
+            style={{ color: 'var(--ink-soft)', borderColor: 'var(--rule)' }}
           >
-            ⭐ Top rated
-          </button>
-        </div>
-        <div className="flex shrink-0 rounded-full border-2 overflow-hidden text-xs font-bold" style={{ borderColor: 'var(--rule)' }}>
-          <button
-            onClick={() => setView('list')}
-            className="pressable px-3.5 py-2"
-            style={{
-              background: view === 'list' ? 'var(--ink)' : 'var(--card)',
-              color: view === 'list' ? 'var(--paper)' : 'var(--ink-soft)',
-            }}
-          >
-            List
-          </button>
-          <button
-            onClick={() => setView('map')}
-            className="pressable px-3.5 py-2"
-            style={{
-              background: view === 'map' ? 'var(--ink)' : 'var(--card)',
-              color: view === 'map' ? 'var(--paper)' : 'var(--ink-soft)',
-            }}
-          >
-            Map
-          </button>
-        </div>
+            <option value="">Any distance</option>
+            <option value="1">🚶 Walking (1 mi)</option>
+            <option value="5">Within 5 mi</option>
+            <option value="10">Within 10 mi</option>
+            <option value="25">Within 25 mi</option>
+            <option value="50">Within 50 mi</option>
+          </select>
+        )}
       </div>
       {loading ? (
         <div className="grid grid-cols-2 gap-3">
@@ -250,10 +209,6 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
             <ListingCardSkeleton key={i} />
           ))}
         </div>
-      ) : view === 'map' ? (
-        <Suspense fallback={<div className="skeleton h-96 w-full rounded-2xl" />}>
-          <KitchensMap listings={filtered} onSelect={onSelect} userLocation={userLocation} radiusMiles={radiusMiles} />
-        </Suspense>
       ) : filtered.length === 0 ? (
         listings.length === 0 ? (
           <div className="mt-6">

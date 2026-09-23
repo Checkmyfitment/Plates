@@ -112,6 +112,13 @@ create table public.profiles (
   -- one optional link (Instagram, TikTok, a personal site, etc.) shown on
   -- the public storefront and own profile
   social_link text check (social_link is null or char_length(social_link) <= 200),
+  -- food trucks: a manual "I'm here today" check-in, not live/GPS-tracked --
+  -- see migration_food_truck.sql for the reasoning
+  is_food_truck boolean not null default false,
+  truck_location_label text check (truck_location_label is null or char_length(truck_location_label) <= 150),
+  truck_location_lat double precision,
+  truck_location_lng double precision,
+  truck_location_updated_at timestamptz,
   created_at timestamptz not null default now()
 );
 

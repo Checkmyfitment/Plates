@@ -84,6 +84,11 @@ export default function ListingCard({ listing, onSelect, isFavorite, onToggleFav
       <div className="p-2.5">
         <p className="text-sm font-bold leading-tight tracking-tight line-clamp-2 break-words">{listing.title}</p>
         <div className="flex items-center gap-1 mt-1 min-w-0">
+          {listing.sellerIsFoodTruck && (
+            <span className="shrink-0 text-xs" title="Food truck" aria-label="Food truck">
+              🚚
+            </span>
+          )}
           <p className="text-xs font-medium truncate" style={{ color: 'var(--ink-soft)' }}>
             {listing.seller}
             {distanceLabel && <span> · {distanceLabel}</span>}

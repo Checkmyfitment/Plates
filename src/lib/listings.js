@@ -47,6 +47,13 @@ function mapListing(row, store) {
     // admin re-saves an older store that predates geocoding
     sellerLat: store ? (store.lat ?? null) : (row.seller?.lat ?? null),
     sellerLng: store ? (store.lng ?? null) : (row.seller?.lng ?? null),
+    // food trucks: a manual "I'm here today" check-in, not the fixed
+    // kitchen point above -- see migration_food_truck.sql
+    sellerIsFoodTruck: store ? false : (row.seller?.is_food_truck ?? false),
+    sellerTruckLocationLabel: store ? null : (row.seller?.truck_location_label ?? null),
+    sellerTruckLocationLat: store ? null : (row.seller?.truck_location_lat ?? null),
+    sellerTruckLocationLng: store ? null : (row.seller?.truck_location_lng ?? null),
+    sellerTruckLocationUpdatedAt: store ? null : (row.seller?.truck_location_updated_at ?? null),
     price: row.price,
     unit: row.unit,
     tag: row.tag,
@@ -88,7 +95,7 @@ function mapListing(row, store) {
 }
 
 const SELLER_JOIN =
-  'seller:profiles!listings_seller_id_fkey(name, kitchen, avatar_url, neighborhood, lat, lng, on_vacation, phone_verified, is_pro)'
+  'seller:profiles!listings_seller_id_fkey(name, kitchen, avatar_url, neighborhood, lat, lng, on_vacation, phone_verified, is_pro, is_food_truck, truck_location_label, truck_location_lat, truck_location_lng, truck_location_updated_at)'
 
 export async function fetchListings() {
   const { data, error } = await supabase

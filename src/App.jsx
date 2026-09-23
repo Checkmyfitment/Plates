@@ -12,7 +12,15 @@ import AuthScreen from './components/AuthScreen'
 import BannedScreen from './components/BannedScreen'
 import DeletedScreen from './components/DeletedScreen'
 import OnboardingWalkthrough from './components/OnboardingWalkthrough'
-import { hasSeenOnboarding, markOnboardingSeen, hasSeenCottageLawNotice, markCottageLawNoticeSeen } from './lib/onboarding'
+import {
+  hasSeenOnboarding,
+  markOnboardingSeen,
+  hasSeenCottageLawNotice,
+  markCottageLawNoticeSeen,
+  hasSeenNotifPrompt,
+  markNotifPromptSeen,
+} from './lib/onboarding'
+import NotificationsPromptScreen from './components/NotificationsPromptScreen'
 // lazy — pulls in react-usa-map, only needed for the small slice of
 // signups (sellers/"both") who ever hit this screen
 const CottageLawReviewScreen = lazy(() => import('./components/CottageLawReviewScreen'))
@@ -48,6 +56,7 @@ const SellerStorefront = lazy(() => import('./components/SellerStorefront'))
 const OrdersScreen = lazy(() => import('./components/OrdersScreen'))
 const SellerDashboard = lazy(() => import('./components/SellerDashboard'))
 const SettingsScreen = lazy(() => import('./components/SettingsScreen'))
+const KitchensMap = lazy(() => import('./components/KitchensMap'))
 
 const screenFallback = (
   <div className="px-5 pt-6">
@@ -56,17 +65,19 @@ const screenFallback = (
 )
 
 const titles = {
-  browse: 'Plates',
+  home: 'Plates',
+  map: 'Map',
+  search: 'Search',
   favorites: 'Saved',
   post: 'Sell',
   messages: 'Chats',
-  profile: 'You',
+  you: 'You',
 }
 
 export default function App() {
   const { session, profile, loading, signOut, refreshProfile, passwordRecovery } = useAuth()
   const toast = useToast()
-  const [tab, setTab] = useState('browse')
+  const [tab, setTab] = useState('home')
   const [selected, setSelected] = useState(null)
   // set only by the "Order" shortcut on a Saved card -- tells ListingDetail
   // to jump straight to the order form instead of opening at the top, since
@@ -79,8 +90,10 @@ export default function App() {
   const [legalDoc, setLegalDoc] = useState(null)
   const [viewingSellerId, setViewingSellerId] = useState(null)
   const [showOrders, setShowOrders] = useState(false)
+  const [showSaved, setShowSaved] = useState(false)
   const [showDashboard, setShowDashboard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [radiusMiles, setRadiusMiles] = useState(null)
   const [listings, setListings] = useState([])
   const [listingsLoading, setListingsLoading] = useState(true)
   const [favoriteIds, setFavoriteIds] = useState(new Set())
@@ -101,6 +114,8 @@ export default function App() {
   const [legalLinkOpened, setLegalLinkOpened] = useState(false)
   const [onboarded, setOnboarded] = useState(() => hasSeenOnboarding())
   const [cottageLawSeen, setCottageLawSeen] = useState(() => hasSeenCottageLawNotice())
+  const [justSignedUp, setJustSignedUp] = useState(false)
+  const [notifPromptSeen, setNotifPromptSeen] = useState(() => hasSeenNotifPrompt())
   const [authPromptOpen, setAuthPromptOpen] = useState(false)
   const [authPromptReason, setAuthPromptReason] = useState(null)
 
@@ -133,7 +148,7 @@ export default function App() {
     }
     if (!hadSession.current) return
     hadSession.current = false
-    setTab('browse')
+    setTab('home')
     setEditingListing(null)
     setEditingProfile(false)
     setShowNotifications(false)
@@ -141,7 +156,9 @@ export default function App() {
     setLegalDoc(null)
     setActiveChatId(null)
     setShowOrders(false)
+    setShowSaved(false)
     setShowDashboard(false)
+    setJustSignedUp(false)
   }, [session])
 
   useEffect(() => {
@@ -429,15 +446,17 @@ export default function App() {
   }, [tab])
 
   const tabAuthReasons = {
-    favorites: "Log in to see what you've saved.",
-    post: 'Log in to start selling.',
-    messages: 'Log in to message sellers.',
-    profile: 'Log in to view your profile.',
+    cart: 'Log in to see your orders.',
+    you: 'Log in to view your profile.',
   }
 
   const changeTab = (t) => {
-    if (!session && t !== 'browse') {
+    if (!session && t !== 'home' && t !== 'map' && t !== 'search') {
       requireAuth(tabAuthReasons[t])
+      return
+    }
+    if (t === 'cart') {
+      openOrders()
       return
     }
     setSelected(null)
@@ -449,6 +468,7 @@ export default function App() {
     setViewingSellerId(null)
     setActiveChatId(null)
     setShowOrders(false)
+    setShowSaved(false)
     setShowDashboard(false)
     setShowSettings(false)
     setTab(t)
@@ -463,6 +483,7 @@ export default function App() {
     setViewingSellerId(null)
     setActiveChatId(null)
     setShowOrders(false)
+    setShowSaved(false)
     setShowDashboard(false)
     setShowSettings(false)
     setShowAdmin(true)
@@ -477,6 +498,7 @@ export default function App() {
     setViewingSellerId(null)
     setActiveChatId(null)
     setShowOrders(false)
+    setShowSaved(false)
     setShowDashboard(false)
     setShowSettings(false)
     setLegalDoc(doc)
@@ -496,6 +518,7 @@ export default function App() {
     setLegalDoc(null)
     setActiveChatId(null)
     setShowOrders(false)
+    setShowSaved(false)
     setShowDashboard(false)
     setShowSettings(false)
     setViewingSellerId(sellerId)
@@ -510,9 +533,25 @@ export default function App() {
     setLegalDoc(null)
     setViewingSellerId(null)
     setActiveChatId(null)
+    setShowSaved(false)
     setShowDashboard(false)
     setShowSettings(false)
     setShowOrders(true)
+  }
+
+  const openSaved = () => {
+    setSelected(null)
+    setEditingListing(null)
+    setEditingProfile(false)
+    setShowNotifications(false)
+    setShowAdmin(false)
+    setLegalDoc(null)
+    setViewingSellerId(null)
+    setActiveChatId(null)
+    setShowOrders(false)
+    setShowDashboard(false)
+    setShowSettings(false)
+    setShowSaved(true)
   }
 
   const openDashboard = () => {
@@ -525,6 +564,7 @@ export default function App() {
     setViewingSellerId(null)
     setActiveChatId(null)
     setShowOrders(false)
+    setShowSaved(false)
     setShowSettings(false)
     setShowDashboard(true)
   }
@@ -539,6 +579,7 @@ export default function App() {
     setViewingSellerId(null)
     setActiveChatId(null)
     setShowOrders(false)
+    setShowSaved(false)
     setShowDashboard(false)
     setShowSettings(true)
   }
@@ -549,6 +590,7 @@ export default function App() {
     setEditingProfile(false)
     setActiveChatId(null)
     setShowOrders(false)
+    setShowSaved(false)
     setShowDashboard(false)
     setShowSettings(false)
     setShowNotifications(true)
@@ -569,7 +611,7 @@ export default function App() {
     if (listing) {
       setSelected(listing)
     } else {
-      setTab('browse')
+      setTab('home')
     }
   }
 
@@ -805,6 +847,7 @@ export default function App() {
       setActiveChatId(chatId)
       setViewingSellerId(null)
       setShowOrders(false)
+      setShowSaved(false)
       setShowDashboard(false)
       setTab('messages')
       toast.success('Order placed! Message the seller to confirm pickup.')
@@ -861,7 +904,7 @@ export default function App() {
   }
 
   if (authPromptOpen && !session) {
-    return <AuthScreen onClose={() => setAuthPromptOpen(false)} reason={authPromptReason} />
+    return <AuthScreen onClose={() => setAuthPromptOpen(false)} reason={authPromptReason} onSignedUp={() => setJustSignedUp(true)} />
   }
 
   if (profile?.banned) {
@@ -870,6 +913,23 @@ export default function App() {
 
   if (profile?.deleted_at) {
     return <DeletedScreen onLogout={signOut} />
+  }
+
+  // one-time "Allow Notifications" prompt, shown right after a brand-new
+  // signup and before anything else (including the seller-only cottage law
+  // screen below) -- a returning login never sets justSignedUp, so this
+  // never interrupts an existing user
+  if (session && justSignedUp && !notifPromptSeen) {
+    return (
+      <NotificationsPromptScreen
+        userId={session.user.id}
+        onDone={() => {
+          markNotifPromptSeen()
+          setNotifPromptSeen(true)
+          setJustSignedUp(false)
+        }}
+      />
+    )
   }
 
   // one-time, seller-facing reference (not a gate — see the screen itself)
@@ -958,6 +1018,18 @@ export default function App() {
           }}
         />
       </Suspense>
+    )
+  } else if (session && showSaved) {
+    body = (
+      <SavedScreen
+        listings={listingsWithRatings.filter((l) => favoriteIds.has(l.id))}
+        loading={listingsLoading}
+        onSelect={setSelected}
+        onQuickOrder={openQuickOrder}
+        favoriteIds={favoriteIds}
+        onToggleFavorite={toggleFavorite}
+        onBack={() => setShowSaved(false)}
+      />
     )
   } else if (session && showDashboard) {
     body = (
@@ -1104,20 +1176,48 @@ export default function App() {
         />
       </Suspense>
     )
-  } else if (session && tab === 'favorites') {
-    body = (
-      <SavedScreen
-        listings={listingsWithRatings.filter((l) => favoriteIds.has(l.id))}
-        loading={listingsLoading}
-        onSelect={setSelected}
-        onQuickOrder={openQuickOrder}
-        favoriteIds={favoriteIds}
-        onToggleFavorite={toggleFavorite}
-      />
-    )
   } else if (session && tab === 'messages') {
     body = <ChatsScreen chats={chats} loading={chatsLoading} onSelect={(id) => setActiveChatId(id)} />
-  } else if (session && tab === 'profile') {
+  } else if (tab === 'map') {
+    const mapUserLocation = profile?.lat != null && profile?.lng != null ? { lat: profile.lat, lng: profile.lng } : null
+    body = (
+      <div className="px-5 pt-4 pb-4">
+        {mapUserLocation && (
+          <select
+            value={radiusMiles ?? ''}
+            onChange={(e) => setRadiusMiles(e.target.value === '' ? null : Number(e.target.value))}
+            aria-label="Search radius"
+            className="pressable mb-3 text-xs font-bold pl-3 pr-2 py-2 rounded-full border-2 bg-[var(--card)]"
+            style={{ color: 'var(--ink-soft)', borderColor: 'var(--rule)' }}
+          >
+            <option value="">Any distance</option>
+            <option value="1">🚶 Walking (1 mi)</option>
+            <option value="5">Within 5 mi</option>
+            <option value="10">Within 10 mi</option>
+            <option value="25">Within 25 mi</option>
+            <option value="50">Within 50 mi</option>
+          </select>
+        )}
+        <Suspense fallback={screenFallback}>
+          <KitchensMap listings={listingsWithRatings} onSelect={setSelected} userLocation={mapUserLocation} radiusMiles={radiusMiles} />
+        </Suspense>
+      </div>
+    )
+  } else if (tab === 'search') {
+    body = (
+      <BrowseScreen
+        listings={listingsWithRatings}
+        loading={listingsLoading}
+        onSelect={setSelected}
+        favoriteIds={favoriteIds}
+        onToggleFavorite={session ? toggleFavorite : () => requireAuth('Log in to save this listing.')}
+        userLocation={profile?.lat != null && profile?.lng != null ? { lat: profile.lat, lng: profile.lng } : null}
+        userNeighborhood={profile?.neighborhood ?? null}
+        onOpenSeller={openSeller}
+        autoFocusSearch
+      />
+    )
+  } else if (session && tab === 'you') {
     body = (
       <ProfileScreen
         user={{
@@ -1145,9 +1245,10 @@ export default function App() {
         onOpenStorefront={() => openSeller(session.user.id)}
         onOpenSeller={openSeller}
         onOpenOrders={openOrders}
+        onOpenSaved={openSaved}
         onOpenDashboard={openDashboard}
         onGoToSell={() => setTab('post')}
-        onGoBrowse={() => setTab('browse')}
+        onGoBrowse={() => setTab('home')}
         hasEverOrdered={hasEverOrdered}
         openOrderCount={openOrderCount}
       />
@@ -1178,14 +1279,18 @@ export default function App() {
     // swipe and drag the header along with it. Pinning the shell to the
     // real viewport means only the flex-1 region below can ever scroll.
     <div className="max-w-md mx-auto h-dvh overflow-hidden flex flex-col" style={{ background: 'var(--paper)' }}>
-      {!selected && !editingListing && !editingProfile && !showNotifications && !showAdmin && !showOrders && !showDashboard && !showSettings && !legalDoc && !viewingSellerId && !(tab === 'messages' && activeChat) && (
+      {!selected && !editingListing && !editingProfile && !showNotifications && !showAdmin && !showOrders && !showSaved && !showDashboard && !showSettings && !legalDoc && !viewingSellerId && !(tab === 'messages' && activeChat) && (
         <TopBar
           title={titles[tab]}
           avatarUrl={profile?.avatar_url ?? null}
           initials={(profile?.name ?? session?.user?.email ?? '?').trim().charAt(0).toUpperCase()}
-          onAvatarClick={() => (session ? changeTab('profile') : requireAuth('Log in to view your profile.'))}
+          onAvatarClick={() => (session ? changeTab('you') : requireAuth('Log in to view your profile.'))}
           unreadNotifications={notifications.filter((n) => !n.read).length}
           onBellClick={session ? openNotifications : undefined}
+          unreadChats={chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}
+          onChatClick={session ? () => setTab('messages') : () => requireAuth('Log in to message sellers.')}
+          isSeller={profile?.signup_intent === 'seller' || profile?.signup_intent === 'both'}
+          onAddListingClick={session ? () => setTab('post') : undefined}
           isGuest={!session}
           onLogout={session ? signOut : undefined}
         />
@@ -1203,7 +1308,7 @@ export default function App() {
           it rather than patching each screen's own padding individually. */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-40">
         <div
-          key={`${tab}-${selected?.id ?? ''}-${editingListing?.id ?? ''}-${editingProfile}-${showNotifications}-${showAdmin}-${showOrders}-${showDashboard}-${showSettings}-${legalDoc ?? ''}-${viewingSellerId ?? ''}-${activeChatId ?? ''}`}
+          key={`${tab}-${selected?.id ?? ''}-${editingListing?.id ?? ''}-${editingProfile}-${showNotifications}-${showAdmin}-${showOrders}-${showSaved}-${showDashboard}-${showSettings}-${legalDoc ?? ''}-${viewingSellerId ?? ''}-${activeChatId ?? ''}`}
           className="screen-transition"
         >
           {body}
@@ -1212,7 +1317,6 @@ export default function App() {
       <BottomNav
         active={tab}
         onChange={changeTab}
-        unreadCount={chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0)}
         avatarUrl={profile?.avatar_url ?? null}
         initials={(profile?.name ?? session?.user?.email ?? '?').trim().charAt(0).toUpperCase()}
       />

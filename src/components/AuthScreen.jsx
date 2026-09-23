@@ -19,7 +19,7 @@ const isNative = Capacitor.isNativePlatform()
 // to make every guest download it upfront
 const LegalScreen = lazy(() => import('./LegalScreen'))
 
-export default function AuthScreen({ onClose, reason }) {
+export default function AuthScreen({ onClose, reason, onSignedUp }) {
   const { signIn, signUp, resetPassword } = useAuth()
   const [referredBy] = useState(() => new URLSearchParams(window.location.search).get('ref') || null)
   const [claimCode] = useState(() => {
@@ -70,6 +70,7 @@ export default function AuthScreen({ onClose, reason }) {
       const { data, error } = await signUp(email, password, name, referredBy, intent, captchaToken)
       if (error) setError(error.message)
       else if (!data.session) setNotice('Check your email for a confirmation link, then log in.')
+      else onSignedUp?.()
     } else if (mode === 'reset') {
       const { error } = await resetPassword(email, captchaToken)
       if (error) setError(error.message)

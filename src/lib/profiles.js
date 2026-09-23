@@ -48,6 +48,30 @@ export async function setVacationMode(userId, onVacation) {
   if (error) throw error
 }
 
+export async function setFoodTruckStatus(userId, isFoodTruck) {
+  const { error } = await supabase.from('profiles').update({ is_food_truck: isFoodTruck }).eq('id', userId)
+  if (error) throw error
+}
+
+// manual "I'm here today" check-in -- see migration_food_truck.sql. Not
+// live/GPS tracking, just a labeled point + timestamp a truck seller
+// updates whenever they move.
+export async function updateTruckLocation(userId, { label, lat, lng }) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      truck_location_label: label,
+      truck_location_lat: lat,
+      truck_location_lng: lng,
+      truck_location_updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function fetchReferralCount(userId) {
   const { count, error } = await supabase
     .from('profiles')

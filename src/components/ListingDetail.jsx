@@ -13,6 +13,7 @@ import { incrementListingViews, getListingShareLink, formatPickupTime, isOrderin
 import { shareLink } from '../lib/share'
 import { addRecentlyViewed } from '../lib/recentlyViewed'
 import { setListingFeatured } from '../lib/admin'
+import { timeAgo } from '../lib/timeAgo'
 import { useToast } from '../context/ToastContext'
 
 export default function ListingDetail({
@@ -192,12 +193,19 @@ export default function ListingDetail({
               {showInlineSellerInfo && (
                 <>
                   <p className="text-sm mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                    {listing.sellerIsFoodTruck && '🚚 '}
                     {listing.seller}
                     {!isUnclaimed && sellerRating && ` · ★ ${sellerRating.avgRating} (${sellerRating.reviewCount})`}
                   </p>
                   {listing.sellerKitchen && (
                     <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
                       {listing.sellerKitchen}
+                    </p>
+                  )}
+                  {listing.sellerIsFoodTruck && listing.sellerTruckLocationLabel && (
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                      📍 {listing.sellerTruckLocationLabel}
+                      {listing.sellerTruckLocationUpdatedAt && ` · Updated ${timeAgo(listing.sellerTruckLocationUpdatedAt)}`}
                     </p>
                   )}
                   {!isUnclaimed && sellerRating?.avgTaste != null && (

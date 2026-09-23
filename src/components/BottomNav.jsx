@@ -1,12 +1,12 @@
 const tabs = [
-  { id: 'browse', label: 'Browse', icon: '🍽️' },
-  { id: 'favorites', label: 'Saved', icon: '♡' },
-  { id: 'post', label: 'Sell', icon: '+' },
-  { id: 'messages', label: 'Chats', icon: '✉' },
-  { id: 'profile', label: 'You', icon: null },
+  { id: 'home', label: 'Home', icon: '🏠' },
+  { id: 'map', label: 'Map', icon: '📍' },
+  { id: 'search', label: 'Search', icon: '🔍' },
+  { id: 'cart', label: 'Cart', icon: '🛒' },
+  { id: 'you', label: 'You', icon: null },
 ]
 
-export default function BottomNav({ active, onChange, unreadCount = 0, avatarUrl, initials = '?' }) {
+export default function BottomNav({ active, onChange, avatarUrl, initials = '?' }) {
   return (
     <div
       className="fixed left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[416px] flex justify-around rounded-2xl border bg-[var(--card)] py-2 z-20"
@@ -29,7 +29,7 @@ export default function BottomNav({ active, onChange, unreadCount = 0, avatarUrl
             }}
           >
             <span className="relative text-base leading-none">
-              {t.id === 'profile' ? (
+              {t.id === 'you' ? (
                 <span
                   className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold overflow-hidden"
                   style={{
@@ -41,14 +41,6 @@ export default function BottomNav({ active, onChange, unreadCount = 0, avatarUrl
                 </span>
               ) : (
                 t.icon
-              )}
-              {t.id === 'messages' && unreadCount > 0 && (
-                <span
-                  className="absolute -top-1.5 -right-2.5 min-w-[16px] h-[16px] px-[3px] rounded-full text-[9px] font-bold flex items-center justify-center leading-none"
-                  style={{ background: 'var(--plum)', color: 'white' }}
-                >
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
               )}
             </span>
             {t.label}
