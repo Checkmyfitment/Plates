@@ -7,12 +7,14 @@ import { searchFields, matchesAllWords, relevanceScore } from '../lib/searchList
 
 // "Top categories" always shows the same cuisine vocabulary a seller could
 // have picked (see listingOptions.js, which already includes 'Vegan') plus
-// the one synthetic filter Browse also offers, so tapping one here behaves
-// exactly like picking it there.
-const CATEGORIES = [...CUISINES, 'Under $15']
+// the synthetic filters Browse also offers, so tapping one here behaves
+// exactly like picking it there. Food Trucks is seller-level, not a
+// cuisine, so it's not in CUISINES -- added on separately.
+const CATEGORIES = [...CUISINES, 'Under $15', 'Food Trucks']
 
 function categoryEmoji(name) {
   if (name === 'Under $15') return '💸'
+  if (name === 'Food Trucks') return '🚚'
   return CUISINE_EMOJI[name] ?? '🍽️'
 }
 
@@ -20,6 +22,7 @@ function matchesCategory(l, category) {
   if (!category) return true
   if (category === 'Vegan') return l.diet.includes('Vegan') || l.cuisine === 'Vegan'
   if (category === 'Under $15') return l.price < 15
+  if (category === 'Food Trucks') return l.sellerIsFoodTruck
   return l.cuisine === category
 }
 

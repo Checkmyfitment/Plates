@@ -74,6 +74,7 @@ export default function NearbySheet({ listings, userLocation, onSelect }) {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold truncate">{l.title}</p>
                 <p className="text-xs truncate" style={{ color: 'var(--ink-soft)' }}>
+                  {l.sellerIsFoodTruck && '🚚 '}
                   {l.seller}
                   {l.distance != null && ` · ${formatDistance(l.distance)}`}
                 </p>
@@ -94,8 +95,16 @@ export default function NearbySheet({ listings, userLocation, onSelect }) {
               className="pressable shrink-0 w-[132px] rounded-2xl border overflow-hidden text-left"
               style={{ borderColor: 'var(--rule)', background: 'var(--card)', scrollSnapAlign: 'start' }}
             >
-              <div className="w-full h-[100px] flex items-center justify-center text-4xl overflow-hidden" style={{ background: l.bg }}>
+              <div className="w-full h-[100px] relative flex items-center justify-center text-4xl overflow-hidden" style={{ background: l.bg }}>
                 {l.photoUrl ? <img src={l.photoUrl} alt="" className="w-full h-full object-cover" /> : l.photo}
+                {l.sellerIsFoodTruck && (
+                  <span
+                    className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 rounded-md font-bold"
+                    style={{ background: 'rgba(27,24,21,0.82)', color: 'white' }}
+                  >
+                    🚚
+                  </span>
+                )}
               </div>
               <div className="px-2 py-1.5">
                 <p className="text-xs font-bold leading-tight line-clamp-2">{l.title}</p>

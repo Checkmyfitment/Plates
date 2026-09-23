@@ -39,6 +39,7 @@ import { fetchResponseStats } from './lib/responseStats'
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from './lib/notifications'
 import { trackPageView } from './lib/analytics'
 import { claimStore, getPendingClaim, clearPendingClaim } from './lib/stores'
+import { distanceMiles } from './lib/geo'
 import { useToast } from './context/ToastContext'
 
 // only admins ever open this screen, so it stays out of everyone else's
@@ -1182,6 +1183,17 @@ export default function App() {
     body = <ChatsScreen chats={chats} loading={chatsLoading} onSelect={(id) => setActiveChatId(id)} />
   } else if (tab === 'map') {
     const mapUserLocation = profile?.lat != null && profile?.lng != null ? { lat: profile.lat, lng: profile.lng } : null
+    // a listing with no computable distance (e.g. an unclaimed store with
+    // just a typed-in neighborhood, no geocoded point) stays visible rather
+    // than disappearing just because we can't measure it -- same rule
+    // Browse's own radius filter uses
+    const mapListings =
+      mapUserLocation && radiusMiles != null
+        ? listingsWithRatings.filter((l) => {
+            if (l.sellerLat == null || l.sellerLng == null) return true
+            return distanceMiles(mapUserLocation.lat, mapUserLocation.lng, l.sellerLat, l.sellerLng) <= radiusMiles
+          })
+        : listingsWithRatings
     body = (
       <div className="px-5 pt-4 pb-4">
         {mapUserLocation && (
@@ -1201,7 +1213,7 @@ export default function App() {
           </select>
         )}
         <Suspense fallback={screenFallback}>
-          <KitchensMap listings={listingsWithRatings} onSelect={setSelected} userLocation={mapUserLocation} radiusMiles={radiusMiles} />
+          <KitchensMap listings={mapListings} onSelect={setSelected} userLocation={mapUserLocation} radiusMiles={radiusMiles} />
         </Suspense>
         {openOrderCount === 0 && (
           <button
@@ -1218,7 +1230,7 @@ export default function App() {
             🛍️ Start Shopping
           </button>
         )}
-        <NearbySheet listings={listingsWithRatings} userLocation={mapUserLocation} onSelect={setSelected} />
+        <NearbySheet listings={mapListings} userLocation={mapUserLocation} onSelect={setSelected} />
       </div>
     )
   } else if (tab === 'search') {
