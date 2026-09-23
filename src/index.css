@@ -34,54 +34,55 @@
 }
 
 /* Dark palette — follows the system by default; :root[data-theme] below
-   lets the in-app toggle override that either direction. Deliberately
-   moved away from a generic "flat charcoal + mint-green" dark UI: a
-   richer, warmer espresso-black base (not a neutral gray) and a deeper
-   jewel-toned emerald accent in the same hue family as the light theme's
-   forest green (not a shifted-toward-cyan mint), so dark mode still reads
-   as "Plates" rather than a template SaaS dashboard. Gold and wine-red
-   secondary accents follow the same logic — warmer and more saturated
-   than a washed pastel. Every value below re-checked against WCAG AA
-   (4.5:1 normal text) against the surface it's actually used on. */
+   lets the in-app toggle override that either direction. "True black +
+   one bold accent" — the Linear/Vercel/Arc school of modern dark UI: a
+   near-pure black base (a hair of cool tint, not warm brown or dead-flat
+   gray), crisp near-white text, and a single vivid, saturated emerald as
+   the hero accent — same hue family as the light theme's forest green,
+   just pushed much brighter/more saturated so it reads as bold rather
+   than jewel-toned. Gold and wine-red are intentionally kept muted/
+   secondary so they never compete with the green for attention. Every
+   value below re-checked against WCAG AA (4.5:1 normal text) against the
+   surface it's actually used on. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #18130F;
-    --paper-dim: #221B16;
-    --card: #261E18;
-    --skeleton-shine: rgba(255, 255, 255, 0.05);
-    --ink: #F7F1E7;
-    --ink-soft: #AFA091;
-    --forest: #22B573;
-    --forest-dark: #EFFAF4;
-    --mustard: #E2AC4C;
-    --mustard-deep: #F3CB74;
-    --plum: #E07872;
-    --plum-soft: #34201C;
-    --rule: #3A2E25;
-    --forest-soft: #123024;
-    --mustard-soft: #382610;
-    --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 3px 14px -4px rgba(0,0,0,0.42);
-    --shadow-float: 0 2px 4px rgba(0,0,0,0.35), 0 12px 28px -10px rgba(0,0,0,0.58);
+    --paper: #0A0A0C;
+    --paper-dim: #141416;
+    --card: #1A1A1D;
+    --skeleton-shine: rgba(255, 255, 255, 0.04);
+    --ink: #FAFAFA;
+    --ink-soft: #8E8E93;
+    --forest: #16E0A0;
+    --forest-dark: #EAFBF4;
+    --mustard: #D4A857;
+    --mustard-deep: #E8C178;
+    --plum: #E5726B;
+    --plum-soft: #241417;
+    --rule: #262629;
+    --forest-soft: #0F2A22;
+    --mustard-soft: #2A2015;
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.4), 0 4px 16px -6px rgba(0,0,0,0.5);
+    --shadow-float: 0 2px 4px rgba(0,0,0,0.45), 0 14px 32px -12px rgba(0,0,0,0.65);
   }
 }
 :root[data-theme="dark"] {
-  --paper: #18130F;
-  --paper-dim: #221B16;
-  --card: #261E18;
-  --skeleton-shine: rgba(255, 255, 255, 0.05);
-  --ink: #F7F1E7;
-  --ink-soft: #AFA091;
-  --forest: #22B573;
-  --forest-dark: #EFFAF4;
-  --mustard: #E2AC4C;
-  --mustard-deep: #F3CB74;
-  --plum: #E07872;
-  --plum-soft: #34201C;
-  --rule: #3A2E25;
-  --forest-soft: #123024;
-  --mustard-soft: #382610;
-  --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 3px 14px -4px rgba(0,0,0,0.42);
-  --shadow-float: 0 2px 4px rgba(0,0,0,0.35), 0 12px 28px -10px rgba(0,0,0,0.58);
+  --paper: #0A0A0C;
+  --paper-dim: #141416;
+  --card: #1A1A1D;
+  --skeleton-shine: rgba(255, 255, 255, 0.04);
+  --ink: #FAFAFA;
+  --ink-soft: #8E8E93;
+  --forest: #16E0A0;
+  --forest-dark: #EAFBF4;
+  --mustard: #D4A857;
+  --mustard-deep: #E8C178;
+  --plum: #E5726B;
+  --plum-soft: #241417;
+  --rule: #262629;
+  --forest-soft: #0F2A22;
+  --mustard-soft: #2A2015;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.4), 0 4px 16px -6px rgba(0,0,0,0.5);
+  --shadow-float: 0 2px 4px rgba(0,0,0,0.45), 0 14px 32px -12px rgba(0,0,0,0.65);
 }
 
 html, body, #root {
