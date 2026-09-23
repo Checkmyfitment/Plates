@@ -4,6 +4,7 @@ import TopBar from './components/TopBar'
 import BottomNav from './components/BottomNav'
 import BrowseScreen from './components/BrowseScreen'
 import SearchScreen from './components/SearchScreen'
+import NearbySheet from './components/NearbySheet'
 import ListingDetail from './components/ListingDetail'
 import SavedScreen from './components/SavedScreen'
 import ChatsScreen from './components/ChatsScreen'
@@ -1202,6 +1203,22 @@ export default function App() {
         <Suspense fallback={screenFallback}>
           <KitchensMap listings={listingsWithRatings} onSelect={setSelected} userLocation={mapUserLocation} radiusMiles={radiusMiles} />
         </Suspense>
+        {openOrderCount === 0 && (
+          <button
+            type="button"
+            onClick={() => changeTab('search')}
+            className="pressable fixed left-1/2 -translate-x-1/2 text-sm font-bold px-5 py-3 rounded-full z-20"
+            style={{
+              top: 'calc(6.5rem + env(safe-area-inset-top))',
+              background: 'var(--forest)',
+              color: 'white',
+              boxShadow: 'var(--shadow-float)',
+            }}
+          >
+            🛍️ Start Shopping
+          </button>
+        )}
+        <NearbySheet listings={listingsWithRatings} userLocation={mapUserLocation} onSelect={setSelected} />
       </div>
     )
   } else if (tab === 'search') {
