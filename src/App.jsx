@@ -3,6 +3,7 @@ import Logo from './components/Logo'
 import TopBar from './components/TopBar'
 import BottomNav from './components/BottomNav'
 import BrowseScreen from './components/BrowseScreen'
+import SearchScreen from './components/SearchScreen'
 import ListingDetail from './components/ListingDetail'
 import SavedScreen from './components/SavedScreen'
 import ChatsScreen from './components/ChatsScreen'
@@ -1205,16 +1206,14 @@ export default function App() {
     )
   } else if (tab === 'search') {
     body = (
-      <BrowseScreen
+      <SearchScreen
         listings={listingsWithRatings}
         loading={listingsLoading}
         onSelect={setSelected}
         favoriteIds={favoriteIds}
         onToggleFavorite={session ? toggleFavorite : () => requireAuth('Log in to save this listing.')}
         userLocation={profile?.lat != null && profile?.lng != null ? { lat: profile.lat, lng: profile.lng } : null}
-        userNeighborhood={profile?.neighborhood ?? null}
         onOpenSeller={openSeller}
-        autoFocusSearch
       />
     )
   } else if (session && tab === 'you') {

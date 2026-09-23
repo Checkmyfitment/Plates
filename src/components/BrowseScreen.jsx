@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import ListingCard from './ListingCard'
 import ListingCardSkeleton from './ListingCardSkeleton'
 import WhatsCookingThisWeek from './WhatsCookingThisWeek'
 import TrendingKitchens from './TrendingKitchens'
 import { distanceMiles, formatDistance } from '../lib/geo'
 import { getSavedBrowseFilters, saveBrowseFilters } from '../lib/browseFilters'
+import { searchFields, matchesAllWords, relevanceScore } from '../lib/searchListings'
 import AreaWaitlistCard from './AreaWaitlistCard'
 
 // same cuisine vocabulary as the listing form's own dropdown, so a chip
@@ -12,53 +13,15 @@ import AreaWaitlistCard from './AreaWaitlistCard'
 const CUISINES = ['Homemade', 'Meal Prep', 'Bakery', 'Mexican', 'Italian', 'Indian', 'Chinese', 'Middle Eastern', 'Caribbean', 'Southern / Soul food', 'Desserts', 'Other']
 const filters = ['All', ...CUISINES, 'Vegan', 'Under $15']
 
-function searchFields(l) {
-  return {
-    title: (l.title ?? '').toLowerCase(),
-    cuisine: (l.cuisine ?? '').toLowerCase(),
-    seller: (l.seller ?? '').toLowerCase(),
-    description: (l.description ?? '').toLowerCase(),
-    diet: (l.diet ?? []).join(' ').toLowerCase(),
-  }
-}
-
-function matchesAllWords(fields, words) {
-  const combined = `${fields.title} ${fields.cuisine} ${fields.seller} ${fields.description} ${fields.diet}`
-  return words.every((w) => combined.includes(w))
-}
-
-function relevanceScore(fields, words) {
-  let score = 0
-  for (const w of words) {
-    if (fields.title.includes(w)) score += 3
-    if (fields.cuisine.includes(w)) score += 2
-    if (fields.seller.includes(w)) score += 1
-    if (fields.description.includes(w)) score += 1
-    if (fields.diet.includes(w)) score += 1
-  }
-  return score
-}
-
-export default function BrowseScreen({ listings, loading, onSelect, favoriteIds, onToggleFavorite, userLocation, userNeighborhood, onOpenSeller, autoFocusSearch = false }) {
+export default function BrowseScreen({ listings, loading, onSelect, favoriteIds, onToggleFavorite, userLocation, userNeighborhood, onOpenSeller }) {
   const [active, setActive] = useState(() => getSavedBrowseFilters()?.active ?? 'All')
   const [query, setQuery] = useState('')
   const [sortBy, setSortBy] = useState(() => getSavedBrowseFilters()?.sortBy ?? 'default')
   const [radiusMiles, setRadiusMiles] = useState(() => getSavedBrowseFilters()?.radiusMiles ?? null)
-  const searchInputRef = useRef(null)
 
   useEffect(() => {
     saveBrowseFilters({ active, sortBy, radiusMiles })
   }, [active, sortBy, radiusMiles])
-
-  // "Search" bottom-nav tab lands here with a request to jump straight to
-  // typing, instead of making someone scroll past the rails/chips first
-  useEffect(() => {
-    if (autoFocusSearch) {
-      searchInputRef.current?.scrollIntoView({ block: 'center' })
-      searchInputRef.current?.focus()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   // each unclaimed store counts as its own distinct "seller" here, since
   // sellerId alone would otherwise collapse every store an admin has
@@ -151,7 +114,6 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
       >
         <span style={{ color: 'var(--ink-soft)' }}>⌕</span>
         <input
-          ref={searchInputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Tamales, sourdough, dumplings…"

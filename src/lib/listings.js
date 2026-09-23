@@ -1,30 +1,8 @@
 import { supabase, SUPABASE_URL } from './supabaseClient'
 import { fetchPublicStores } from './stores'
 import { SITE_URL } from './siteInfo'
+import { CUISINE_EMOJI } from './listingOptions'
 
-// every listing is created with the same literal '🍽️' photo and
-// 'var(--paper-dim)' bg (a seller never picks these) -- without a real
-// photo, that made every placeholder thumbnail on the app identical: same
-// flat dark tile, same generic fork-and-knife icon, in a grid where
-// Marketplace-style apps show varied real photos. Picking a cuisine-matched
-// emoji and a deterministic accent color (from the app's own theme tokens,
-// so it's already theme-aware) gives a grid of placeholders some actual
-// visual variety instead of everything looking the same and receding.
-const CUISINE_EMOJI = {
-  Homemade: '🍽️',
-  'Meal Prep': '🍱',
-  Bakery: '🍞',
-  Mexican: '🌮',
-  Italian: '🍝',
-  Indian: '🍛',
-  Chinese: '🥟',
-  'Middle Eastern': '🧆',
-  Caribbean: '🍤',
-  'Southern / Soul food': '🍗',
-  Desserts: '🍰',
-  Vegan: '🥗',
-  Other: '🍽️',
-}
 const PLACEHOLDER_BGS = ['var(--forest-soft)', 'var(--mustard-soft)', 'var(--plum-soft)']
 function placeholderBg(id) {
   let hash = 0
