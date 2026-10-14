@@ -1,5 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { Capacitor } from '@capacitor/core'
+import { App as CapApp } from '@capacitor/app'
 import { supabase } from '../lib/supabaseClient'
+import { handleAuthDeepLink, signInWithProvider } from '../lib/socialAuth'
 import { ensureIAPConfigured } from '../lib/iap'
 
 const AuthContext = createContext(null)
@@ -9,6 +12,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [passwordRecovery, setPasswordRecovery] = useState(false)
+  const [oauthError, setOauthError] = useState('')
 
   const loadProfile = async (userId) => {
     if (!userId) {
@@ -39,6 +43,26 @@ export function AuthProvider({ children }) {
 
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  // native Google/Apple sign-in finishes in the system browser, which hands
+  // control back to the app through a com.platesapp.app:// link
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return undefined
+    const onUrl = async (url) => {
+      const result = await handleAuthDeepLink(url)
+      if (result?.error) setOauthError(result.error.message)
+    }
+    const handle = CapApp.addListener('appUrlOpen', ({ url }) => onUrl(url))
+    CapApp.getLaunchUrl().then((launch) => launch?.url && onUrl(launch.url))
+    return () => {
+      handle.then((h) => h.remove())
+    }
+  }, [])
+
+  const signInWithSocial = async (provider) => {
+    setOauthError('')
+    return signInWithProvider(provider)
+  }
 
   const signUp = async (email, password, name, referredBy, signupIntent, captchaToken) => {
     return supabase.auth.signUp({
@@ -80,6 +104,9 @@ export function AuthProvider({ children }) {
     profile,
     loading,
     passwordRecovery,
+    oauthError,
+    clearOauthError: () => setOauthError(''),
+    signInWithSocial,
     signUp,
     signIn,
     signOut,

@@ -14,13 +14,35 @@ import { setRememberMe } from '../lib/supabaseClient'
 // real user out of their own app. It still runs (and is still required) on
 // the web app, where it works fine.
 const isNative = Capacitor.isNativePlatform()
+// Apple's guidelines want Sign in with Apple at least as prominent as other
+// providers; lead with it on iPhone, with Google first everywhere else
+const appleFirst = Capacitor.getPlatform() === 'ios'
 
 // most people who land on this screen never tap Terms/Privacy — no reason
 // to make every guest download it upfront
 const LegalScreen = lazy(() => import('./LegalScreen'))
 
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z" />
+      <path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z" />
+      <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z" />
+    </svg>
+  )
+}
+
+function AppleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M16.37 12.62c-.03-2.74 2.24-4.06 2.34-4.12-1.28-1.87-3.26-2.12-3.97-2.15-1.69-.17-3.3.99-4.16.99-.86 0-2.18-.97-3.58-.94-1.84.03-3.54 1.07-4.49 2.72-1.91 3.31-.49 8.22 1.37 10.9.91 1.31 2 2.78 3.42 2.73 1.37-.05 1.89-.89 3.55-.89 1.66 0 2.13.89 3.58.86 1.48-.03 2.41-1.34 3.31-2.66 1.04-1.52 1.47-3 1.49-3.07-.03-.01-2.85-1.09-2.88-4.37zM13.65 4.5c.76-.92 1.27-2.2 1.13-3.47-1.09.04-2.4.73-3.18 1.64-.7.81-1.31 2.1-1.15 3.34 1.21.09 2.44-.62 3.2-1.51z" />
+    </svg>
+  )
+}
+
 export default function AuthScreen({ onClose, reason, onSignedUp }) {
-  const { signIn, signUp, resetPassword } = useAuth()
+  const { signIn, signUp, resetPassword, signInWithSocial, oauthError, clearOauthError } = useAuth()
   const [referredBy] = useState(() => new URLSearchParams(window.location.search).get('ref') || null)
   const [claimCode] = useState(() => {
     const code = new URLSearchParams(window.location.search).get('claim') || null
@@ -42,9 +64,22 @@ export default function AuthScreen({ onClose, reason, onSignedUp }) {
   const [legalDoc, setLegalDoc] = useState(null)
   const [captchaToken, setCaptchaToken] = useState(null)
 
+  const socialSignIn = async (provider) => {
+    setError('')
+    setNotice('')
+    clearOauthError()
+    setBusy(true)
+    const { error } = await signInWithSocial(provider)
+    if (error) setError(error.message)
+    // on web the page is about to redirect; on native the system browser is
+    // opening -- either way, let the buttons be tappable again
+    setBusy(false)
+  }
+
   const switchMode = (next) => {
     setMode(next)
     setError('')
+    clearOauthError()
     setNotice('')
     // a Turnstile token is single-use and tied to the widget instance that
     // issued it -- switching modes remounts the widget, so the old token
@@ -141,6 +176,38 @@ export default function AuthScreen({ onClose, reason, onSignedUp }) {
               🎉 You were invited by a neighbor
             </p>
           )
+        )}
+
+        {mode !== 'reset' && (
+          <>
+            <div className={`flex gap-2.5 ${appleFirst ? 'flex-col' : 'flex-col-reverse'}`}>
+              <button
+                type="button"
+                onClick={() => socialSignIn('apple')}
+                disabled={busy}
+                className="pressable w-full py-3 rounded-xl text-sm font-semibold border flex items-center justify-center gap-2.5 disabled:opacity-60"
+                style={{ background: 'var(--ink)', borderColor: 'var(--ink)', color: 'var(--paper)' }}
+              >
+                <AppleIcon />
+                Continue with Apple
+              </button>
+              <button
+                type="button"
+                onClick={() => socialSignIn('google')}
+                disabled={busy}
+                className="pressable w-full py-3 rounded-xl text-sm font-semibold border flex items-center justify-center gap-2.5 disabled:opacity-60"
+                style={{ background: 'var(--card)', borderColor: 'var(--rule)', color: 'var(--ink)' }}
+              >
+                <GoogleIcon />
+                Continue with Google
+              </button>
+            </div>
+            <div className="flex items-center gap-3 my-4 text-xs" style={{ color: 'var(--ink-soft)' }}>
+              <span className="flex-1 h-px" style={{ background: 'var(--rule)' }} />
+              or
+              <span className="flex-1 h-px" style={{ background: 'var(--rule)' }} />
+            </div>
+          </>
         )}
 
         <form onSubmit={submit} className="flex flex-col gap-3">
@@ -240,9 +307,9 @@ export default function AuthScreen({ onClose, reason, onSignedUp }) {
           <TurnstileWidget key={mode} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
         )}
 
-        {error && (
+        {(error || oauthError) && (
           <p className="text-xs" style={{ color: 'var(--plum)' }}>
-            {error}
+            {error || oauthError}
           </p>
         )}
         {notice && (

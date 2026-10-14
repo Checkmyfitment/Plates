@@ -42,3 +42,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: { storage: authStorage },
 })
 export const SUPABASE_URL = supabaseUrl
+export const SUPABASE_ANON_KEY = supabaseAnonKey

@@ -23,6 +23,7 @@ import {
   markNotifPromptSeen,
 } from './lib/onboarding'
 import NotificationsPromptScreen from './components/NotificationsPromptScreen'
+import SocialSetupScreen from './components/SocialSetupScreen'
 // lazy — pulls in react-usa-map, only needed for the small slice of
 // signups (sellers/"both") who ever hit this screen
 const CottageLawReviewScreen = lazy(() => import('./components/CottageLawReviewScreen'))
@@ -927,6 +928,18 @@ export default function App() {
 
   if (profile?.deleted_at) {
     return <DeletedScreen onLogout={signOut} />
+  }
+
+  // a brand-new Google/Apple account has no buy/sell choice or Terms
+  // agreement yet (the email signup form collects those; social sign-in skips
+  // it) -- collect them once, then treat it like any other fresh signup
+  if (
+    session &&
+    profile &&
+    !profile.signup_intent &&
+    ['google', 'apple'].includes(session.user.app_metadata?.provider)
+  ) {
+    return <SocialSetupScreen onDone={() => setJustSignedUp(true)} />
   }
 
   // one-time "Allow Notifications" prompt, shown right after a brand-new

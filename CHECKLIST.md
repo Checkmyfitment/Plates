@@ -2627,3 +2627,43 @@ noted here so they're not lost, not started yet:
 - [ ] Deploy live — now the actual next blocker for the mobile app store
       work too, not just a someday task; see "What's left before either
       store submission is possible" under "Mobile app store setup" above
+
+## Google & Apple sign-in + custom signup email — [NEEDS YOU]: account setup in Google Cloud, Apple Developer, Resend, and Supabase can only be done by you
+
+Why: signup confirmation emails were going through Supabase's built-in mailer,
+capped at **2 emails/hour for the whole app** (error `over_email_send_rate_limit`,
+HTTP 429) — everyone after the second signup in an hour was blocked, on every
+platform. Google/Apple sign-in skips the email step; custom SMTP lifts the cap
+for everyone who still signs up with email.
+
+Code is done (buttons on the login/signup screen, `src/lib/socialAuth.js`, a
+one-time Buy/Sell/Both + Terms screen for brand-new social accounts, and the
+`com.platesapp.app://auth-callback` link registered in the iOS/Android
+projects). Nothing works until the steps below are done, and the native apps
+need a new build to include it (the web app picks it up on the next deploy).
+
+- [x] Added `com.platesapp.app://auth-callback` to Supabase → Authentication →
+      URL Configuration → Redirect URLs
+- [ ] **Resend (email)**: sign up at resend.com → Domains → add your domain and
+      add the DNS records it shows (SPF/DKIM) → wait for "Verified" → API Keys →
+      create a key
+- [ ] **Supabase SMTP**: Authentication → Emails → SMTP Settings → enable custom
+      SMTP. Host `smtp.resend.com`, port `465`, username `resend`, password = the
+      Resend API key, sender = an address on your verified domain (e.g.
+      `no-reply@yourdomain.com`), sender name `Plates`. Then Authentication → Rate
+      Limits → raise "emails per hour" (it only unlocks once SMTP is on)
+- [ ] **Google**: Google Cloud Console → APIs & Services → Credentials → Create
+      OAuth client ID → type **Web application**. Authorized redirect URI:
+      `https://pexmyasywfqkswpblmrq.supabase.co/auth/v1/callback`. (Set up the
+      OAuth consent screen first if asked; Publish it to "In production" so
+      anyone can sign in, not just test users.) Copy the Client ID + Secret →
+      Supabase → Authentication → Sign In / Providers → Google → paste and enable
+- [ ] **Apple**: developer.apple.com → Identifiers → create a **Services ID**
+      (e.g. `com.platesapp.app.signin`) with Sign in with Apple enabled; Website
+      URL domain = `pexmyasywfqkswpblmrq.supabase.co`, Return URL =
+      `https://pexmyasywfqkswpblmrq.supabase.co/auth/v1/callback`. Keys → create
+      a key with Sign in with Apple, download the `.p8` (once only). Supabase →
+      Providers → Apple needs the Services ID as Client ID plus a **secret key
+      generated from the .p8** (Supabase's docs have a generator). The secret
+      expires every 6 months — put a reminder in your calendar
+- [ ] New iOS + Android builds (bump versions) so the buttons appear in the apps
