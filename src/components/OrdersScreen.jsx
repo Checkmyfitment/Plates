@@ -5,8 +5,26 @@ import { fetchBuyerOrders, fetchSellerOrders, updateOrderStatus, updateCartStatu
 import { subscribeToTable } from '../lib/realtime'
 import { useToast } from '../context/ToastContext'
 
-export default function OrdersScreen({ userId, onBack, onReorder, onOpenDashboard }) {
+const SWIPE_HINT_KEY = 'plates-orders-swipe-hint-seen'
+
+export default function OrdersScreen({ userId, onBack, onReorder, onOpenDashboard, onOpenChat }) {
   const toast = useToast()
+  // a one-time tip: swiping is invisible until someone knows to try it
+  const [showSwipeHint, setShowSwipeHint] = useState(() => {
+    try {
+      return localStorage.getItem(SWIPE_HINT_KEY) !== '1'
+    } catch {
+      return true
+    }
+  })
+  const dismissSwipeHint = () => {
+    setShowSwipeHint(false)
+    try {
+      localStorage.setItem(SWIPE_HINT_KEY, '1')
+    } catch {
+      // ignore
+    }
+  }
   const [buying, setBuying] = useState([])
   const [selling, setSelling] = useState([])
   const [loading, setLoading] = useState(true)
@@ -103,6 +121,11 @@ export default function OrdersScreen({ userId, onBack, onReorder, onOpenDashboar
           <h3 className="text-xs font-medium mb-2.5" style={{ color: 'var(--ink-soft)' }}>
             Orders you placed
           </h3>
+          {buyingGroups.length > 0 && onOpenChat && showSwipeHint && (
+            <p className="text-[11px] -mt-1 mb-2.5" style={{ color: 'var(--ink-soft)' }}>
+              💡 Swipe an order left for quick actions.
+            </p>
+          )}
           {buyingGroups.length === 0 ? (
             <Placeholder compact icon="🛒" title="No orders yet" body="Orders you place will show up here." />
           ) : (
@@ -115,6 +138,8 @@ export default function OrdersScreen({ userId, onBack, onReorder, onOpenDashboar
                   onUpdateStatus={handleUpdateStatus}
                   onReorder={onReorder}
                   onMarkPaid={handleMarkPaid}
+                  onMessage={onOpenChat}
+                  onSwipeOpened={dismissSwipeHint}
                 />
               ))}
             </div>
@@ -138,7 +163,14 @@ export default function OrdersScreen({ userId, onBack, onReorder, onOpenDashboar
               </div>
               <div className="flex flex-col gap-2.5">
                 {sellingGroups.map((g) => (
-                  <OrderCard key={g.groupId} group={g} role="seller" readOnly />
+                  <OrderCard
+                    key={g.groupId}
+                    group={g}
+                    role="seller"
+                    readOnly
+                    onMessage={onOpenChat}
+                    onSwipeOpened={dismissSwipeHint}
+                  />
                 ))}
               </div>
             </>

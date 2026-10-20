@@ -784,6 +784,19 @@ export default function App() {
     setTab('messages')
   }
 
+  // open the conversation an order belongs to -- a chat is one listing + one
+  // buyer, so the same call finds it from either the buyer's or seller's side
+  const openOrderChat = async (order) => {
+    try {
+      const chatId = await startOrGetChat({ id: order.listingId }, order.buyerId)
+      setChats(await fetchChats(session.user.id))
+      showChat(chatId)
+    } catch (err) {
+      console.error('Failed to open order chat', err)
+      toast.error('Could not open that chat — try again.')
+    }
+  }
+
   const startChat = async (listing) => {
     if (listing.sellerId === session.user.id) return
     try {
@@ -1172,6 +1185,7 @@ export default function App() {
           userId={session.user.id}
           onBack={() => setShowOrders(false)}
           onReorder={reorderGroup}
+          onOpenChat={openOrderChat}
           onOpenDashboard={() => {
             setShowOrders(false)
             setShowDashboard(true)

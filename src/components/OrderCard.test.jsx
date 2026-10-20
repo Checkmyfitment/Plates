@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import OrderCard from './OrderCard'
 
 function makeGroup(overrides) {
@@ -34,7 +34,7 @@ describe('OrderCard', () => {
 
   it('lets a buyer cancel a pending order but not a seller-only action', () => {
     render(<OrderCard group={makeGroup()} role="buyer" onUpdateStatus={vi.fn()} />)
-    expect(screen.getByText('Cancel order')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel order' })).toBeInTheDocument()
     expect(screen.queryByText('Confirm')).not.toBeInTheDocument()
   })
 
@@ -118,5 +118,56 @@ describe('OrderCard', () => {
 
     rerender(<OrderCard group={group} role="buyer" onUpdateStatus={vi.fn()} onReorder={vi.fn()} />)
     expect(screen.getByText('Order again')).toBeInTheDocument()
+  })
+})
+
+describe('OrderCard swipe actions', () => {
+  it('gives a buyer a visible Message seller button that opens the chat for that order', () => {
+    const onMessage = vi.fn()
+    render(<OrderCard group={makeGroup()} role="buyer" onUpdateStatus={vi.fn()} onMessage={onMessage} />)
+    fireEvent.click(screen.getByRole('button', { name: /Message seller/ }))
+    expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ id: 'o1', listingId: 'l1' }))
+  })
+
+  it('hides the swipe buttons from screen readers while the card is closed', () => {
+    render(<OrderCard group={makeGroup()} role="buyer" onUpdateStatus={vi.fn()} onMessage={vi.fn()} />)
+    // only the always-visible buttons are exposed; the swipe copies are aria-hidden
+    expect(screen.getAllByRole('button', { name: /Message seller/ })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: /Message seller/, hidden: true })).toHaveLength(2)
+  })
+
+  it("the swipe Cancel button opens the same confirmation as the inline one -- it never cancels instantly", () => {
+    const onUpdateStatus = vi.fn()
+    render(<OrderCard group={makeGroup()} role="buyer" onUpdateStatus={onUpdateStatus} onMessage={vi.fn()} />)
+    const [swipeCancel] = screen.getAllByRole('button', { name: 'Cancel order', hidden: true })
+    fireEvent.click(swipeCancel)
+    expect(screen.getByText("Cancel this order? This can't be undone.")).toBeInTheDocument()
+    expect(onUpdateStatus).not.toHaveBeenCalled()
+  })
+
+  it('offers "Request cancel" (not an instant cancel) once the seller has confirmed', () => {
+    const group = makeGroup({ orders: [{ ...makeGroup().orders[0], status: 'confirmed' }] })
+    render(<OrderCard group={group} role="buyer" onUpdateStatus={vi.fn()} onMessage={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Cancel order', hidden: true })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Request cancel/, hidden: true })).toBeInTheDocument()
+  })
+
+  it('offers no cancel once the order is ready, only Message', () => {
+    const group = makeGroup({ orders: [{ ...makeGroup().orders[0], status: 'ready' }] })
+    render(<OrderCard group={group} role="buyer" onUpdateStatus={vi.fn()} onMessage={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: /cancel/i, hidden: true })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Message seller/ })).toBeInTheDocument()
+  })
+
+  it('read-only seller history cards only offer Message buyer', () => {
+    render(<OrderCard group={makeGroup()} role="seller" readOnly onMessage={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /Message buyer/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /cancel/i, hidden: true })).not.toBeInTheDocument()
+  })
+
+  it('has no swipe actions at all when nothing can be done', () => {
+    const group = makeGroup({ orders: [{ ...makeGroup().orders[0], status: 'completed' }] })
+    render(<OrderCard group={group} role="buyer" onUpdateStatus={vi.fn()} />)
+    expect(screen.queryByRole('button', { hidden: true, name: /Message|cancel/i })).not.toBeInTheDocument()
   })
 })

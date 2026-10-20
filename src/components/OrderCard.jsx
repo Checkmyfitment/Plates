@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import SwipeActions from './SwipeActions'
 
 export const STATUS_STYLES = {
   pending: { background: 'var(--mustard-soft)', color: 'var(--mustard-deep)', label: 'Pending' },
@@ -102,6 +103,8 @@ export default function OrderCard({
   onMarkPaid,
   onApproveCancellation,
   onDeclineCancellation,
+  onMessage,
+  onSwipeOpened,
   readOnly,
 }) {
   const { orders, cartId, groupId } = group
@@ -157,7 +160,34 @@ export default function OrderCard({
 
   const isDelivery = first.fulfillmentMethod === 'delivery'
 
+  // what a buyer can still do to this order: cancel outright while it's
+  // pending, or ask the seller to once they've started on it
+  const cancelAction =
+    !readOnly && role === 'buyer' && first.status === 'pending'
+      ? 'cancelled'
+      : !readOnly && role === 'buyer' && (first.status === 'confirmed' || first.status === 'preparing')
+        ? 'cancel_requested'
+        : null
+  const swipeActions = [
+    onMessage && {
+      key: 'message',
+      icon: '💬',
+      label: role === 'buyer' ? 'Message seller' : 'Message buyer',
+      tone: 'primary',
+      onClick: () => onMessage(first),
+    },
+    cancelAction && {
+      key: 'cancel',
+      icon: '✕',
+      label: cancelAction === 'cancelled' ? 'Cancel order' : 'Request cancel',
+      tone: 'danger',
+      // opens the same "are you sure?" panel as the Cancel button
+      onClick: () => setConfirmingAction(cancelAction),
+    },
+  ].filter(Boolean)
+
   return (
+    <SwipeActions actions={swipeActions} disabled={!!confirmingAction} onOpened={onSwipeOpened}>
     <div className="card-elevated p-3.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -355,6 +385,16 @@ export default function OrderCard({
         </div>
       )}
 
+      {onMessage && !confirmingAction && (
+        <button
+          onClick={() => onMessage(first)}
+          className="pressable text-xs mt-2.5 mr-4 font-medium"
+          style={{ color: 'var(--forest-dark)' }}
+        >
+          💬 {role === 'buyer' ? 'Message seller' : 'Message buyer'}
+        </button>
+      )}
+
       {!readOnly && !confirmingAction && (
         <>
           {role === 'buyer' && first.status === 'pending' && (
@@ -498,5 +538,6 @@ export default function OrderCard({
         </>
       )}
     </div>
+    </SwipeActions>
   )
 }
