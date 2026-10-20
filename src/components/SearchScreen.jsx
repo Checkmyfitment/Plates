@@ -69,7 +69,7 @@ export default function SearchScreen({ listings, loading, onSelect, favoriteIds,
   return (
     <div className="px-5 pt-4 pb-4">
       <div
-        className="flex items-center gap-2.5 rounded-2xl border bg-[var(--card)] px-4 py-3 mb-4"
+        className="has-focus-ring flex items-center gap-2.5 rounded-2xl border bg-[var(--card)] px-4 py-3 mb-4"
         style={{ borderColor: 'var(--rule)', boxShadow: 'var(--shadow-card)' }}
       >
         <span style={{ color: 'var(--ink-soft)' }}>⌕</span>

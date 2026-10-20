@@ -69,7 +69,7 @@ export default function ChatThread({ chat, currentUserId, viewerProfile, onBack,
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-5 pt-6 pb-3 flex items-center gap-3 border-b" style={{ borderColor: 'var(--rule)' }}>
+      <div className="sticky top-0 z-10 bg-[var(--paper)] px-5 pt-6 pb-3 flex items-center gap-3 border-b" style={{ borderColor: 'var(--rule)' }}>
         <button
           onClick={onBack}
           aria-label="Back"

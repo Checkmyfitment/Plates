@@ -1852,7 +1852,7 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onE
 
   return (
     <div className="pb-4">
-      <div className="px-5 pt-6 pb-3 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-[var(--paper)] px-5 pt-6 pb-3 flex items-center gap-3">
         <button
           onClick={onBack}
           aria-label="Back"

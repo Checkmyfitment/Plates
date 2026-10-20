@@ -11,29 +11,32 @@ export default function BottomNav({ active, onChange, avatarUrl, initials = '?' 
     >
       <button
         onClick={() => onChange('home')}
+        aria-current={active === 'home' ? 'page' : undefined}
         className="pressable relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[11px] transition-colors shrink-0"
         style={{
           color: active === 'home' ? 'var(--forest)' : 'var(--ink-soft)',
           fontWeight: active === 'home' ? 700 : 500,
         }}
       >
-        <span className="text-base leading-none">🏠</span>
+        <span className="text-base leading-none" aria-hidden="true">🏠</span>
         Home
       </button>
       <button
         onClick={() => onChange('map')}
+        aria-current={active === 'map' ? 'page' : undefined}
         className="pressable relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[11px] transition-colors shrink-0"
         style={{
           color: active === 'map' ? 'var(--forest)' : 'var(--ink-soft)',
           fontWeight: active === 'map' ? 700 : 500,
         }}
       >
-        <span className="text-base leading-none">📍</span>
+        <span className="text-base leading-none" aria-hidden="true">📍</span>
         Map
       </button>
       <button
         onClick={() => onChange('search')}
         aria-label="Search"
+        aria-current={searchActive ? 'page' : undefined}
         className="pressable flex items-center gap-1.5 flex-1 min-w-0 px-3.5 py-2.5 rounded-full text-sm font-medium transition-colors"
         style={{
           background: searchActive ? 'var(--forest-soft)' : 'var(--paper-dim)',
@@ -46,17 +49,19 @@ export default function BottomNav({ active, onChange, avatarUrl, initials = '?' 
       </button>
       <button
         onClick={() => onChange('cart')}
+        aria-current={active === 'cart' ? 'page' : undefined}
         className="pressable relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[11px] transition-colors shrink-0"
         style={{
           color: active === 'cart' ? 'var(--forest)' : 'var(--ink-soft)',
           fontWeight: active === 'cart' ? 700 : 500,
         }}
       >
-        <span className="text-base leading-none">🛒</span>
+        <span className="text-base leading-none" aria-hidden="true">🛒</span>
         Cart
       </button>
       <button
         onClick={() => onChange('you')}
+        aria-current={active === 'you' ? 'page' : undefined}
         className="pressable relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[11px] transition-colors shrink-0"
         style={{
           color: active === 'you' ? 'var(--forest)' : 'var(--ink-soft)',

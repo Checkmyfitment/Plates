@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { submitReport } from '../lib/reports'
 
 const reasons = [
@@ -17,6 +17,14 @@ export default function ReportModal({ reporterId, listingId, reportedUserId, tit
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -38,6 +46,9 @@ export default function ReportModal({ reporterId, listingId, reportedUserId, tit
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title ?? 'Report this listing'}
         className="w-full max-w-md rounded-2xl p-5"
         style={{ background: 'var(--paper)' }}
         onClick={(e) => e.stopPropagation()}

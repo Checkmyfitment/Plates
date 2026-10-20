@@ -341,7 +341,7 @@ export default function SellerDashboard({
 
   return (
     <div className="px-5 pt-6 pb-4">
-      <div className="flex items-center gap-3 mb-5">
+      <div className="sticky top-0 z-10 bg-[var(--paper)] -mx-5 px-5 -mt-6 pt-6 pb-3 mb-2 flex items-center gap-3">
         <button
           onClick={onBack}
           aria-label="Back"

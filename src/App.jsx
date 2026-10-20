@@ -23,6 +23,10 @@ import {
   markNotifPromptSeen,
 } from './lib/onboarding'
 import NotificationsPromptScreen from './components/NotificationsPromptScreen'
+import GestureLayer from './components/GestureLayer'
+import ScrollLock from './components/ScrollLock'
+import { Capacitor } from '@capacitor/core'
+import { App as CapApp } from '@capacitor/app'
 import SocialSetupScreen from './components/SocialSetupScreen'
 // lazy — pulls in react-usa-map, only needed for the small slice of
 // signups (sellers/"both") who ever hit this screen
@@ -99,6 +103,7 @@ export default function App() {
   const [showDashboard, setShowDashboard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [radiusMiles, setRadiusMiles] = useState(null)
+  const [sheetLevel, setSheetLevel] = useState('peek')
   const [listings, setListings] = useState([])
   const [listingsLoading, setListingsLoading] = useState(true)
   const [favoriteIds, setFavoriteIds] = useState(new Set())
@@ -254,7 +259,7 @@ export default function App() {
   }, [activeChatId, chats])
 
   const refreshSellerRatings = () => {
-    fetchSellerRatings()
+    return fetchSellerRatings()
       .then(setSellerRatings)
       .catch((err) => console.error('Failed to load seller ratings', err))
   }
@@ -765,15 +770,27 @@ export default function App() {
     }
   }
 
+  // land on a chat from anywhere: clear every screen that would otherwise
+  // still be sitting in front of it (a storefront, Saved, Orders, ...)
+  const showChat = (chatId) => {
+    setActiveChatId(chatId)
+    setSelected(null)
+    setViewingSellerId(null)
+    setShowSaved(false)
+    setShowOrders(false)
+    setShowDashboard(false)
+    setShowSettings(false)
+    setShowNotifications(false)
+    setTab('messages')
+  }
+
   const startChat = async (listing) => {
     if (listing.sellerId === session.user.id) return
     try {
       const chatId = await startOrGetChat(listing, session.user.id)
       const updated = await fetchChats(session.user.id)
       setChats(updated)
-      setActiveChatId(chatId)
-      setSelected(null)
-      setTab('messages')
+      showChat(chatId)
     } catch (err) {
       console.error('Failed to start chat', err)
       toast.error('Could not start a chat with this seller — try again.')
@@ -826,9 +843,7 @@ export default function App() {
       await sendChatMessage(chatId, session.user.id, summary)
       const updated = await fetchChats(session.user.id)
       setChats(updated)
-      setActiveChatId(chatId)
-      setSelected(null)
-      setTab('messages')
+      showChat(chatId)
       toast.success(
         repeatInterval
           ? `Order placed! It'll repeat every ${repeatInterval === 7 ? 'week' : '2 weeks'} until you cancel it from your profile.`
@@ -859,12 +874,7 @@ export default function App() {
       await sendChatMessage(chatId, session.user.id, summary)
       const updated = await fetchChats(session.user.id)
       setChats(updated)
-      setActiveChatId(chatId)
-      setViewingSellerId(null)
-      setShowOrders(false)
-      setShowSaved(false)
-      setShowDashboard(false)
-      setTab('messages')
+      showChat(chatId)
       toast.success('Order placed! Message the seller to confirm pickup.')
       return true
     } catch (err) {
@@ -898,6 +908,88 @@ export default function App() {
       wantsDelivery ? group.orders[0].deliveryAddress : undefined,
     )
   }
+
+  // Which screen a "back" (Android back button, Escape, swipe-right) should
+  // close. Mirrors the render chain below -- the first open screen wins.
+  // `form` screens hold unsaved edits, so only the explicit back actions
+  // (button / hardware back) close them, never an accidental swipe or Escape.
+  let closeTop = null
+  let closeTopIsForm = false
+  if (session && showAdmin) closeTop = () => setShowAdmin(false)
+  else if (session && editingListing) {
+    closeTop = () => setEditingListing(null)
+    closeTopIsForm = true
+  } else if (selected) {
+    closeTop = () => {
+      setSelected(null)
+      setScrollToOrder(false)
+    }
+  } else if (session && showOrders) closeTop = () => setShowOrders(false)
+  else if (session && showSaved) closeTop = () => setShowSaved(false)
+  else if (session && showDashboard) closeTop = () => setShowDashboard(false)
+  else if (session && showSettings) closeTop = () => setShowSettings(false)
+  else if (legalDoc) closeTop = () => setLegalDoc(null)
+  else if (session && showNotifications) closeTop = () => setShowNotifications(false)
+  else if (session && editingProfile) {
+    closeTop = () => setEditingProfile(false)
+    closeTopIsForm = true
+  } else if (viewingSellerId) closeTop = () => setViewingSellerId(null)
+  else if (session && tab === 'messages' && activeChat) closeTop = () => setActiveChatId(null)
+
+  // pull-to-refresh: reloads the shared data every tab is built from
+  const refreshAll = () =>
+    Promise.all([
+      fetchListings().then(setListings),
+      refreshSellerRatings(),
+      session ? fetchChats(session.user.id).then(setChats) : null,
+      session ? fetchNotifications(session.user.id).then(setNotifications) : null,
+    ]).catch((err) => {
+      console.error('Failed to refresh', err)
+      toast.error('Could not refresh — check your connection and try again.')
+    })
+
+  const navRef = useRef({})
+  navRef.current = {
+    closeTop,
+    closeTopIsForm,
+    tab,
+    goHome: () => changeTab('home'),
+    authPromptOpen: authPromptOpen && !session,
+    closeAuthPrompt: () => setAuthPromptOpen(false),
+  }
+
+  useEffect(() => {
+    // Android's hardware/gesture back button. Without a listener Capacitor
+    // closes the app from anywhere, so back from a listing quit Plates.
+    let handle
+    if (Capacitor.getPlatform() === 'android') {
+      CapApp.addListener('backButton', () => {
+        const nav = navRef.current
+        if (nav.authPromptOpen) nav.closeAuthPrompt()
+        else if (nav.closeTop) nav.closeTop()
+        else if (nav.tab !== 'home') nav.goHome()
+        else CapApp.exitApp()
+      }).then((h) => {
+        handle = h
+      })
+    }
+
+    // Escape closes the open screen on web / with a hardware keyboard, except
+    // while typing or while a modal dialog owns the key
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      const nav = navRef.current
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
+      if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return
+      if (nav.authPromptOpen) nav.closeAuthPrompt()
+      else if (nav.closeTop && !nav.closeTopIsForm) nav.closeTop()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      handle?.remove()
+    }
+  }, [])
 
   if (loading) {
     return (
@@ -1032,6 +1124,47 @@ export default function App() {
         />
       </Suspense>
     )
+  } else if (selected) {
+    body = (
+      <ListingDetail
+        listing={selected}
+        onBack={() => {
+          setSelected(null)
+          setScrollToOrder(false)
+        }}
+        scrollToOrder={scrollToOrder}
+        onScrolledToOrder={() => setScrollToOrder(false)}
+        isFavorite={favoriteIds.has(selected.id)}
+        onToggleFavorite={() => (session ? toggleFavorite(selected.id) : requireAuth('Log in to save this listing.'))}
+        onMessageSeller={() => (session ? startChat(selected) : requireAuth('Log in to message the seller.'))}
+        sellerRating={sellerRatings.get(selected.sellerId)}
+        sellerTrust={sellerTrustStats.get(selected.sellerId)}
+        currentUserId={session?.user?.id ?? null}
+        onRatingSaved={refreshSellerRatings}
+        moreFromSeller={listings.filter((l) =>
+          selected.unclaimedStoreId
+            ? l.unclaimedStoreId === selected.unclaimedStoreId && l.id !== selected.id
+            : l.sellerId === selected.sellerId && !l.unclaimedStoreId && l.id !== selected.id,
+        )}
+        onSelectListing={setSelected}
+        favoriteIds={favoriteIds}
+        onToggleFavoriteListing={session ? toggleFavorite : () => requireAuth('Log in to save this listing.')}
+        onEditListing={() => setEditingListing(selected)}
+        restockRequested={restockIds.has(selected.id)}
+        onToggleRestockAlert={() => (session ? toggleRestockAlert(selected.id) : requireAuth('Log in to get notified when this is back.'))}
+        restockCount={restockCounts.get(selected.id) ?? 0}
+        responseStats={responseStats.get(selected.sellerId)}
+        isAdmin={!!profile?.is_admin}
+        onFeaturedChanged={(id, featured) =>
+          setListings((prev) => prev.map((l) => (l.id === id ? { ...l, featured } : l)))
+        }
+        onOpenSeller={() => openSeller(selected.sellerId)}
+        onRequireAuth={requireAuth}
+        onPlaceOrder={(quantity, note, fulfillmentMethod, deliveryAddress, repeatInterval) =>
+          placeOrderAndNotify(selected, quantity, note, fulfillmentMethod, deliveryAddress, repeatInterval)
+        }
+      />
+    )
   } else if (session && showOrders) {
     body = (
       <Suspense fallback={screenFallback}>
@@ -1120,47 +1253,6 @@ export default function App() {
         />
       </Suspense>
     )
-  } else if (selected) {
-    body = (
-      <ListingDetail
-        listing={selected}
-        onBack={() => {
-          setSelected(null)
-          setScrollToOrder(false)
-        }}
-        scrollToOrder={scrollToOrder}
-        onScrolledToOrder={() => setScrollToOrder(false)}
-        isFavorite={favoriteIds.has(selected.id)}
-        onToggleFavorite={() => (session ? toggleFavorite(selected.id) : requireAuth('Log in to save this listing.'))}
-        onMessageSeller={() => (session ? startChat(selected) : requireAuth('Log in to message the seller.'))}
-        sellerRating={sellerRatings.get(selected.sellerId)}
-        sellerTrust={sellerTrustStats.get(selected.sellerId)}
-        currentUserId={session?.user?.id ?? null}
-        onRatingSaved={refreshSellerRatings}
-        moreFromSeller={listings.filter((l) =>
-          selected.unclaimedStoreId
-            ? l.unclaimedStoreId === selected.unclaimedStoreId && l.id !== selected.id
-            : l.sellerId === selected.sellerId && !l.unclaimedStoreId && l.id !== selected.id,
-        )}
-        onSelectListing={setSelected}
-        favoriteIds={favoriteIds}
-        onToggleFavoriteListing={session ? toggleFavorite : () => requireAuth('Log in to save this listing.')}
-        onEditListing={() => setEditingListing(selected)}
-        restockRequested={restockIds.has(selected.id)}
-        onToggleRestockAlert={() => (session ? toggleRestockAlert(selected.id) : requireAuth('Log in to get notified when this is back.'))}
-        restockCount={restockCounts.get(selected.id) ?? 0}
-        responseStats={responseStats.get(selected.sellerId)}
-        isAdmin={!!profile?.is_admin}
-        onFeaturedChanged={(id, featured) =>
-          setListings((prev) => prev.map((l) => (l.id === id ? { ...l, featured } : l)))
-        }
-        onOpenSeller={() => openSeller(selected.sellerId)}
-        onRequireAuth={requireAuth}
-        onPlaceOrder={(quantity, note, fulfillmentMethod, deliveryAddress, repeatInterval) =>
-          placeOrderAndNotify(selected, quantity, note, fulfillmentMethod, deliveryAddress, repeatInterval)
-        }
-      />
-    )
   } else if (viewingSellerId) {
     body = (
       <Suspense fallback={screenFallback}>
@@ -1237,9 +1329,15 @@ export default function App() {
           </select>
         )}
         <Suspense fallback={screenFallback}>
-          <KitchensMap listings={mapListings} onSelect={setSelected} userLocation={mapUserLocation} radiusMiles={radiusMiles} />
+          <KitchensMap
+            listings={mapListings}
+            onSelect={setSelected}
+            userLocation={mapUserLocation}
+            radiusMiles={radiusMiles}
+            height={sheetLevel === 'expanded' ? '120px' : sheetLevel === 'min' ? '520px' : '420px'}
+          />
         </Suspense>
-        {openOrderCount === 0 && (
+        {openOrderCount === 0 && sheetLevel !== 'expanded' && (
           <button
             type="button"
             onClick={() => changeTab('search')}
@@ -1254,7 +1352,7 @@ export default function App() {
             🛍️ Start Shopping
           </button>
         )}
-        <NearbySheet listings={mapListings} userLocation={mapUserLocation} onSelect={setSelected} />
+        <NearbySheet listings={mapListings} userLocation={mapUserLocation} onSelect={setSelected} onLevelChange={setSheetLevel} />
       </div>
     )
   } else if (tab === 'search') {
@@ -1330,7 +1428,8 @@ export default function App() {
     // which let the whole page itself rubber-band scroll on an overscroll
     // swipe and drag the header along with it. Pinning the shell to the
     // real viewport means only the flex-1 region below can ever scroll.
-    <div className="max-w-md mx-auto h-dvh overflow-hidden flex flex-col" style={{ background: 'var(--paper)' }}>
+    <div className="max-w-md mx-auto h-app overflow-hidden flex flex-col" style={{ background: 'var(--paper)' }}>
+      <ScrollLock />
       {!selected && !editingListing && !editingProfile && !showNotifications && !showAdmin && !showOrders && !showSaved && !showDashboard && !showSettings && !legalDoc && !viewingSellerId && !(tab === 'messages' && activeChat) && (
         <TopBar
           title={titles[tab]}
@@ -1347,25 +1446,21 @@ export default function App() {
           onLogout={session ? signOut : undefined}
         />
       )}
-      {/* pb-24 (96px) used to be the only clearance every screen got below
-          the floating bottom nav -- not quite enough. BottomNav sits `1rem
-          + env(safe-area-inset-bottom)` above the edge, and on a device
-          with a tall safe area (iPhone Pro Max-class hardware) that alone
-          is ~34px, pushing its real occupied zone past 96px -- which is
-          exactly why a real device showed content clipped under the nav
-          bar (a seller's own listings on the You page, in this case) even
-          though nothing looked wrong in a browser/simulator with no safe
-          area to speak of. pb-40 (160px) gives real margin past the worst
-          case on any current device, applied once here so every tab gets
-          it rather than patching each screen's own padding individually. */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-40">
+      <GestureLayer
+        onBack={closeTop && !closeTopIsForm ? closeTop : null}
+        pullToDismiss={!!selected || !!viewingSellerId}
+        noScroll={!closeTop && tab === 'map'}
+        onRefresh={
+          !closeTop && tab !== 'post' ? refreshAll : showSaved || showNotifications ? refreshAll : null
+        }
+      >
         <div
           key={`${tab}-${selected?.id ?? ''}-${editingListing?.id ?? ''}-${editingProfile}-${showNotifications}-${showAdmin}-${showOrders}-${showSaved}-${showDashboard}-${showSettings}-${legalDoc ?? ''}-${viewingSellerId ?? ''}-${activeChatId ?? ''}`}
           className="screen-transition"
         >
           {body}
         </div>
-      </div>
+      </GestureLayer>
       <BottomNav
         active={tab}
         onChange={changeTab}

@@ -95,6 +95,21 @@ html, body, #root {
   height: 100%;
 }
 
+/* The main app shell scrolls inside its own region, never the page. On an
+   iPhone the body's safe-area padding makes the document a few pixels taller
+   than the screen, so any scroll that chained out of an inner element slid
+   the whole page up and left the header stuck under the status bar. While
+   the shell is mounted (see ScrollLock), the document itself can't scroll. */
+html.scroll-locked,
+html.scroll-locked body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+/* full screen minus the body's own safe-area padding, so the shell fits exactly */
+.h-app {
+  height: calc(100dvh - env(safe-area-inset-top));
+}
+
 body {
   background: var(--paper);
   color: var(--ink);
@@ -151,6 +166,22 @@ body {
 :focus-visible {
   outline: 2px solid var(--mustard-deep);
   outline-offset: 2px;
+}
+/* An input that opts out of the outline lives inside a rounded pill: a
+   rectangle drawn inside the curve looks broken, so light the pill instead.
+   (The unlayered rule above would otherwise beat Tailwind's outline-none.) */
+input.outline-none:focus-visible {
+  outline: none;
+}
+.has-focus-ring:focus-within {
+  border-color: var(--forest);
+  outline: 3px solid color-mix(in srgb, var(--forest) 22%, transparent);
+  outline-offset: 0;
+}
+/* native checkboxes/radios pick up the app's green instead of system blue */
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--forest);
 }
 
 /* Restyle Leaflet's default popup chrome to match the app's warm, rounded look */
@@ -332,4 +363,17 @@ body {
 }
 .toast-enter {
   animation: toast-in 220ms ease;
+}
+
+/* Respect the OS "reduce motion" setting: no screen slides, press-scale,
+   shimmer or spinners for people who've asked for less movement */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

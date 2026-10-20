@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import Placeholder from './Placeholder'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -85,7 +85,20 @@ function sellerIcon(seller) {
   })
 }
 
-export default function KitchensMap({ listings, onSelect, userLocation, radiusMiles }) {
+// Leaflet measures its container once, so when the container's height changes
+// (the Map tab shrinks it while the nearby sheet is open) it has to be told
+function KeepSized() {
+  const map = useMap()
+  useEffect(() => {
+    const el = map.getContainer()
+    const observer = new ResizeObserver(() => map.invalidateSize())
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [map])
+  return null
+}
+
+export default function KitchensMap({ listings, onSelect, userLocation, radiusMiles, height = '420px' }) {
   const isDark = useIsDarkMode()
 
   const sellers = useMemo(() => {
@@ -137,12 +150,16 @@ export default function KitchensMap({ listings, onSelect, userLocation, radiusMi
   // out just because the visible sellers happen to cluster elsewhere
   if (showRadius) bounds.push(...radiusBoundsBox(userLocation.lat, userLocation.lng, radiusMiles))
 
+  // MapContainer only reads its style when it's first created, so the height
+  // lives on this wrapper (which re-renders) and the map just fills it.
+  // isolation keeps Leaflet's high-z-index panes below the nearby sheet.
   return (
+    <div style={{ height, width: '100%', borderRadius: '16px', transition: 'height 300ms ease', isolation: 'isolate', position: 'relative', zIndex: 0 }}>
     <MapContainer
       key={`${sellers.map((s) => s.sellerId).join(',')}-${showRadius ? radiusMiles : 'none'}`}
       bounds={bounds}
       boundsOptions={{ padding: [30, 30], maxZoom: 13 }}
-      style={{ height: '420px', width: '100%', borderRadius: '16px' }}
+      style={{ height: '100%', width: '100%', borderRadius: '16px' }}
       scrollWheelZoom={false}
     >
       {/* Keyed on isDark so toggling Appearance while the map is already open
@@ -156,6 +173,7 @@ export default function KitchensMap({ listings, onSelect, userLocation, radiusMi
         url={TILES}
         className={isDark ? 'plates-map-tiles-dark' : ''}
       />
+      <KeepSized />
       {showRadius && (
         <>
           <Circle
@@ -207,5 +225,6 @@ export default function KitchensMap({ listings, onSelect, userLocation, radiusMi
         </Marker>
       ))}
     </MapContainer>
+    </div>
   )
 }
