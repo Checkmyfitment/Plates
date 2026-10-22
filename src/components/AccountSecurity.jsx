@@ -143,7 +143,7 @@ export default function AccountSecurity({ email, onAccountDeleted }) {
           Delete account
         </p>
         <p className="text-[11px] mb-2" style={{ color: 'var(--ink-soft)' }}>
-          Removes your name, photo, and location from Plates and takes your listings down. Past orders and
+          Removes your name, photo, and location from Pass the Plates and takes your listings down. Past orders and
           reviews stay in place for the other party, just without your personal info attached.
         </p>
         {!confirmingDelete ? (

@@ -166,7 +166,7 @@ export default function PlaceOrderForm({
           {repeat && (
             <p className="text-[11px] mt-1.5" style={{ color: 'var(--ink-soft)' }}>
               You'll get this order automatically placed on this schedule until you cancel it from
-              your profile — you still pay the seller directly each time, same as any Plates order.
+              your profile — you still pay the seller directly each time, same as any Pass the Plates order.
             </p>
           )}
         </div>

@@ -26,8 +26,8 @@ export default function InviteFriends({ userId }) {
     try {
       const result = await shareLink({
         url: inviteLink,
-        title: 'Join me on Plates',
-        text: "I'm on Plates, a marketplace for homemade food from neighbors — join me?",
+        title: 'Join me on Pass the Plates',
+        text: "I'm on Pass the Plates, a marketplace for homemade food from neighbors — join me?",
       })
       if (result === 'copied') toast.success('Invite link copied!')
     } catch (err) {
@@ -42,7 +42,7 @@ export default function InviteFriends({ userId }) {
         🎉 Invite your neighbors
       </p>
       <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>
-        Share your link — the more neighbors on Plates, the more food nearby.
+        Share your link — the more neighbors on Pass the Plates, the more food nearby.
         {count != null && count > 0 && (
           <span className="block mt-1 font-medium" style={{ color: 'var(--forest-dark)' }}>
             {count} {count === 1 ? 'neighbor has' : 'neighbors have'} joined from your invite so far.

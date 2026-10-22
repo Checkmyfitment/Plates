@@ -533,7 +533,7 @@ export default function SellerDashboard({
             <p className="text-sm font-medium">📄 Export your income</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--ink-soft)' }}>
               A CSV of your {completedOrderCount} completed order{completedOrderCount === 1 ? '' : 's'} — handy for your own
-              records at tax time. Plates doesn't process payments, so this is just a summary of what you've sold.
+              records at tax time. Pass the Plates doesn't process payments, so this is just a summary of what you've sold.
             </p>
           </div>
           <button
@@ -611,7 +611,7 @@ export default function SellerDashboard({
               You're a Plates Pro seller
             </p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--mustard-deep)', opacity: 0.8 }}>
-              Thanks for supporting Plates — your Pro badge is showing on your storefront.
+              Thanks for supporting Pass the Plates — your Pro badge is showing on your storefront.
             </p>
           </div>
         </div>

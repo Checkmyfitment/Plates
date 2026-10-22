@@ -39,7 +39,7 @@ export default class ErrorBoundary extends Component {
           className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 active:opacity-80 transition-opacity"
           style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}
         >
-          Reload Plates
+          Reload Pass the Plates
         </button>
       </div>
     )

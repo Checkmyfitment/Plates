@@ -14,7 +14,7 @@ import { useToast } from '../context/ToastContext'
 import ReviewItem from './ReviewItem'
 import ReportModal from './ReportModal'
 
-// "On Plates since March 2026" -- month-level precision reads as genuine
+// "On Pass the Plates since March 2026" -- month-level precision reads as genuine
 // tenure without implying a day-exact anniversary nobody's tracking
 function memberSince(iso) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
@@ -171,8 +171,8 @@ export default function SellerStorefront({
     try {
       const result = await shareLink({
         url: link,
-        title: seller?.name ? `${seller.name} on Plates` : 'Plates',
-        text: seller?.name ? `Check out ${seller.name}'s kitchen on Plates` : 'Check out this kitchen on Plates',
+        title: seller?.name ? `${seller.name} on Pass the Plates` : 'Pass the Plates',
+        text: seller?.name ? `Check out ${seller.name}'s kitchen on Pass the Plates` : 'Check out this kitchen on Pass the Plates',
       })
       if (result === 'copied') toast.success('Profile link copied!')
     } catch (err) {
@@ -296,7 +296,7 @@ export default function SellerStorefront({
             )}
             {seller.created_at && (
               <p className="text-[11px] mt-0.5" style={{ color: 'var(--ink-soft)' }}>
-                On Plates since {memberSince(seller.created_at)}
+                On Pass the Plates since {memberSince(seller.created_at)}
               </p>
             )}
             <div className="flex items-center flex-wrap gap-1.5 mt-1">

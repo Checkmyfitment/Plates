@@ -75,7 +75,7 @@ export function registerNativePush(userId) {
           if (settled) return
           settled = true
           cleanup()
-          reject(new Error('Notifications are blocked — enable them for Plates in your device Settings.'))
+          reject(new Error('Notifications are blocked — enable them for Pass the Plates in your device Settings.'))
           return
         }
         await PushNotifications.register()

@@ -76,7 +76,7 @@ export default function PushToggle({ userId }) {
       <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>
         {subscribed
           ? "You'll get a notification on this device for new listings you follow."
-          : 'Get notified on this device the moment a listing you follow goes up — even when Plates isn\'t open.'}
+          : 'Get notified on this device the moment a listing you follow goes up — even when Pass the Plates isn\'t open.'}
       </p>
       <button
         onClick={toggle}

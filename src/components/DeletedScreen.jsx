@@ -11,7 +11,7 @@ export default function DeletedScreen({ onLogout }) {
         Account deleted
       </h1>
       <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
-        This account's profile and listings have been removed from Plates. Thanks for being part of the
+        This account's profile and listings have been removed from Pass the Plates. Thanks for being part of the
         community.
       </p>
       <button

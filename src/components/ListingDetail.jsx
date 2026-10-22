@@ -65,7 +65,7 @@ export default function ListingDetail({
       const result = await shareLink({
         url: getListingShareLink(listing.id),
         title: listing.title,
-        text: `${listing.title} — $${listing.price} on Plates`,
+        text: `${listing.title} — $${listing.price} on Pass the Plates`,
       })
       if (result === 'copied') toast.success('Link copied!')
     } catch (err) {
@@ -221,7 +221,7 @@ export default function ListingDetail({
                     className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                     style={{ background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' }}
                   >
-                    🏪 Not yet on Plates
+                    🏪 Not yet on Pass the Plates
                   </span>
                 )}
                 {showInlineSellerInfo && !isUnclaimed && badge && (
@@ -397,7 +397,7 @@ export default function ListingDetail({
         {!isOwnListing && isUnclaimed && (
           <div className="mt-6 card-elevated p-3 text-sm">
             <p className="font-medium" style={{ color: 'var(--forest-dark)' }}>
-              🏪 {listing.seller} hasn't joined Plates yet
+              🏪 {listing.seller} hasn't joined Pass the Plates yet
             </p>
             <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>
               {listing.unclaimedContactNote

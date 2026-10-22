@@ -26,7 +26,7 @@ export default function CottageLawReviewScreen({ onDone }) {
           <CottageFoodMap />
         </div>
         <p className="text-xs mt-4 text-center leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-          This doesn't restrict what you can post on Plates — you can browse, list, and sell
+          This doesn't restrict what you can post on Pass the Plates — you can browse, list, and sell
           anywhere. It's here so you can check your own state before you invest time in a listing,
           not to gate you out of anything. Full details are always in Community Guidelines → "Cottage
           Food Laws by State," from your profile.

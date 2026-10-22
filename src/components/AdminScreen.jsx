@@ -619,7 +619,7 @@ function StoresPanel({ adminId }) {
     <>
       <form onSubmit={submit} className="card-elevated p-3 mb-3 flex flex-col gap-2">
         <p className="text-xs font-medium" style={{ color: 'var(--forest-dark)' }}>
-          + New store (posting on behalf of someone not on Plates yet)
+          + New store (posting on behalf of someone not on Pass the Plates yet)
         </p>
         <input
           value={form.name}

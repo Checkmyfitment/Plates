@@ -67,7 +67,7 @@ export async function deleteOutreachLead(id) {
   if (error) throw error
 }
 
-export const outreachMessageTemplate = `Hey! I saw your [dish] post — looks amazing. I run Plates, a marketplace just for home cooks like you (no furniture/electronics clutter, just food). It's free to list, buyers can order and message you directly, and you build reviews/a following instead of starting over on every post. Want me to send you the link to set up your kitchen? Takes like 2 minutes.`
+export const outreachMessageTemplate = `Hey! I saw your [dish] post — looks amazing. I run Pass the Plates, a marketplace just for home cooks like you (no furniture/electronics clutter, just food). It's free to list, buyers can order and message you directly, and you build reviews/a following instead of starting over on every post. Want me to send you the link to set up your kitchen? Takes like 2 minutes.`
 
 export function personalizedOutreachMessage(lead) {
   const dish = lead.listingNote?.trim()

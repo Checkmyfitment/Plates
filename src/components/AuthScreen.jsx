@@ -151,7 +151,7 @@ export default function AuthScreen({ onClose, reason, onSignedUp }) {
           <Logo size={52} />
         </div>
         <h1 className="font-display text-3xl text-center mb-1" style={{ color: 'var(--forest-dark)' }}>
-          Plates
+          Pass the Plates
         </h1>
         <p className="text-sm text-center mb-6" style={{ color: 'var(--ink-soft)' }}>
           {mode === 'signin' && (reason || 'Log in to browse and order.')}
@@ -254,7 +254,7 @@ export default function AuthScreen({ onClose, reason, onSignedUp }) {
         {mode === 'signup' && (
           <div>
             <p className="text-xs mb-1.5" style={{ color: 'var(--ink-soft)' }}>
-              What brings you to Plates?
+              What brings you to Pass the Plates?
             </p>
             <div className="flex gap-2">
               {[

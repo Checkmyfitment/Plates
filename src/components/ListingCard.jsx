@@ -116,7 +116,7 @@ export default function ListingCard({ listing, onSelect, isFavorite, onToggleFav
             className="inline-block text-[9px] px-1.5 py-0.5 rounded-md font-bold mt-1"
             style={{ background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' }}
           >
-            🏪 Not yet on Plates
+            🏪 Not yet on Pass the Plates
           </span>
         )}
         {!sold && listing.quantityAvailable != null && listing.quantityAvailable <= 3 && (

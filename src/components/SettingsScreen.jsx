@@ -3,12 +3,14 @@ import PhoneVerification from './PhoneVerification'
 import PushToggle from './PushToggle'
 import ListingAlerts from './ListingAlerts'
 import AccountSecurity from './AccountSecurity'
+import { getRateAppUrl } from '../lib/rateApp'
 
 // Everything that configures the account rather than being profile
 // content — pulled out of the main Profile screen (which was getting
 // crowded) into its own screen, the same way Admin/Orders/Dashboard
 // already work.
 export default function SettingsScreen({ userId, email, phoneVerified, onProfileRefresh, onBack, onLogout, onOpenLegal }) {
+  const rateUrl = getRateAppUrl()
   return (
     // pb-28 (not the pb-4/pb-8 other screens use) -- Log out is the very
     // last element on this screen with nothing below it, so it sat right
@@ -40,6 +42,21 @@ export default function SettingsScreen({ userId, email, phoneVerified, onProfile
       {userId && <ListingAlerts userId={userId} />}
 
       {userId && <AccountSecurity email={email} />}
+
+      {rateUrl && (
+        <a
+          href={rateUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="pressable mt-6 flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium"
+          style={{ borderColor: 'var(--rule)', color: 'var(--forest-dark)', background: 'var(--card)' }}
+        >
+          <span>⭐ Rate Pass the Plates</span>
+          <span aria-hidden="true" style={{ color: 'var(--ink-soft)' }}>
+            →
+          </span>
+        </a>
+      )}
 
       {onOpenLegal && (
         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-6 pt-4 border-t" style={{ borderColor: 'var(--rule)' }}>

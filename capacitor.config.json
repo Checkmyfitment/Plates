@@ -1,6 +1,6 @@
 {
   "appId": "com.platesapp.app",
-  "appName": "Plates",
+  "appName": "Pass the Plates",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",

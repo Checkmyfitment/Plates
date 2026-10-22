@@ -59,7 +59,7 @@ export default function SocialSetupScreen({ onDone }) {
           <Logo size={52} />
         </div>
         <h1 className="font-display text-2xl text-center mb-1" style={{ color: 'var(--forest-dark)' }}>
-          {firstName ? `Welcome, ${firstName}` : 'Welcome to Plates'}
+          {firstName ? `Welcome, ${firstName}` : 'Welcome to Pass the Plates'}
         </h1>
         <p className="text-sm text-center mb-6" style={{ color: 'var(--ink-soft)' }}>
           Two quick things and you're in.
@@ -68,7 +68,7 @@ export default function SocialSetupScreen({ onDone }) {
         <form onSubmit={submit} className="flex flex-col gap-4">
           <div>
             <p className="text-xs mb-1.5" style={{ color: 'var(--ink-soft)' }}>
-              What brings you to Plates?
+              What brings you to Pass the Plates?
             </p>
             <div className="flex gap-2">
               {[

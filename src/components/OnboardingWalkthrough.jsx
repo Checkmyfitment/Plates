@@ -4,7 +4,7 @@ import Logo from './Logo'
 const screens = [
   {
     icon: '🍽️',
-    title: 'Welcome to Plates',
+    title: 'Welcome to Pass the Plates',
     body: 'Homemade food from home cooks in your own neighborhood — not a restaurant, not a chain, just your neighbors.',
   },
   {
