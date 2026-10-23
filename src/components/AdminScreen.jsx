@@ -1454,7 +1454,8 @@ function StatsPanel() {
   const [topWaitlist, setTopWaitlist] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true)
     Promise.all([
       fetchAnalyticsSummary(),
       fetchWeeklyGrowth(),
@@ -1474,6 +1475,10 @@ function StatsPanel() {
         toast.error('Could not load analytics — try again.')
       })
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -1487,7 +1492,7 @@ function StatsPanel() {
     )
   }
 
-  if (!summary) return <Placeholder compact icon="📊" title="Couldn't load analytics" body="Try again in a moment." />
+  if (!summary) return <Placeholder compact icon="📊" title="Couldn't load analytics" body="Try again in a moment." action={{ label: 'Try again', onClick: load }} />
 
   return (
     <div className="flex flex-col gap-6">

@@ -97,6 +97,9 @@ export default function App() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
   const [legalDoc, setLegalDoc] = useState(null)
+  // true when the open legal page was reached from Settings, so Back goes
+  // back to Settings instead of dropping the reader on some other tab
+  const [legalFromSettings, setLegalFromSettings] = useState(false)
   const [viewingSellerId, setViewingSellerId] = useState(null)
   const [showOrders, setShowOrders] = useState(false)
   const [showSaved, setShowSaved] = useState(false)
@@ -534,7 +537,14 @@ export default function App() {
     setShowAdmin(true)
   }
 
+  const closeLegal = () => {
+    setLegalDoc(null)
+    if (legalFromSettings) setShowSettings(true)
+    setLegalFromSettings(false)
+  }
+
   const openLegal = (doc) => {
+    setLegalFromSettings(showSettings)
     setSelected(null)
     setEditingListing(null)
     setEditingProfile(false)
@@ -651,11 +661,17 @@ export default function App() {
       setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)))
       markNotificationRead(notification.id).catch((err) => console.error('Failed to mark notification read', err))
     }
+    // a notification with no listing (an announcement, say) has nowhere to go,
+    // so leave the person where they are instead of sending them to Home
+    if (!notification.listingId) return
     const listing = listings.find((l) => l.id === notification.listingId)
     setShowNotifications(false)
     if (listing) {
       setSelected(listing)
     } else {
+      // the listing was sold out or taken down since -- say so rather than
+      // dropping them on Home with no explanation
+      toast.info('That listing is no longer available.')
       setTab('home')
     }
   }
@@ -970,7 +986,7 @@ export default function App() {
   else if (session && showSaved) closeTop = () => setShowSaved(false)
   else if (session && showDashboard) closeTop = () => setShowDashboard(false)
   else if (session && showSettings) closeTop = () => setShowSettings(false)
-  else if (legalDoc) closeTop = () => setLegalDoc(null)
+  else if (legalDoc) closeTop = closeLegal
   else if (session && showNotifications) closeTop = () => setShowNotifications(false)
   else if (session && editingProfile) {
     closeTop = () => setEditingProfile(false)
@@ -1120,7 +1136,7 @@ export default function App() {
   if (!onboarded && legalDoc) {
     return (
       <Suspense fallback={screenFallback}>
-        <LegalScreen doc={legalDoc} onBack={() => setLegalDoc(null)} />
+        <LegalScreen doc={legalDoc} onBack={closeLegal} />
       </Suspense>
     )
   }
@@ -1268,7 +1284,7 @@ export default function App() {
     // work for a signed-out visitor, same as the onboarding-bypass branch
     body = (
       <Suspense fallback={screenFallback}>
-        <LegalScreen doc={legalDoc} onBack={() => setLegalDoc(null)} />
+        <LegalScreen doc={legalDoc} onBack={closeLegal} />
       </Suspense>
     )
   } else if (session && showNotifications) {

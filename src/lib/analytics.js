@@ -13,7 +13,8 @@ export function trackPageView(screen, userId) {
 export async function fetchAnalyticsSummary() {
   const { data, error } = await supabase.rpc('get_analytics_summary')
   if (error) throw error
-  const row = data[0]
+  const row = data?.[0]
+  if (!row) throw new Error('get_analytics_summary returned no row')
   return {
     totalUsers: row.total_users,
     newUsers30d: row.new_users_30d,
@@ -67,7 +68,8 @@ export async function fetchSellerWeeklyEarnings() {
 export async function fetchSellerInsights() {
   const { data, error } = await supabase.rpc('get_seller_insights')
   if (error) throw error
-  const row = data[0]
+  // a brand-new seller can come back with no row at all
+  const row = data?.[0] ?? {}
   return {
     topListingTitle: row.top_listing_title,
     topListingQuantity: row.top_listing_quantity,

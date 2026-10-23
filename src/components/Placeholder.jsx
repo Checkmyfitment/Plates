@@ -1,4 +1,15 @@
-export default function Placeholder({ icon, title, body, compact = false }) {
+// action: optional { label, onClick } -- a way out of an error state
+export default function Placeholder({ icon, title, body, compact = false, action }) {
+  const button = action && (
+    <button
+      type="button"
+      onClick={action.onClick}
+      className="mt-4 px-4 py-2 rounded-full text-sm font-semibold text-white"
+      style={{ background: 'var(--forest)' }}
+    >
+      {action.label}
+    </button>
+  )
   if (compact) {
     return (
       <div className="rounded-2xl border border-dashed py-8 px-5 text-center" style={{ borderColor: 'var(--rule)' }}>
@@ -11,6 +22,7 @@ export default function Placeholder({ icon, title, body, compact = false }) {
             {body}
           </p>
         )}
+        {button}
       </div>
     )
   }
@@ -23,6 +35,7 @@ export default function Placeholder({ icon, title, body, compact = false }) {
       <p className="text-sm mt-1" style={{ color: 'var(--ink-soft)' }}>
         {body}
       </p>
+      {button}
     </div>
   )
 }
