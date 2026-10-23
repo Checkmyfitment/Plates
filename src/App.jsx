@@ -947,6 +947,10 @@ export default function App() {
     )
   }
 
+  // the chat currently open on the Chats tab (declared up here, before the
+  // back-handling below reads it -- reading a const before its line crashes)
+  const activeChat = chats.find((c) => c.id === activeChatId)
+
   // Which screen a "back" (Android back button, Escape, swipe-right) should
   // close. Mirrors the render chain below -- the first open screen wins.
   // `form` screens hold unsaved edits, so only the explicit back actions
@@ -1133,7 +1137,6 @@ export default function App() {
   }
 
   let body
-  const activeChat = chats.find((c) => c.id === activeChatId)
   if (session && showAdmin) {
     body = (
       <Suspense fallback={<div className="px-5 pt-6"><div className="skeleton h-40 w-full rounded-2xl" /></div>}>
