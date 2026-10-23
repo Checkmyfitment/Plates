@@ -2667,3 +2667,138 @@ need a new build to include it (the web app picks it up on the next deploy).
       generated from the .p8** (Supabase's docs have a generator). The secret
       expires every 6 months — put a reminder in your calendar
 - [ ] New iOS + Android builds (bump versions) so the buttons appear in the apps
+
+---
+
+## Payments & sponsors go-live (infrastructure built, switched OFF)
+
+Everything below is already written and tested but **inert**: three flags in
+`src/lib/siteInfo.js` are `false` (`PAID_BOOSTS_LIVE`, `PRO_PAYMENTS_LIVE`,
+`SPONSORS_ENABLED`), so nothing about the live app changes until you flip them.
+What exists:
+
+- **Featured listings (promotions):** Stripe Checkout on web (`create-checkout-session`
+  + `stripe-webhook`), in-app purchase on iOS/Android via RevenueCat
+  (`apply-native-boost`). DB: `migration_listing_boost_payments.sql` (already run).
+- **Plates Pro subscription ($9/month):** Stripe subscription on web
+  (`create-pro-checkout-session` + `stripe-webhook`), in-app subscription on
+  iOS/Android via RevenueCat (`revenuecat-webhook`). One shared, idempotent DB
+  path: `apply_pro_subscription()` in `migration_pro_subscriptions.sql`. Pro
+  sellers' listings also sort like Featured in Browse. An admin-granted Pro
+  (the old manual toggle) is never expired by any of this.
+- **Sponsored placements (ads):** `sponsors` table + a clearly labeled
+  "Sponsored" card in Browse (`migration_sponsors.sql`, `SponsoredCard.jsx`).
+  First-party only: no ad network, no tracking IDs, no per-user data, so the
+  store privacy answers don't change.
+
+### Phase 1 (current scope): paid Featured listings on the WEB only
+
+Pro subscriptions, sponsors, order checkout and in-app (RevenueCat) purchases
+stay off for now. The minimum to take real money for a Featured listing:
+
+1. Stripe account live (needs the bank account first).
+2. Supabase secrets: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+   `SITE_URL` = `https://www.passtheplates.app`.
+3. Deploy just these two functions:
+   `supabase functions deploy create-checkout-session stripe-webhook`
+   (they import `supabase/functions/_shared/`, which deploys with them).
+4. Stripe dashboard -> Developers -> Webhooks -> add endpoint
+   `https://<project>.supabase.co/functions/v1/stripe-webhook`, listening for
+   `checkout.session.completed` (the Pro events can be added later). Copy its
+   signing secret into `STRIPE_WEBHOOK_SECRET`.
+5. Stripe -> Settings -> Payment methods -> Apple Pay: add and verify
+   `passtheplates.app` (this is what makes the Apple Pay / Google Pay buttons
+   appear on the Checkout page).
+6. Test in Stripe **test mode** first: card `4242 4242 4242 4242`. Expect:
+   click "Feature this listing — $4.99" -> Stripe page -> pay -> back on the
+   site with "Payment received!" -> the listing shows "Featured until ..." within
+   ~15 seconds. Then confirm a row in `listing_boosts`, and that paying twice
+   adds a second week. Then swap in the live keys/secret and repeat once with
+   a real card and refund it.
+7. Set `PAID_BOOSTS_LIVE = true` in `src/lib/siteInfo.js`, deploy the web app.
+   In the phone apps nothing changes until RevenueCat keys exist: they keep
+   the old "Request to be featured" flow.
+
+Already verified (no Stripe needed): the database function `apply_listing_boost`
+(first payment features for 7 days, a replayed webhook does not add time, a
+second payment adds another week, expiry clears it, every payment is logged),
+the web checkout call, the buy/cancel/refresh behavior of the promotion card,
+and the RevenueCat purchase matching. Fixed while auditing: the purchase
+functions had no CORS handling (browsers/WebViews would have blocked every
+call), the RevenueCat check compared the wrong id field, and the web success
+message showed before the badge could appear.
+
+Known gaps to decide on later: a Stripe refund or dispute does not
+automatically remove a boost (handle `charge.refunded` when it matters); and
+inside the phone apps the fallback "billed manually" text for promotions is
+still shown until in-app purchase is set up -- Apple/Google prefer digital
+promotion be bought in-app, so consider hiding it there (as done for Pro).
+
+### Full list (Pro, ads, in-app purchases) -- later phases
+
+### Order of operations (all phases)
+
+1. **Business setup (you):** EIN ✅ → business bank account → Stripe account
+   (business type LLC, legal name PASS THE PLATES LLC, same EIN/bank).
+2. **Run the SQL** in the Supabase SQL Editor, in this order (each is safe to
+   re-run): `migration_pro_subscriptions.sql`, then `migration_sponsors.sql`.
+3. **Supabase secrets** (Project settings -> Edge Functions -> Secrets):
+   `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SITE_URL`
+   (`https://www.passtheplates.app`), `REVENUECAT_SECRET_API_KEY`,
+   `REVENUECAT_WEBHOOK_AUTH` (any long random string you invent),
+   optional `STRIPE_PRO_PRICE_ID`, optional `PRO_PRODUCT_IDS`.
+4. **Deploy the functions** (needs the Supabase CLI: `supabase login`, then
+   `supabase link`): `supabase functions deploy create-checkout-session
+   stripe-webhook create-pro-checkout-session revenuecat-webhook
+   apply-native-boost`. (None of these were deployable from the dev machine --
+   no Deno/Supabase CLI there -- so they have NOT been type-checked by a real
+   Deno build; deploy and read the logs on the first test.)
+5. **Stripe dashboard:** add a webhook endpoint -> URL
+   `https://<project>.supabase.co/functions/v1/stripe-webhook`, events
+   `checkout.session.completed`, `customer.subscription.updated`,
+   `customer.subscription.deleted`. Copy its signing secret into
+   `STRIPE_WEBHOOK_SECRET`. Verify the domain `passtheplates.app` under
+   Settings -> Payment methods -> Apple Pay (this is what shows Apple Pay /
+   Google Pay buttons on web Checkout).
+6. **Stores (needed before in-app purchases work):**
+   - App Store Connect: Business -> Agreements: accept the **Paid Apps
+     Agreement** and add bank + tax info. Create the auto-renewing subscription
+     `pro_monthly` ($8.99/$9.99 tier -- Apple's price points) and the
+     consumable/one-time `feature_listing_7day`; add a subscription group
+     display name, and the subscription terms/privacy links.
+   - Google Play Console: set up the merchant profile, create subscription
+     `pro_monthly` and one-time product `feature_listing_7day`.
+   - RevenueCat: create the project + iOS and Android apps, import the
+     products, put them in one offering (package ids `pro_monthly`,
+     `feature_listing_7day`), paste the two public SDK keys into
+     `REVENUECAT_IOS_API_KEY` / `REVENUECAT_ANDROID_API_KEY` in `siteInfo.js`,
+     and add the webhook: URL
+     `https://<project>.supabase.co/functions/v1/revenuecat-webhook`,
+     Authorization header = the `REVENUECAT_WEBHOOK_AUTH` value.
+7. **Test with real sandbox money, per platform:** web Stripe test mode
+   (card `4242 4242 4242 4242`), iOS TestFlight sandbox purchase, Android
+   licensed tester purchase. For Pro check: purchase -> badge appears within
+   ~15 s; cancel -> badge stays until the paid-through date; expire -> badge
+   goes away; "Restore purchases" works on a fresh install.
+8. **Flip the flags** in `src/lib/siteInfo.js` (`PAID_BOOSTS_LIVE`,
+   `PRO_PAYMENTS_LIVE`), ship a new build, and only then mention paid features
+   in the store listing.
+9. **Sponsors:** set `SPONSORS_ENABLED = true`, add a row in the Supabase Table
+   Editor -> `sponsors` (https link only; optional `neighborhood` targeting;
+   `starts_at` / `ends_at` for the paid period). Impressions/clicks are
+   approximate counters, not billing-grade.
+
+### Rules to keep in mind
+
+- Inside the iOS/Android apps, digital features (Pro, Featured) must be sold
+  through Apple/Google in-app purchase (App Review Guideline 3.1.1 / Play
+  Billing policy); Stripe + Apple Pay/Google Pay buttons are for the **web**
+  only. Until `PRO_PAYMENTS_LIVE`, the native apps hide the Pro upgrade card.
+- Subscriptions need: price + renewal terms shown before purchase, a Restore
+  purchases button (both are in `ProCard.jsx`), and Terms/Privacy links in the
+  store listing.
+- Ads must stay clearly labeled "Sponsored". Adding a third-party ad network
+  later means updating App Privacy / Data Safety answers, Apple's ATT prompt,
+  and re-reviewing this checklist.
+- Taking payments puts Plates closer to each food sale; get the cottage-food
+  legal review (see `LEGAL_REVIEW_BRIEF.md`) before charging real buyers.

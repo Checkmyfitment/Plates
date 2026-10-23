@@ -37,6 +37,7 @@ export default function ListingDetail({
   responseStats,
   isAdmin,
   onFeaturedChanged,
+  onBoostApplied,
   onOpenSeller,
   onRequireAuth,
   onPlaceOrder,
@@ -57,6 +58,11 @@ export default function ListingDetail({
     onScrolledToOrder?.()
   }, [scrollToOrder, onScrolledToOrder])
   const [featured, setFeatured] = useState(listing?.featured ?? false)
+  // a paid boost (or an expiry) changes the listing from outside this
+  // screen -- follow it instead of keeping the value from first render
+  useEffect(() => {
+    setFeatured(listing?.featured ?? false)
+  }, [listing?.featured])
   const [togglingFeatured, setTogglingFeatured] = useState(false)
   const isOwnListing = listing?.sellerId === currentUserId
 
@@ -481,6 +487,7 @@ export default function ListingDetail({
                 sellerId={currentUserId}
                 featured={featured}
                 featuredUntil={listing.featuredUntil}
+                onBoosted={onBoostApplied}
               />
             )}
           </>

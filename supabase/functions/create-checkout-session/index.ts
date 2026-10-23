@@ -12,6 +12,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import Stripe from 'npm:stripe@17'
+import { preflight, reply } from '../_shared/cors.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -21,25 +22,31 @@ const SITE_URL = Deno.env.get('SITE_URL') || 'https://www.passtheplates.app'
 const BOOST_PRICE_CENTS = 499
 
 Deno.serve(async (req) => {
+  const early = preflight(req)
+  if (early) return early
   try {
     if (!STRIPE_SECRET_KEY) {
-      return new Response(JSON.stringify({ error: 'not configured' }), { status: 503 })
+      return reply({ error: 'not configured' }, 503)
     }
-    const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
+    const stripe = new Stripe(STRIPE_SECRET_KEY)
 
     const authHeader = req.headers.get('Authorization') || ''
     const jwt = authHeader.replace('Bearer ', '')
-    if (!jwt) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 })
+    if (!jwt) return reply({ error: 'unauthorized' }, 401)
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
     const { data: userData, error: userErr } = await supabase.auth.getUser(jwt)
     if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 })
+      return reply({ error: 'unauthorized' }, 401)
     }
     const sellerId = userData.user.id
 
-    const { listing_id } = await req.json()
-    if (!listing_id) return new Response(JSON.stringify({ error: 'missing listing_id' }), { status: 400 })
+    // a banned account shouldn't be able to buy promotion
+    const { data: sellerProfile } = await supabase.from('profiles').select('banned').eq('id', sellerId).single()
+    if (sellerProfile?.banned) return reply({ error: 'not allowed' }, 403)
+
+    const { listing_id } = await req.json().catch(() => ({}))
+    if (!listing_id) return reply({ error: 'missing listing_id' }, 400)
 
     const { data: listing, error: listingErr } = await supabase
       .from('listings')
@@ -47,12 +54,16 @@ Deno.serve(async (req) => {
       .eq('id', listing_id)
       .single()
     if (listingErr || !listing || listing.seller_id !== sellerId) {
-      return new Response(JSON.stringify({ error: 'not your listing' }), { status: 403 })
+      return reply({ error: 'not your listing' }, 403)
     }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      // 'card' covers Apple Pay and Google Pay too; they show up
+      // automatically on devices that support them
       payment_method_types: ['card'],
+      // so Stripe emails the seller a receipt
+      customer_email: userData.user.email ?? undefined,
       line_items: [
         {
           price_data: {
@@ -74,12 +85,9 @@ Deno.serve(async (req) => {
       cancel_url: `${SITE_URL}/?boost_cancelled=1`,
     })
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return reply({ url: session.url })
   } catch (err) {
     console.error('create-checkout-session error', err)
-    return new Response(JSON.stringify({ error: 'internal error' }), { status: 500 })
+    return reply({ error: 'internal error' }, 500)
   }
 })

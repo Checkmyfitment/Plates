@@ -150,3 +150,79 @@ This brief is scoped to reviewing the existing drafts and flagging the
 specific gaps above — it is not asking for a full business/regulatory
 setup consultation (e.g., business formation, tax structure), though the
 attorney may reasonably suggest those are worth a separate conversation.
+
+---
+
+## Update — October 2026 (read this section first)
+
+Things that changed since the sections above were written. Nothing below has
+been reviewed by an attorney yet.
+
+### The business exists now (answers question 8)
+
+- **Operator:** PASS THE PLATES LLC, a **Delaware** limited liability company,
+  formed September 21, 2026. Single member (the founder). The founder lives and
+  works in **California** (Oceanside), so the company effectively operates in
+  California even though it is a Delaware entity.
+- **EIN issued** October 22, 2026. A U.S. Bank business account is being opened.
+
+### The name changed
+
+The app is now called **Pass the Plates** in both app stores and across the app
+(it was "Plates"). The legal documents still say "Plates" throughout — please
+make them consistent and decide how the **operator** is described. Where it
+appears in the app today:
+
+- Terms of Service, Privacy Policy, Community Guidelines, Cottage Food Laws
+  page: all in `src/components/LegalScreen.jsx` (about 40 mentions of "Plates").
+- The signup consent sentence in `src/components/AuthScreen.jsx` and
+  `src/components/SocialSetupScreen.jsx` ("I agree ... Plates is just a
+  listing platform ...").
+- "Plates Pro" (the seller subscription's name) in `ProfileScreen.jsx`,
+  `SellerStorefront.jsx`, `SellerDashboard.jsx` / `ProCard.jsx`.
+- Website: the privacy page is reachable at `passtheplates.app/?legal=privacy`
+  and is the Privacy Policy URL given to Apple and Google.
+
+### New questions
+
+12. **Name and trademark.** Is "Pass the Plates" (and "Plates Pro") clear to
+    use and worth registering? Searching the Apple App Store for the exact
+    name found nothing, but no trademark search has been done.
+13. **Operator disclosure.** Should the Terms and Privacy Policy name PASS THE
+    PLATES LLC, with a mailing address and contact email? (A business email
+    does not exist yet — the founder's personal email is used.)
+14. **Money flowing through the app (new — monetization infrastructure was
+    built this month but is switched off).** Planned: paid **featured
+    listings** ($4.99 per week; Stripe on the web, in-app purchase on
+    iOS/Android), a **Plates Pro seller subscription** (about $9/month,
+    auto-renewing), and possibly **sponsored placements** (local-business
+    ads clearly labeled "Sponsored"). Questions: (a) does charging sellers
+    for promotion change the "just a listing platform" positioning in Terms
+    §2? (b) California's **automatic renewal law** — what must the
+    subscription terms, disclosures, and cancellation flow say? (c) refund
+    policy for promotions; (d) ad-disclosure rules for the sponsored cards.
+15. **Per-order fees and payments (not built; being considered).** One option
+    is a flat fee charged to the buyer per order via Apple Pay / Google Pay
+    while buyer and cook settle the food payment themselves. Does collecting
+    any fee tied to individual food sales change the cottage-food exposure
+    in question 2 or the Section 230 / "not a seller" analysis in question 6?
+16. **Food trucks.** Sellers can now mark themselves as food trucks and post a
+    manually updated location. Mobile food facilities usually need permits
+    that home cooks do not — should the app require or at least prompt for
+    that, and does hosting such listings add exposure?
+17. **Account creation with Apple / Google.** Sign in with Apple and Google was
+    added in October 2026; those new accounts accept the same 18+ / Terms
+    checkbox on a first-run screen (`SocialSetupScreen`). Is that
+    acceptance flow still sufficient (see question 10)?
+18. **Email.** Account emails are sent from `no-reply@passtheplates.app` via
+    Resend. Anything to add for commercial-email rules (CAN-SPAM) or the
+    transactional vs. marketing split?
+
+### Updated "future changes"
+
+Payments are no longer hypothetical: the Terms' current "Payments & Refunds"
+section (which says the app does not process payments) will need to be
+rewritten **before any payment feature is switched on**. The go-live steps and
+the switches that keep everything off are in `CHECKLIST.md`
+("Payments & sponsors go-live").
+

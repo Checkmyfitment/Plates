@@ -431,22 +431,47 @@ export default function App() {
     window.history.replaceState({}, '', window.location.pathname + (search ? `?${search}` : ''))
   }, [legalLinkOpened])
 
+  // Re-reads listings (and the open listing's featured state) after a paid
+  // boost. Stripe/RevenueCat confirm to our server a few seconds after the
+  // buyer pays, so callers can retry a couple of times until the badge shows.
+  const refreshAfterBoost = () =>
+    fetchListings()
+      .then((fresh) => {
+        setListings(fresh)
+        setSelected((prev) => {
+          if (!prev) return prev
+          const updated = fresh.find((l) => l.id === prev.id)
+          return updated ? { ...prev, featured: updated.featured, featuredUntil: updated.featuredUntil } : prev
+        })
+      })
+      .catch((err) => console.error('Failed to refresh listings after boost', err))
+
   // ?boosted=1 / ?boost_cancelled=1 -- Stripe Checkout's success_url/
   // cancel_url for the featured-listing purchase (see lib/checkout.js)
   // redirect back here with one of these; the native/RevenueCat purchase
-  // path doesn't need this since it never leaves the app. Runs once per
+  // path doesn't need this since it never leaves the app. Same for
+  // ?pro=1 / ?pro_cancelled=1 from the Plates Pro checkout. Runs once per
   // load, same pattern as the ?legal= handler above.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.has('boosted')) {
-      toast.success('This listing is now featured for 7 days!')
+      toast.success("Payment received! Your listing will show as Featured in a moment.")
+      // the confirmation reaches our server a few seconds after the redirect
+      for (const ms of [2500, 7000, 15000]) setTimeout(refreshAfterBoost, ms)
     } else if (params.has('boost_cancelled')) {
       toast.info('Checkout cancelled — your listing was not featured.')
+    } else if (params.has('pro')) {
+      toast.success('Welcome to Plates Pro! Your badge will show up in a moment.')
+      for (const ms of [2500, 7000, 15000]) setTimeout(() => refreshProfile?.(), ms)
+    } else if (params.has('pro_cancelled')) {
+      toast.info('Checkout cancelled — you were not charged.')
     } else {
       return
     }
     params.delete('boosted')
     params.delete('boost_cancelled')
+    params.delete('pro')
+    params.delete('pro_cancelled')
     const search = params.toString()
     window.history.replaceState({}, '', window.location.pathname + (search ? `?${search}` : ''))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1168,6 +1193,7 @@ export default function App() {
         restockCount={restockCounts.get(selected.id) ?? 0}
         responseStats={responseStats.get(selected.sellerId)}
         isAdmin={!!profile?.is_admin}
+        onBoostApplied={refreshAfterBoost}
         onFeaturedChanged={(id, featured) =>
           setListings((prev) => prev.map((l) => (l.id === id ? { ...l, featured } : l)))
         }

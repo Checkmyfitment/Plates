@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Get Plates</title>
-<meta name="description" content="Get Plates on your phone — homemade food from your actual neighbors. No app store needed, just add it to your home screen." />
+<title>Get Pass the Plates</title>
+<meta name="description" content="Get Pass the Plates on your phone — homemade food from home cooks and bakers in your neighborhood. Download it on the App Store or use it right in your browser." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231D3128'/%3E%3Ccircle cx='16' cy='17' r='11' fill='%23FBF8EF' stroke='%23B8811A' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='17' r='7.5' fill='none' stroke='%23DED5BE' stroke-width='1'/%3E%3Ccircle cx='12.5' cy='14.5' r='2.6' fill='%23E3A72B'/%3E%3Ccircle cx='20' cy='14.5' r='2.4' fill='%237A2E3B'/%3E%3Ccircle cx='16' cy='20' r='2.9' fill='%232F4B3C'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,6 +48,7 @@
   .btn:hover{transform:translateY(-1px)}
   .btn-primary{background:var(--mustard); color:var(--dark); box-shadow:var(--shadow-float)}
   .btn-primary:hover{opacity:.94}
+  .btn-secondary{margin-top:12px; background:transparent; color:var(--cream); border:1.5px solid rgba(251,248,239,.35)}
 
   .card{
     background:var(--card); color:var(--ink); border-radius:20px; padding:26px;
@@ -99,21 +100,22 @@
         <circle cx="20" cy="14.5" r="2.4" fill="#7A2E3B"/>
         <circle cx="16" cy="20" r="2.9" fill="#2F4B3C"/>
       </svg>
-      <span>Plates</span>
+      <span>Pass the Plates</span>
     </div>
   </div>
 </header>
 
 <main>
   <div class="wrap">
-    <h1>Get Plates on <em>your phone.</em></h1>
-    <p class="lead">Homemade food from your actual neighbors. Open it once, add it to your home screen, and it's right there like any other app.</p>
+    <h1>Get Pass the Plates on <em>your phone.</em></h1>
+    <p class="lead">Homemade food from home cooks, bakers, and food trucks in your actual neighborhood. Download the app, or open it in your browser and add it to your home screen.</p>
 
-    <a class="btn btn-primary" href="https://www.passtheplates.app">🍽️ Open Plates</a>
+    <a class="btn btn-primary" href="https://apps.apple.com/app/id6809894925">📱 Download on the App Store</a>
+    <a class="btn btn-secondary" href="https://www.passtheplates.app">🍽️ Open Pass the Plates in your browser</a>
 
     <div class="card">
-      <h2>Add it to your home screen</h2>
-      <div class="sub">No app store needed — this takes about 10 seconds.</div>
+      <h2>Prefer a shortcut? Add it to your home screen</h2>
+      <div class="sub">Works on iPhone and Android — this takes about 10 seconds. (An Android app is on the way.)</div>
 
       <div class="tabs">
         <button class="tab" id="tab-ios" onclick="showPanel('ios')">iPhone</button>
@@ -137,7 +139,7 @@
 
     <div class="qr-wrap">
       <div class="qr-box">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=https://www.passtheplates.app" alt="QR code linking to the Plates app" width="130" height="130" loading="lazy" />
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=https://www.passtheplates.app" alt="QR code linking to Pass the Plates" width="130" height="130" loading="lazy" />
       </div>
       <div class="qr-cap">Scan to open on another phone</div>
     </div>
@@ -146,7 +148,7 @@
 
 <footer>
   <div class="wrap">
-    <p>© 2026 Plates. Homemade food, neighbor to neighbor.</p>
+    <p>© 2026 Pass The Plates LLC. Homemade food, neighbor to neighbor.</p>
   </div>
 </footer>
 

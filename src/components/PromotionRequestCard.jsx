@@ -11,7 +11,7 @@ function formatUntil(iso) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-export default function PromotionRequestCard({ listingId, sellerId, featured, featuredUntil }) {
+export default function PromotionRequestCard({ listingId, sellerId, featured, featuredUntil, onBoosted }) {
   const toast = useToast()
   const [request, setRequest] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -55,6 +55,9 @@ export default function PromotionRequestCard({ listingId, sellerId, featured, fe
       if (Capacitor.isNativePlatform()) {
         await purchaseFeaturedListing(listingId)
         toast.success('This listing is now featured for 7 days!')
+        // re-read the listing so this card flips to "Featured until ..." --
+        // otherwise the buy button would stay up and invite a second purchase
+        onBoosted?.()
       } else {
         // redirects the page to Stripe Checkout — nothing left to do here
         // on success; the toast/refresh happens after the redirect back
@@ -101,6 +104,13 @@ export default function PromotionRequestCard({ listingId, sellerId, featured, fe
       </div>
     )
   }
+
+  // Inside the iPhone/Android apps, paying for promotion by arranging
+  // payment outside the app ("billed manually") isn't allowed -- Apple and
+  // Google want digital promotion bought in-app. So until the in-app
+  // purchase is set up (RevenueCat keys + PAID_BOOSTS_LIVE), the apps show
+  // nothing here; the website keeps the manual request flow.
+  if (Capacitor.isNativePlatform()) return null
 
   if (loading) return null
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import ListingCard from './ListingCard'
 import ListingCardSkeleton from './ListingCardSkeleton'
 import WhatsCookingThisWeek from './WhatsCookingThisWeek'
@@ -7,6 +7,9 @@ import { distanceMiles, formatDistance } from '../lib/geo'
 import { getSavedBrowseFilters, saveBrowseFilters } from '../lib/browseFilters'
 import { searchFields, matchesAllWords, relevanceScore } from '../lib/searchListings'
 import AreaWaitlistCard from './AreaWaitlistCard'
+import SponsoredCard from './SponsoredCard'
+import { fetchLiveSponsors, eligibleSponsors, pickSponsor } from '../lib/sponsors'
+import { SPONSORS_ENABLED } from '../lib/siteInfo'
 
 // same cuisine vocabulary as the listing form's own dropdown, so a chip
 // here always matches something a seller could actually have picked
@@ -22,6 +25,16 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
   useEffect(() => {
     saveBrowseFilters({ active, sortBy, radiusMiles })
   }, [active, sortBy, radiusMiles])
+
+  // one sponsored card, only once sponsors are switched on and a live one
+  // exists for this person -- otherwise nothing changes
+  const [sponsor, setSponsor] = useState(null)
+  useEffect(() => {
+    if (!SPONSORS_ENABLED) return
+    fetchLiveSponsors('browse')
+      .then((all) => setSponsor(pickSponsor(eligibleSponsors(all, userNeighborhood))))
+      .catch((err) => console.error('Failed to load sponsors', err))
+  }, [userNeighborhood])
 
   // each unclaimed store counts as its own distinct "seller" here, since
   // sellerId alone would otherwise collapse every store an admin has
@@ -74,8 +87,10 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
   } else if (words.length > 0) {
     filtered = [...filtered].sort((a, b) => relevanceScore(searchFields(b), words) - relevanceScore(searchFields(a), words))
   } else {
-    // keep default order stable, just float featured listings to the top
-    filtered = [...filtered].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+    // keep default order stable, just float featured listings to the top --
+    // a Plates Pro seller's listings count as featured (part of what Pro buys)
+    const boosted = (l) => (l.featured || l.sellerIsPro ? 1 : 0)
+    filtered = [...filtered].sort((a, b) => boosted(b) - boosted(a))
   }
 
   return (
@@ -186,15 +201,18 @@ export default function BrowseScreen({ listings, loading, onSelect, favoriteIds,
         )
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {filtered.map((l) => (
-            <ListingCard
-              key={l.id}
-              listing={l}
-              onSelect={onSelect}
-              isFavorite={favoriteIds.has(l.id)}
-              onToggleFavorite={onToggleFavorite}
-              distanceLabel={l.distance != null ? formatDistance(l.distance) : null}
-            />
+          {filtered.map((l, i) => (
+            <Fragment key={l.id}>
+              <ListingCard
+                listing={l}
+                onSelect={onSelect}
+                isFavorite={favoriteIds.has(l.id)}
+                onToggleFavorite={onToggleFavorite}
+                distanceLabel={l.distance != null ? formatDistance(l.distance) : null}
+              />
+              {/* after the 4th listing (or at the end of a short list) */}
+              {sponsor && i === Math.min(3, filtered.length - 1) && <SponsoredCard sponsor={sponsor} />}
+            </Fragment>
           ))}
         </div>
       )}

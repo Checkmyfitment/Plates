@@ -23,6 +23,8 @@
 //     Supabase project's Edge Functions automatically
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { preflight, reply } from '../_shared/cors.ts'
+import { findPurchase } from '../_shared/boost.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -31,9 +33,11 @@ const REVENUECAT_SECRET_API_KEY = Deno.env.get('REVENUECAT_SECRET_API_KEY')
 const BOOST_DAYS = 7
 
 Deno.serve(async (req) => {
+  const early = preflight(req)
+  if (early) return early
   try {
     if (!REVENUECAT_SECRET_API_KEY) {
-      return new Response(JSON.stringify({ error: 'not configured' }), { status: 503 })
+      return reply({ error: 'not configured' }, 503)
     }
 
     // identify the caller from their own auth token, the same way every
@@ -41,21 +45,27 @@ Deno.serve(async (req) => {
     // trust a seller_id passed in the request body
     const authHeader = req.headers.get('Authorization') || ''
     const jwt = authHeader.replace('Bearer ', '')
-    if (!jwt) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 })
+    if (!jwt) return reply({ error: 'unauthorized' }, 401)
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
     const { data: userData, error: userErr } = await supabase.auth.getUser(jwt)
     if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 })
+      return reply({ error: 'unauthorized' }, 401)
     }
     const sellerId = userData.user.id
 
     const { listing_id, transaction_id, revenuecat_app_user_id, platform } = await req.json()
     if (!listing_id || !transaction_id || !revenuecat_app_user_id || !platform) {
-      return new Response(JSON.stringify({ error: 'missing fields' }), { status: 400 })
+      return reply({ error: 'missing fields' }, 400)
     }
     if (platform !== 'ios' && platform !== 'android') {
-      return new Response(JSON.stringify({ error: 'invalid platform' }), { status: 400 })
+      return reply({ error: 'invalid platform' }, 400)
+    }
+    // the app signs RevenueCat in with the Supabase user id (see
+    // lib/iap.js), so the purchaser we look up must be the caller -- this
+    // stops someone pointing the check at another account's purchase history
+    if (revenuecat_app_user_id !== sellerId) {
+      return reply({ error: 'purchase does not belong to this account' }, 403)
     }
 
     // the caller must actually own the listing they're paying to feature
@@ -65,7 +75,7 @@ Deno.serve(async (req) => {
       .eq('id', listing_id)
       .single()
     if (listingErr || !listing || listing.seller_id !== sellerId) {
-      return new Response(JSON.stringify({ error: 'not your listing' }), { status: 403 })
+      return reply({ error: 'not your listing' }, 403)
     }
 
     // ask RevenueCat directly whether this transaction is real, rather
@@ -76,17 +86,17 @@ Deno.serve(async (req) => {
     )
     if (!rcRes.ok) {
       console.error('RevenueCat lookup failed', rcRes.status, await rcRes.text())
-      return new Response(JSON.stringify({ error: 'could not verify purchase' }), { status: 502 })
+      return reply({ error: 'could not verify purchase' }, 502)
     }
     const rcData = await rcRes.json()
 
-    // non_subscriptions holds one-time/consumable purchase history, keyed
-    // by product id, each entry carrying its own transaction id
-    const nonSubs = rcData?.subscriber?.non_subscriptions || {}
-    const allTransactions = Object.values(nonSubs).flat() as Array<{ id?: string; store?: string }>
-    const matched = allTransactions.find((t) => t.id === transaction_id)
+    // non_subscriptions holds one-time/consumable purchase history, keyed by
+    // product id. Each entry has RevenueCat's own `id` AND the store's
+    // `store_transaction_id`; the app sends the store's, so match on both
+    // (see _shared/boost.ts)
+    const matched = findPurchase(rcData?.subscriber?.non_subscriptions, transaction_id)
     if (!matched) {
-      return new Response(JSON.stringify({ error: 'transaction not found for this purchase' }), { status: 402 })
+      return reply({ error: 'transaction not found for this purchase' }, 402)
     }
 
     const { error: applyErr } = await supabase.rpc('apply_listing_boost', {
@@ -101,12 +111,12 @@ Deno.serve(async (req) => {
     })
     if (applyErr) {
       console.error('apply_listing_boost failed', applyErr)
-      return new Response(JSON.stringify({ error: 'could not apply boost' }), { status: 500 })
+      return reply({ error: 'could not apply boost' }, 500)
     }
 
-    return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    return reply({ ok: true }, 200)
   } catch (err) {
     console.error('apply-native-boost error', err)
-    return new Response(JSON.stringify({ error: 'internal error' }), { status: 500 })
+    return reply({ error: 'internal error' }, 500)
   }
 })

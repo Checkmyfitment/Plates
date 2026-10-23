@@ -39,3 +39,25 @@ export const FEATURE_LISTING_PACKAGE_ID = 'feature_listing_7day'
 // has gone through on each platform you plan to launch with; see
 // CHECKLIST.md's "Paid featured listings setup".
 export const PAID_BOOSTS_LIVE = false
+
+// --- Plates Pro subscription ---------------------------------------------
+// The RevenueCat package/product identifier for the monthly Pro
+// subscription (create it in App Store Connect + Google Play, then add it to
+// the RevenueCat offering -- see CHECKLIST.md's "Payments & sponsors
+// go-live"). Web uses Stripe instead and doesn't need it.
+export const PRO_PACKAGE_ID = 'pro_monthly'
+export const PRO_PRICE_LABEL = '$9/month'
+
+// Master switch for selling Pro. False = the web app keeps the old "message
+// us to upgrade" flow and the iOS/Android apps hide the upgrade card
+// entirely (Apple/Google don't allow steering people to outside payment for
+// a digital subscription inside their apps). Flip to true only after the
+// Stripe account, store subscription products, RevenueCat, and both
+// webhooks are set up and a real test purchase has worked on each platform.
+export const PRO_PAYMENTS_LIVE = false
+
+// --- Sponsored placements ("ads") ------------------------------------------
+// Master switch for showing "Sponsored" cards in Browse. Nothing appears
+// until this is true AND there is a live row in the sponsors table
+// (supabase/migration_sponsors.sql).
+export const SPONSORS_ENABLED = false
