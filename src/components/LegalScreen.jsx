@@ -2,7 +2,7 @@ import { SUPPORT_EMAIL } from '../lib/siteInfo'
 import { STATES } from '../lib/cottageFoodStates'
 import CottageFoodMap from './CottageFoodMap'
 
-const LAST_UPDATED = 'September 12, 2026'
+const LAST_UPDATED = 'October 24, 2026'
 
 function Section({ title, children }) {
   return (
@@ -204,8 +204,10 @@ function Privacy() {
           </li>
           <li>
             <strong>Usage & diagnostics:</strong> basic in-app activity needed to run features
-            (e.g. listing view counts), and — only when something breaks — an error message,
-            stack trace, and the page it happened on, so we can fix real bugs.
+            (e.g. listing view counts); which screens you open; when you're using the app while
+            signed in (we record the times of your visits and when you were last active, and keep
+            visit history for about six months); and — only when something breaks — an error
+            message, stack trace, and the page it happened on, so we can fix real bugs.
           </li>
         </ul>
       </Section>
@@ -213,8 +215,12 @@ function Privacy() {
         <p>
           To run the marketplace: showing your listings to nearby buyers, connecting buyers and
           sellers through chat, computing distance/neighborhood matches, sending you alerts for
-          cuisines you follow, and enforcing our Terms of Service and Community Guidelines. We
-          don't use your data to serve ads, and we don't track you across other apps or websites.
+          cuisines you follow, and enforcing our Terms of Service and Community Guidelines. To keep
+          people safe, messages are automatically checked for scam patterns (for example gift-card
+          or wire-transfer requests, or phone numbers and links sent by brand-new accounts), and
+          our moderators can see account details and activity — such as when someone was last
+          active — for accounts that are flagged or reported. We don't use your data to serve ads,
+          and we don't track you across other apps or websites.
         </p>
       </Section>
       <Section title="3. Who we share it with">

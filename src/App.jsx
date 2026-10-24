@@ -44,6 +44,7 @@ import { fetchRestockIds, addRestockAlert, removeRestockAlert, fetchRestockCount
 import { fetchResponseStats } from './lib/responseStats'
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from './lib/notifications'
 import { trackPageView } from './lib/analytics'
+import { startPresence } from './lib/presence'
 import { claimStore, getPendingClaim, clearPendingClaim } from './lib/stores'
 import { distanceMiles } from './lib/geo'
 import { useToast } from './context/ToastContext'
@@ -492,6 +493,13 @@ export default function App() {
     trackPageView(tab, session?.user?.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
+
+  // while a signed-in person has the app open, report "still here" about once
+  // a minute -- this is what admins see as "online now" and visit history
+  useEffect(() => {
+    if (!session?.user?.id) return undefined
+    return startPresence()
+  }, [session?.user?.id])
 
   const tabAuthReasons = {
     cart: 'Log in to see your orders.',

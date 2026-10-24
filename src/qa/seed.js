@@ -81,3 +81,56 @@ export const CHATS = [
     created_at: iso(1),
   },
 ]
+
+// ---- trust & safety (admin) fakes -------------------------------------------
+const minsAgo = (m) => new Date(Date.now() - m * 60_000).toISOString()
+const hrsAgo = (h) => minsAgo(h * 60)
+
+export const ADMIN_USERS = [
+  { id: 'u-fresh', name: 'Fresh Account', email: 'fresh.acct99@gmail.com', is_admin: false, banned: false, is_pro: false, created_at: hrsAgo(5) },
+  { id: 'u-milli', name: 'mlllicent pottinger', email: 'pottingerrose@yahoo.com', is_admin: false, banned: false, is_pro: false, created_at: hrsAgo(40) },
+  { id: 'u-old', name: 'Sam Whitfield', email: 'sam@example.com', is_admin: false, banned: false, is_pro: true, created_at: hrsAgo(24 * 45) },
+]
+
+export const PRESENCE = [
+  { user_id: 'u-fresh', last_seen_at: minsAgo(0.5) },
+  { user_id: 'u-old', last_seen_at: hrsAgo(3) },
+]
+
+export const RISK = [
+  { user_id: 'u-fresh', name: 'Fresh Account', email: 'fresh.acct99@gmail.com', joined_at: hrsAgo(5), account_age_hours: 5, total_messages: 9, flagged_messages: 6, people_messaged: 5, flags: ['asks to move off-app', 'phone number', 'scam-style payment'], last_flagged_at: minsAgo(20), score: 9, level: 'high' },
+  { user_id: 'u-milli', name: 'mlllicent pottinger', email: 'pottingerrose@yahoo.com', joined_at: hrsAgo(40), account_age_hours: 40, total_messages: 3, flagged_messages: 1, people_messaged: 1, flags: ['link'], last_flagged_at: hrsAgo(6), score: 3, level: 'medium' },
+]
+
+export function overviewFor(id) {
+  const u = ADMIN_USERS.find((x) => x.id === id) ?? ADMIN_USERS[0]
+  const fresh = id === 'u-fresh'
+  return {
+    id: u.id, name: u.name, email: u.email, signup_intent: 'buyer', neighborhood: fresh ? null : 'Berkeley',
+    is_admin: false, is_pro: u.is_pro, banned: u.banned, joined_at: u.created_at, last_sign_in_at: hrsAgo(1),
+    email_confirmed: true, providers: fresh ? ['email'] : ['google'],
+    listings_count: fresh ? 0 : 3, orders_as_buyer: fresh ? 0 : 6, orders_as_seller: fresh ? 0 : 11,
+    chats_started: fresh ? 6 : 2, chats_received: fresh ? 0 : 9, messages_sent: fresh ? 9 : 40,
+    first_message_at: fresh ? new Date(Date.parse(u.created_at) + 4 * 60_000).toISOString() : hrsAgo(24 * 40),
+    reports_against: fresh ? 2 : 0, reports_filed: 0, last_seen_at: fresh ? minsAgo(0.5) : hrsAgo(3),
+  }
+}
+
+export function sessionsFor() {
+  // a plausible month: most days, evenings, a few mornings
+  const out = []
+  for (let d = 0; d < 30; d++) {
+    if (d % 4 === 3) continue
+    const evening = new Date(); evening.setDate(evening.getDate() - d); evening.setHours(19 + (d % 3), 10, 0, 0)
+    out.push({ started_at: evening.toISOString(), last_seen_at: new Date(evening.getTime() + (6 + (d % 9)) * 60_000).toISOString() })
+    if (d % 5 === 0) {
+      const morning = new Date(evening); morning.setHours(8, 5, 0, 0)
+      out.push({ started_at: morning.toISOString(), last_seen_at: new Date(morning.getTime() + 4 * 60_000).toISOString() })
+    }
+  }
+  return out
+}
+
+export const RELATED = [
+  { id: 'u-sock', name: 'Fresh Acct', email: 'freshacct99@gmail.com', banned: true, joined_at: hrsAgo(5.1), reasons: ['same email address once dots and + tags are ignored', 'signed up within 15 minutes'] },
+]

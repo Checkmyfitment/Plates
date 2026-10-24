@@ -226,3 +226,13 @@ rewritten **before any payment feature is switched on**. The go-live steps and
 the switches that keep everything off are in `CHECKLIST.md`
 ("Payments & sponsors go-live").
 
+
+## Added 2026-10-24: admin trust & safety tooling (please review)
+
+New data practices, now disclosed in the in-app Privacy Policy (section 1 "Usage & diagnostics" and section 2):
+
+- **Visit tracking for signed-in users.** While the app is open, it reports "still here" about once a minute. We store each person's last-active time and one row per visit (start time, last-active time). Visit history is deleted after about 180 days. Admins can see this per person (online now, last seen, visits per day, time of day).
+- **Automated message scanning.** Server-side pattern checks over message text from the last 14 days flag possible scams (gift cards, wire transfer, crypto, "text me", phone numbers, links, new accounts messaging many people). Nothing is stored; only matched pattern names are shown to admins, never the message text.
+- **Admin visibility.** Admins can see account details (email, sign-in method, join date, counts of listings/orders/chats/messages, reports) and possibly-related accounts (same email ignoring dots/+tags, same display name, signed up within 15 minutes).
+
+Questions for counsel: (1) is the Privacy Policy wording enough, and does anything need a notice at signup? (2) do the Apple App Privacy answers and Google Play Data Safety form need updating (usage data linked to the user's identity; user content scanned)? (3) any limits on how long to keep visit history? (4) before we add admin reading of reported conversations (planned next, with a required reason and an audit log), what notice and process should surround it?

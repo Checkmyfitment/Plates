@@ -37,6 +37,8 @@ import {
 import { fetchListings } from '../lib/listings'
 import { geocodeArea } from '../lib/geocode'
 import { fetchClientErrors, deleteClientError, clearClientErrors } from '../lib/errorLog'
+import { UserDetail, SafetyPanel, OnlineBadge } from './AdminSafety'
+import { fetchPresenceSnapshot, fetchRiskSenders, lastSeenText, isOnline } from '../lib/safety'
 import WeeklyBarChart from './WeeklyBarChart'
 import OrderHealthBar from './OrderHealthBar'
 import { useToast } from '../context/ToastContext'
@@ -285,11 +287,13 @@ function ReportsPanel({ adminId, onSelfProfileChanged }) {
   )
 }
 
-function UsersPanel({ adminId, onSelfProfileChanged }) {
+function UsersPanel({ adminId, onSelfProfileChanged, onOpenUser }) {
   const toast = useToast()
   const [query, setQuery] = useState('')
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  // userId -> last time the app reported them open; drives the online dots
+  const [seen, setSeen] = useState({})
   const { busyIds, withBusy } = useBusyIds()
 
   const load = (q) => {
@@ -305,6 +309,19 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => load(''), [])
+
+  // who's online; refreshed every 30s while this list is open
+  useEffect(() => {
+    const refresh = () =>
+      fetchPresenceSnapshot()
+        .then((rows) => setSeen(Object.fromEntries(rows.map((r) => [r.userId, r.lastSeenAt]))))
+        .catch((err) => console.error('Failed to load presence', err))
+    refresh()
+    const timer = setInterval(refresh, 30_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const onlineCount = users.filter((u) => isOnline(seen[u.id])).length
 
   const submitSearch = (e) => {
     e.preventDefault()
@@ -353,6 +370,12 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
         </button>
       </form>
 
+      {!loading && onlineCount > 0 && (
+        <p className="text-xs mb-2 font-medium" style={{ color: 'var(--forest-dark)' }}>
+          {onlineCount} online now
+        </p>
+      )}
+
       {loading ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -368,13 +391,21 @@ function UsersPanel({ adminId, onSelfProfileChanged }) {
             return (
               <div key={u.id} className="card-elevated p-3 text-sm">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{u.name}</p>
+                  <button
+                    onClick={() => onOpenUser(u.id)}
+                    aria-label={`Open ${u.name}`}
+                    className="pressable min-w-0 text-left"
+                  >
+                    <p className="font-medium truncate">{u.name} <span aria-hidden="true" style={{ color: 'var(--ink-soft)' }}>›</span></p>
                     <p className="text-xs truncate" style={{ color: 'var(--ink-soft)' }}>
                       {u.email}
                     </p>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
+                    <p className="text-[11px] mt-0.5" style={{ color: isOnline(seen[u.id]) ? 'var(--forest-dark)' : 'var(--ink-soft)' }}>
+                      {lastSeenText(seen[u.id])}
+                    </p>
+                  </button>
+                  <div className="flex flex-wrap justify-end gap-1 shrink-0">
+                    <OnlineBadge lastSeenAt={seen[u.id]} />
                     {u.isPro && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--mustard)', color: 'var(--forest-dark)' }}>
                         🌟 Pro
@@ -1821,6 +1852,7 @@ const ADMIN_GROUPS = [
     tabs: [
       { key: 'reports', label: 'Reports', icon: '🚩' },
       { key: 'users', label: 'Users', icon: '👥' },
+      { key: 'safety', label: 'Safety', icon: '🛡️' },
       { key: 'listings', label: 'Listings', icon: '🍽️' },
       { key: 'stores', label: 'Stores', icon: '🏪' },
     ],
@@ -1845,14 +1877,26 @@ const ADMIN_GROUPS = [
 
 export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onEditListing }) {
   const [section, setSection] = useState('reports')
-  const [counts, setCounts] = useState({ reports: 0, promotions: 0, errors: 0 })
+  // the person whose detail page is open under Users (null = the list)
+  const [detailUserId, setDetailUserId] = useState(null)
+  const [counts, setCounts] = useState({ reports: 0, promotions: 0, errors: 0, safety: 0 })
+
+  const openUser = (id) => {
+    setDetailUserId(id)
+    setSection('users')
+  }
 
   // refetches whenever the admin switches tabs, so the badges stay close
   // to fresh without every panel needing to know how to update them
   useEffect(() => {
     fetchAdminPendingCounts()
-      .then(setCounts)
+      .then((c) => setCounts((prev) => ({ ...prev, ...c })))
       .catch((err) => console.error('Failed to load pending counts', err))
+    // number of people the scam checks currently flag; a failure here just
+    // leaves the badge off
+    fetchRiskSenders(14)
+      .then((rows) => setCounts((prev) => ({ ...prev, safety: rows.length })))
+      .catch(() => {})
   }, [section])
 
   return (
@@ -1884,7 +1928,10 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onE
                 return (
                   <button
                     key={t.key}
-                    onClick={() => setSection(t.key)}
+                    onClick={() => {
+                      if (t.key === 'users') setDetailUserId(null)
+                      setSection(t.key)
+                    }}
                     className="pressable text-xs px-3 py-1.5 rounded-full border font-medium flex items-center gap-1.5"
                     style={{
                       background: active ? 'var(--forest)' : 'transparent',
@@ -1915,7 +1962,20 @@ export default function AdminScreen({ onBack, adminId, onSelfProfileChanged, onE
 
       <div className="px-5 pt-1">
         {section === 'reports' && <ReportsPanel adminId={adminId} onSelfProfileChanged={onSelfProfileChanged} />}
-        {section === 'users' && <UsersPanel adminId={adminId} onSelfProfileChanged={onSelfProfileChanged} />}
+        {section === 'users' &&
+          (detailUserId ? (
+            <UserDetail
+              key={detailUserId}
+              userId={detailUserId}
+              adminId={adminId}
+              onBack={() => setDetailUserId(null)}
+              onOpenUser={openUser}
+              onSelfProfileChanged={onSelfProfileChanged}
+            />
+          ) : (
+            <UsersPanel adminId={adminId} onSelfProfileChanged={onSelfProfileChanged} onOpenUser={openUser} />
+          ))}
+        {section === 'safety' && <SafetyPanel onOpenUser={openUser} />}
         {section === 'listings' && <ListingsPanel onEditListing={onEditListing} />}
         {section === 'stores' && <StoresPanel adminId={adminId} />}
         {section === 'promotions' && <PromotionsPanel />}

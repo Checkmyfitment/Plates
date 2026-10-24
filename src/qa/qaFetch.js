@@ -4,7 +4,7 @@
 //    from seed.js
 //  - EVERY write (POST/PATCH/PUT/DELETE) to Supabase is answered locally and
 //    never sent, so nothing in the real database can change
-import { QA_USER, QA_PROFILE, BUYER_ORDERS, SELLER_ORDERS, NOTIFICATIONS, CHATS } from './seed.js'
+import { QA_USER, QA_PROFILE, BUYER_ORDERS, SELLER_ORDERS, NOTIFICATIONS, CHATS, ADMIN_USERS, PRESENCE, RISK, RELATED, overviewFor, sessionsFor } from './seed.js'
 
 const SUPABASE = import.meta.env.VITE_SUPABASE_URL
 const realFetch = window.fetch.bind(window)
@@ -34,6 +34,15 @@ window.fetch = async (input, init = {}) => {
     try { body = init.body ? JSON.parse(init.body) : null } catch { /* ignore */ }
     blockedWrites.push({ method, path, qs: qs.slice(0, 120), body })
     if (path.startsWith('/functions/v1/')) return json({ url: `${window.location.origin}/qa.html#stripe-checkout-was-requested`, ok: true })
+    if (path === '/rest/v1/rpc/admin_list_users') return json(ADMIN_USERS)
+    if (path === '/rest/v1/rpc/admin_presence_snapshot') return json(PRESENCE)
+    if (path === '/rest/v1/rpc/admin_risk_senders') return json(RISK)
+    if (path === '/rest/v1/rpc/admin_related_accounts') return json(RELATED)
+    if (path === '/rest/v1/rpc/admin_user_sessions') return json(sessionsFor())
+    if (path === '/rest/v1/rpc/admin_user_overview') {
+      const id = JSON.parse(init?.body ?? '{}').p_user_id
+      return json([overviewFor(id)])
+    }
     if (path.startsWith('/rest/v1/rpc/')) return json([])
     let echo = Array.isArray(body) ? body : body ? [{ id: 'qa-new-row', ...body }] : []
     if (path === '/rest/v1/listings' && body) {
