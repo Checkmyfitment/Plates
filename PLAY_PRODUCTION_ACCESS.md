@@ -80,3 +80,32 @@ installs in the first few months.
 **Is the app free? Any in-app purchases?**
 Free to download and use. Optional promotion for a listing and a seller
 subscription may be added later through Google Play Billing.
+
+
+---
+
+## Final answers, trimmed to Google's 300-character boxes (drafted 2026-10-26)
+
+Confirm each is true before pasting -- especially recruitment, engagement and feedback.
+
+**1. How did you recruit testers?** (292/300)
+I personally invited friends, family and neighbors who use Android, plus a few people from my wider network in other countries. I added each person's Google account to the closed-test email list, sent them the opt-in link, and tracked opt-ins on the dashboard until we passed the required 12.
+
+**3. Engagement from testers** (271/300)
+Testers installed the app, created accounts, browsed listings, used the map and search, and messaged a seller. Usage was lighter than real life because no local cooks have launched yet; at release, real listings, orders and repeat visits should look noticeably different.
+
+**4. Feedback summary + how collected** (260/300)
+I collected feedback by text and in person. Biggest issue: some testers couldn't create accounts because of a signup confirmation-email limit. Others reported cut-off screen headers and wanted pull-to-refresh and swipe-back. I fixed all of these and re-tested.
+
+**Step 2. What does the app do** (245/300)
+Pass the Plates is a neighborhood marketplace for homemade food. Home cooks and bakers post what they're making; neighbors browse by distance or on a map, message the cook, and arrange pickup. Payment is arranged directly between buyer and cook.
+
+**Step 2. Who is it for** (222/300)
+Neighbors who want homemade food nearby (tamales, sourdough, meal prep, baked goods) and home cooks who want a simple way to sell it. I'm starting locally in California and growing by word of mouth and neighborhood groups.
+
+**Step 3. Changes made from testing** (237/300)
+Added Google and Apple sign-in and a higher-limit email service so signup works; fixed header layout on notched phones; added pull-to-refresh, swipe-back, Android back-button fix, order swipe actions; fixed a Chats crash my own QA found.
+
+**Step 3. Why ready for production** (261/300)
+Testers can sign up, browse, search, use the map, message sellers and place orders without crashes. Signup problems are fixed, privacy policy and terms are published, and I log errors to catch problems early and will roll out gradually, watching Android vitals.
+
