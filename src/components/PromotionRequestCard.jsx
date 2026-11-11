@@ -97,7 +97,7 @@ export default function PromotionRequestCard({ listingId, sellerId, featured, fe
           onClick={buyNow}
           disabled={submitting}
           className="pressable mt-2 text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
-          style={{ background: 'var(--forest)', color: 'white' }}
+          style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
         >
           {submitting ? 'Processing…' : 'Feature this listing — $4.99'}
         </button>
@@ -134,7 +134,7 @@ export default function PromotionRequestCard({ listingId, sellerId, featured, fe
         onClick={submit}
         disabled={submitting}
         className="pressable mt-2 text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
-        style={{ background: 'var(--forest)', color: 'white' }}
+        style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
       >
         {submitting ? 'Sending…' : 'Request to be featured'}
       </button>

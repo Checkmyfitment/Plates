@@ -449,7 +449,7 @@ export default function ListingDetail({
           <button
             onClick={onMessageSeller}
             className="pressable w-full mt-6 py-3.5 rounded-2xl font-bold text-sm"
-            style={{ background: 'var(--forest)', color: 'white' }}
+            style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
           >
             Message seller to order
           </button>

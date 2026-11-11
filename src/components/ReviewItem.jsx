@@ -105,7 +105,7 @@ export default function ReviewItem({ review, isSeller }) {
               onClick={submitReply}
               disabled={busy}
               className="pressable text-xs px-3 py-1 rounded-full font-medium disabled:opacity-60"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               {busy ? 'Saving…' : 'Save reply'}
             </button>

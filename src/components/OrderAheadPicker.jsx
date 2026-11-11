@@ -128,7 +128,7 @@ export default function OrderAheadPicker({ listingId, buyerId }) {
                   onClick={() => handleCancel(occ)}
                   disabled={busyKey === key}
                   className="pressable shrink-0 px-2.5 py-1 rounded-full font-medium disabled:opacity-60"
-                  style={{ background: 'var(--forest)', color: 'white' }}
+                  style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
                 >
                   ✓ Ordered
                 </button>

@@ -16,6 +16,8 @@
   --ink-soft: #6E6E73;
   --forest: #0C7A52;
   --forest-dark: #0A0A0C;
+  --on-forest: #FFFFFF;
+  --glow: rgba(12, 122, 82, 0.18);
   --mustard: #E3A72B;
   --mustard-deep: #B8811A;
   --plum: #C23B3B;
@@ -59,6 +61,8 @@
     --ink: #FAFAFA;
     --ink-soft: #8E8E93;
     --forest: #16E0A0;
+    --on-forest: #03140D;
+    --glow: rgba(22, 224, 160, 0.16);
     --forest-dark: #EAFBF4;
     --mustard: #D4A857;
     --mustard-deep: #E8C178;
@@ -79,6 +83,8 @@
   --ink: #FAFAFA;
   --ink-soft: #8E8E93;
   --forest: #16E0A0;
+  --on-forest: #03140D;
+  --glow: rgba(22, 224, 160, 0.16);
   --forest-dark: #EAFBF4;
   --mustard: #D4A857;
   --mustard-deep: #E8C178;
@@ -112,6 +118,9 @@ html.scroll-locked body {
 
 body {
   background: var(--paper);
+  /* a faint emerald glow bleeding in from the top edge */
+  background-image: radial-gradient(900px 380px at 50% -140px, var(--glow), transparent 70%);
+  background-repeat: no-repeat;
   color: var(--ink);
   font-family: 'Work Sans', -apple-system, sans-serif;
   /* viewport-fit=cover draws content under the status bar/notch — push it
@@ -121,8 +130,8 @@ body {
 
 .font-display {
   font-family: 'Work Sans', -apple-system, sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 .plate-scallop {
@@ -134,8 +143,36 @@ body {
    that should read as distinct, tappable modules rather than a form field */
 .card-elevated {
   background: var(--card);
-  border-radius: 18px;
-  box-shadow: var(--shadow-card);
+  border-radius: 16px;
+  /* hairline edge + a faint top highlight instead of a plain drop shadow */
+  box-shadow: var(--shadow-card), inset 0 0 0 1px var(--rule), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Small status chips (trust badges, tags): tight, hairline-outlined, uppercase-ish */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent);
+}
+
+/* Chat bubbles: a sharp corner on the speaker's side gives the "tail" */
+.bubble-me {
+  border-radius: 18px 18px 4px 18px;
+  background: linear-gradient(135deg, var(--forest), color-mix(in srgb, var(--forest) 72%, #00c2ff));
+  color: var(--on-forest);
+  box-shadow: 0 6px 18px -8px var(--forest);
+}
+.bubble-them {
+  border-radius: 18px 18px 18px 4px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--rule);
 }
 
 .icon-badge {
@@ -161,6 +198,7 @@ body {
 }
 .field:focus {
   border-color: var(--forest);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--forest) 22%, transparent);
 }
 
 :focus-visible {

@@ -140,7 +140,7 @@ export default function SellerRatingForm({ sellerId, reviewerId, listingId, onSa
         type="submit"
         disabled={!allRated || saving}
         className="mt-2 text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
-        style={{ background: 'var(--forest)', color: 'white' }}
+        style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
       >
         {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save rating'}
       </button>

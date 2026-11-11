@@ -23,10 +23,10 @@ describe('TopBar', () => {
 
     fireEvent.click(screen.getByLabelText('Account menu'))
     expect(onAvatarClick).not.toHaveBeenCalled()
-    expect(screen.getByText('👤 Profile')).toBeInTheDocument()
-    expect(screen.getByText('⏻ Log out')).toBeInTheDocument()
+    expect(screen.getByText('Profile')).toBeInTheDocument()
+    expect(screen.getByText('Log out')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('⏻ Log out'))
+    fireEvent.click(screen.getByText('Log out'))
     expect(onLogout).toHaveBeenCalledTimes(1)
   })
 
@@ -36,7 +36,7 @@ describe('TopBar', () => {
     render(<TopBar title="Plates" avatarUrl={null} initials="M" onAvatarClick={onAvatarClick} onLogout={onLogout} />)
 
     fireEvent.click(screen.getByLabelText('Account menu'))
-    fireEvent.click(screen.getByText('👤 Profile'))
+    fireEvent.click(screen.getByText('Profile'))
     expect(onAvatarClick).toHaveBeenCalledTimes(1)
     expect(onLogout).not.toHaveBeenCalled()
   })

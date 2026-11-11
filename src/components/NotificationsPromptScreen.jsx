@@ -41,7 +41,7 @@ export default function NotificationsPromptScreen({ userId, onDone }) {
         onClick={allow}
         disabled={busy}
         className="pressable w-full max-w-xs text-sm font-bold px-5 py-3 rounded-full mb-3 disabled:opacity-50"
-        style={{ background: 'var(--forest)', color: 'white' }}
+        style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
       >
         {busy ? 'Working…' : 'Allow Notifications'}
       </button>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CUISINES, DIET_TAGS } from '../lib/listingOptions'
 import { fetchUnclaimedStores } from '../lib/admin'
 import { uploadListingPhoto, validatePhotoFile } from '../lib/storage'
@@ -38,6 +38,7 @@ export default function PostListing({ onAddListing, onEditListing, isAdmin, curr
   const [submitError, setSubmitError] = useState('')
   const [saving, setSaving] = useState(false)
   const [stores, setStores] = useState([])
+  const photoRef = useRef(null)
 
   useEffect(() => {
     if (!isAdmin) return
@@ -96,7 +97,7 @@ export default function PostListing({ onAddListing, onEditListing, isAdmin, curr
             <button
               onClick={() => onEditListing(postedListing)}
               className="pressable text-xs px-3 py-1.5 rounded-full font-medium mt-3"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               Add pickup times or a schedule
             </button>
@@ -124,6 +125,11 @@ export default function PostListing({ onAddListing, onEditListing, isAdmin, curr
       onSubmit={async (e) => {
         e.preventDefault()
         if (!form.title.trim() || !form.price) return
+        if (!form.photoUrl) {
+          setPhotoError('Add a photo of your food. Listings with a real photo get far more orders.')
+          photoRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+          return
+        }
         setSubmitError('')
         setSaving(true)
         try {
@@ -184,8 +190,8 @@ export default function PostListing({ onAddListing, onEditListing, isAdmin, curr
         </Field>
       )}
 
-      <div className="flex flex-col gap-1 text-xs" style={{ color: 'var(--ink-soft)' }}>
-        Photo
+      <div ref={photoRef} className="flex flex-col gap-1 text-xs" style={{ color: 'var(--ink-soft)' }}>
+        Photo (required)
         <div className="flex items-center gap-3">
           <div
             className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl overflow-hidden shrink-0"

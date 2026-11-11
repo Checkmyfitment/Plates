@@ -104,7 +104,7 @@ export default function ListingAlerts({ userId }) {
               onClick={turnOn}
               disabled={turningOn || !hasLocation}
               className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-50"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               {turningOn ? 'Turning on…' : '🔔 Turn on notifications'}
             </button>

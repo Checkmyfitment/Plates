@@ -95,7 +95,7 @@ export default function OnboardingWalkthrough({ onDone }) {
       <button
         onClick={goNext}
         className="pressable w-full mb-8 py-3.5 rounded-2xl font-bold text-sm shrink-0"
-        style={{ background: 'var(--forest)', color: 'white' }}
+        style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
       >
         {isLast ? 'Get started' : 'Next'}
       </button>

@@ -154,7 +154,7 @@ export default function ProfileScreen({
           {openOrderCount > 0 ? (
             <span
               className="shrink-0 min-w-[26px] h-[26px] px-1.5 rounded-full text-xs font-bold flex items-center justify-center"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               {openOrderCount > 9 ? '9+' : openOrderCount}
             </span>

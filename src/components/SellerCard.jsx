@@ -1,3 +1,4 @@
+import Icon from './Icon'
 import { useEffect, useState } from 'react'
 import { fetchSellerReviews } from '../lib/reviews'
 import { fetchFollowedSellerIds, followSeller, unfollowSeller } from '../lib/follows'
@@ -116,7 +117,7 @@ export default function SellerCard({
           style={
             isFollowing
               ? { border: '1px solid var(--rule)', color: 'var(--ink)' }
-              : { background: 'var(--forest)', color: 'white' }
+              : { background: 'var(--forest)', color: 'var(--on-forest)' }
           }
         >
           {isFollowing ? '✓ Following' : '+ Follow'}
@@ -125,31 +126,28 @@ export default function SellerCard({
 
       <div className="flex items-center flex-wrap gap-1.5 mt-2.5">
         {badge && (
-          <span
-            className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-            style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}
-          >
+          <span className="chip" style={{ background: 'var(--forest-soft)', color: 'var(--forest)' }}>
             {badge.icon} {badge.label}
           </span>
         )}
         {sellerPhoneVerified && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}>
-            📱 Phone verified
+          <span className="chip" style={{ background: 'var(--forest-soft)', color: 'var(--forest)' }}>
+            <Icon name="phone" size={12} strokeWidth={2.2} /> Phone verified
           </span>
         )}
         {cottageLawVerified && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--forest-soft)', color: 'var(--forest-dark)' }}>
-            📋 Cottage law confirmed
+          <span className="chip" style={{ background: 'var(--forest-soft)', color: 'var(--forest)' }}>
+            <Icon name="shield" size={12} strokeWidth={2.2} /> Cottage law confirmed
           </span>
         )}
         {responseStats && responseStats.responseCount >= 3 && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}>
-            ⚡ Usually replies within {formatResponseTime(responseStats.avgResponseMinutes)}
+          <span className="chip" style={{ background: 'var(--paper-dim)', color: 'var(--ink-soft)' }}>
+            <Icon name="bolt" size={12} strokeWidth={2.2} /> Usually replies within {formatResponseTime(responseStats.avgResponseMinutes)}
           </span>
         )}
         {orderCount >= 2 && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' }}>
-            🔁 Ordered {orderCount} times
+          <span className="chip" style={{ background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' }}>
+            <Icon name="repeat" size={12} strokeWidth={2.2} /> Ordered {orderCount} times
           </span>
         )}
       </div>

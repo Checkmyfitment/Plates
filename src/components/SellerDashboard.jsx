@@ -435,7 +435,7 @@ export default function SellerDashboard({
             className="pressable shrink-0 text-xs px-3 py-2 rounded-full font-medium disabled:opacity-60"
             style={
               profile?.is_food_truck
-                ? { background: 'var(--forest)', color: 'white' }
+                ? { background: 'var(--forest)', color: 'var(--on-forest)' }
                 : { background: 'var(--paper-dim)', color: 'var(--ink)' }
             }
           >
@@ -465,7 +465,7 @@ export default function SellerDashboard({
                 onClick={submitTruckLocation}
                 disabled={truckLocationBusy || !truckLocationInput.trim()}
                 className="pressable shrink-0 text-xs font-bold px-3.5 py-2 rounded-full disabled:opacity-50"
-                style={{ background: 'var(--forest)', color: 'white' }}
+                style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
               >
                 {truckLocationBusy ? '…' : 'Update'}
               </button>
@@ -565,7 +565,7 @@ export default function SellerDashboard({
                 onClick={handleBroadcast}
                 disabled={broadcastSending || !broadcastText.trim()}
                 className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
-                style={{ background: 'var(--forest)', color: 'white' }}
+                style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
               >
                 {broadcastSending ? 'Sending…' : 'Send'}
               </button>
@@ -742,7 +742,7 @@ export default function SellerDashboard({
                       onClick={() => handleRepost(l)}
                       disabled={reposting === l.id}
                       className="pressable text-[10px] px-2.5 py-1 rounded-full font-medium disabled:opacity-60"
-                      style={{ background: 'var(--forest)', color: 'white' }}
+                      style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
                     >
                       {reposting === l.id ? 'Reposting…' : '🔁 Repost'}
                     </button>

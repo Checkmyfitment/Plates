@@ -4,6 +4,7 @@
 //    from seed.js
 //  - EVERY write (POST/PATCH/PUT/DELETE) to Supabase is answered locally and
 //    never sent, so nothing in the real database can change
+import { SAMPLE_LISTINGS } from './sampleListings.js'
 import { QA_USER, QA_PROFILE, BUYER_ORDERS, SELLER_ORDERS, NOTIFICATIONS, CHATS, ADMIN_USERS, PRESENCE, RISK, RELATED, overviewFor, sessionsFor } from './seed.js'
 
 const SUPABASE = import.meta.env.VITE_SUPABASE_URL
@@ -84,6 +85,11 @@ window.fetch = async (input, init = {}) => {
 
   // public reads pass through; make the first two real listings "yours" so
   // Your listings / Edit / Dashboard have something to work with
+  if (table === 'listings' && new URLSearchParams(location.search).has('samples')) {
+    // sample data for app previews: never touches the real database
+    const idMatch = qs.match(/[?&]id=eq\.([^&]+)/)
+    return reply(idMatch ? SAMPLE_LISTINGS.filter((r) => r.id === decodeURIComponent(idMatch[1])) : SAMPLE_LISTINGS)
+  }
   if (table === 'listings') {
     const res = await realFetch(input, init)
     if (!res.ok) return res

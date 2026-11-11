@@ -25,7 +25,7 @@ export default function GettingStartedChecklist({ title, steps }) {
               className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold"
               style={
                 step.done
-                  ? { background: 'var(--forest)', color: 'white' }
+                  ? { background: 'var(--forest)', color: 'var(--on-forest)' }
                   : { border: '1.5px solid var(--rule)', color: 'transparent' }
               }
             >

@@ -311,7 +311,7 @@ export default function OrderCard({
               }}
               disabled={busy || pickupInput.length !== 4}
               className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               Confirm pickup
             </button>
@@ -448,7 +448,7 @@ export default function OrderCard({
               onClick={reorder}
               disabled={busy}
               className="pressable text-xs px-3 py-1.5 rounded-full font-medium mt-2.5 disabled:opacity-60"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               Order again
             </button>
@@ -460,7 +460,7 @@ export default function OrderCard({
                 onClick={() => act('confirmed')}
                 disabled={busy}
                 className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
-                style={{ background: 'var(--forest)', color: 'white' }}
+                style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
               >
                 Confirm
               </button>
@@ -480,7 +480,7 @@ export default function OrderCard({
                 onClick={() => act('preparing')}
                 disabled={busy}
                 className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
-                style={{ background: 'var(--forest)', color: 'white' }}
+                style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
               >
                 Start preparing
               </button>
@@ -500,7 +500,7 @@ export default function OrderCard({
                 onClick={() => act('ready')}
                 disabled={busy}
                 className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
-                style={{ background: 'var(--forest)', color: 'white' }}
+                style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
               >
                 {isDelivery ? 'Ready for delivery' : 'Mark ready'}
               </button>
@@ -520,7 +520,7 @@ export default function OrderCard({
                 onClick={() => (isDelivery || !first.pickupCode ? act('completed') : setConfirmingAction('pickup_verify'))}
                 disabled={busy}
                 className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-60"
-                style={{ background: 'var(--forest)', color: 'white' }}
+                style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
               >
                 {isDelivery ? 'Mark delivered' : 'Mark picked up'}
               </button>

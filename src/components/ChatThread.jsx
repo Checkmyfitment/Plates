@@ -1,3 +1,4 @@
+import Icon from './Icon'
 import { useRef, useState } from 'react'
 import { uploadChatPhoto, validatePhotoFile } from '../lib/storage'
 import { translateText, targetLanguageFor } from '../lib/translate'
@@ -99,7 +100,7 @@ export default function ChatThread({ chat, currentUserId, viewerProfile, onBack,
             className="text-xs px-2 py-1 -m-1 shrink-0"
             style={{ color: 'var(--ink-soft)' }}
           >
-            🚩 Report
+            <span className="inline-flex items-center gap-1"><Icon name="flag" size={13} /> Report</span>
           </button>
         )}
       </div>
@@ -108,17 +109,12 @@ export default function ChatThread({ chat, currentUserId, viewerProfile, onBack,
         {chat.messages.map((m, i) => {
           const key = m.id ?? i
           const translation = translations[key]
-          const subtleColor = m.from === 'me' ? 'rgba(255,255,255,0.75)' : 'var(--ink-soft)'
+          const subtleColor = m.from === 'me' ? 'color-mix(in srgb, var(--on-forest) 75%, transparent)' : 'var(--ink-soft)'
           return (
             <div
               key={key}
-              className="max-w-[75%] text-sm rounded-2xl overflow-hidden"
-              style={{
-                alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start',
-                background: m.from === 'me' ? 'var(--forest)' : 'var(--card)',
-                color: m.from === 'me' ? 'white' : 'var(--ink)',
-                border: m.from === 'me' ? 'none' : '1px solid var(--rule)',
-              }}
+              className={`max-w-[75%] text-sm overflow-hidden ${m.from === 'me' ? 'bubble-me' : 'bubble-them'}`}
+              style={{ alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start' }}
             >
               {m.photoUrl && (
                 <img src={m.photoUrl} alt="Shared photo" className="w-full max-h-64 object-cover" />
@@ -132,7 +128,7 @@ export default function ChatThread({ chat, currentUserId, viewerProfile, onBack,
                     className="pressable text-xs mt-1 underline"
                     style={{ color: subtleColor }}
                   >
-                    {translation?.visible ? 'Hide translation' : '🌐 Translate'}
+                    {translation?.visible ? 'Hide translation' : (<span className="inline-flex items-center gap-1"><Icon name="globe" size={12} /> Translate</span>)}
                   </button>
                   {translation?.visible && (
                     <div className="text-xs mt-1 pt-1" style={{ color: subtleColor, borderTop: `1px solid ${subtleColor}` }}>
@@ -176,7 +172,7 @@ export default function ChatThread({ chat, currentUserId, viewerProfile, onBack,
           className="pressable px-3 rounded-xl text-lg disabled:opacity-50"
           style={{ border: '1px solid var(--rule)', color: 'var(--ink-soft)' }}
         >
-          {uploadingPhoto ? '…' : '📷'}
+          {uploadingPhoto ? '…' : <Icon name="camera" size={18} />}
         </button>
         <input
           value={text}

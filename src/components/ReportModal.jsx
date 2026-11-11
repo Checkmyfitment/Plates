@@ -65,7 +65,7 @@ export default function ReportModal({ reporterId, listingId, reportedUserId, tit
             <button
               onClick={onClose}
               className="w-full mt-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 active:opacity-80 transition-opacity"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               Close
             </button>

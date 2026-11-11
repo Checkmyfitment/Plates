@@ -99,7 +99,7 @@ export default function PlaceOrderForm({
                 className="pressable flex-1 py-2 rounded-xl text-xs font-bold capitalize border"
                 style={
                   fulfillment === option
-                    ? { background: 'var(--forest)', color: 'white', borderColor: 'var(--forest)' }
+                    ? { background: 'var(--forest)', color: 'var(--on-forest)', borderColor: 'var(--forest)' }
                     : { borderColor: 'var(--rule)', color: 'var(--ink)' }
                 }
               >
@@ -154,7 +154,7 @@ export default function PlaceOrderForm({
                   className="pressable flex-1 py-2 rounded-xl text-xs font-bold border"
                   style={
                     repeatInterval === opt.days
-                      ? { background: 'var(--forest)', color: 'white', borderColor: 'var(--forest)' }
+                      ? { background: 'var(--forest)', color: 'var(--on-forest)', borderColor: 'var(--forest)' }
                       : { borderColor: 'var(--rule)', color: 'var(--ink)' }
                   }
                 >
@@ -176,7 +176,7 @@ export default function PlaceOrderForm({
         onClick={submit}
         disabled={submitting || belowMinimum || (needsAddress && !deliveryAddress.trim())}
         className="pressable w-full mt-3 py-3.5 rounded-2xl font-bold text-sm disabled:opacity-60"
-        style={{ background: 'var(--forest)', color: 'white' }}
+        style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
       >
         {submitting ? 'Placing order…' : `Place order — $${orderTotal.toFixed(2)}`}
       </button>

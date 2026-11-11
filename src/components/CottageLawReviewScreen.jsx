@@ -35,7 +35,7 @@ export default function CottageLawReviewScreen({ onDone }) {
       <button
         onClick={onDone}
         className="pressable w-full mt-4 py-3.5 rounded-2xl font-bold text-sm shrink-0"
-        style={{ background: 'var(--forest)', color: 'white' }}
+        style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
       >
         Got it
       </button>

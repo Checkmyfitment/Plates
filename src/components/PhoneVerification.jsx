@@ -93,7 +93,7 @@ export default function PhoneVerification({ phoneVerified, onVerified }) {
             onClick={sendCode}
             disabled={busy || !phone.trim()}
             className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-50 shrink-0"
-            style={{ background: 'var(--forest)', color: 'white' }}
+            style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
           >
             {busy ? 'Sending…' : 'Send code'}
           </button>
@@ -117,7 +117,7 @@ export default function PhoneVerification({ phoneVerified, onVerified }) {
               onClick={confirmCode}
               disabled={busy || code.length < 4}
               className="pressable text-xs px-3 py-1.5 rounded-full font-medium disabled:opacity-50 shrink-0"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               {busy ? 'Checking…' : 'Confirm'}
             </button>

@@ -74,7 +74,7 @@ function StorefrontListingTile({ listing, quantity, onIncrement, onDecrement, on
           <button
             onClick={onIncrement}
             className="pressable text-xs px-3 py-1 rounded-full font-medium"
-            style={{ background: 'var(--forest)', color: 'white' }}
+            style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
           >
             + Add
           </button>
@@ -359,7 +359,7 @@ export default function SellerStorefront({
               style={
                 isFollowing
                   ? { border: '1px solid var(--rule)', color: 'var(--ink)' }
-                  : { background: 'var(--forest)', color: 'white' }
+                  : { background: 'var(--forest)', color: 'var(--on-forest)' }
               }
             >
               {isFollowing ? '✓ Following' : '+ Follow'}
@@ -464,7 +464,7 @@ export default function SellerStorefront({
                   className="pressable flex-1 py-1.5 rounded-lg text-[11px] font-bold capitalize border"
                   style={
                     cartFulfillment === option
-                      ? { background: 'var(--forest)', color: 'white', borderColor: 'var(--forest)' }
+                      ? { background: 'var(--forest)', color: 'var(--on-forest)', borderColor: 'var(--forest)' }
                       : { borderColor: 'var(--rule)', color: 'var(--ink)' }
                   }
                 >
@@ -489,7 +489,7 @@ export default function SellerStorefront({
               onClick={submitCart}
               disabled={submitting || (cartNeedsAddress && !cartDeliveryAddress.trim())}
               className="pressable text-xs px-4 py-2 rounded-full font-bold disabled:opacity-60"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               {submitting ? 'Placing…' : 'Place order'}
             </button>

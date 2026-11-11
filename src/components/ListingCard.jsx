@@ -1,3 +1,4 @@
+import Icon from './Icon'
 import { useState } from 'react'
 
 export default function ListingCard({ listing, onSelect, isFavorite, onToggleFavorite, distanceLabel, onQuickOrder }) {
@@ -10,7 +11,7 @@ export default function ListingCard({ listing, onSelect, isFavorite, onToggleFav
     : away
       ? { label: '🏖️ Away', bg: 'var(--plum)', color: 'white' }
       : listing.featured
-      ? { label: '✨ Featured', bg: 'var(--forest)', color: 'white' }
+      ? { label: '✨ Featured', bg: 'var(--forest)', color: 'var(--on-forest)' }
       : listing.tag
         ? {
             label: listing.tag,
@@ -30,8 +31,8 @@ export default function ListingCard({ listing, onSelect, isFavorite, onToggleFav
           onSelect(listing)
         }
       }}
-      className="pressable text-left rounded-2xl overflow-hidden border bg-[var(--card)] relative cursor-pointer"
-      style={{ borderColor: 'var(--rule)', opacity: sold ? 0.65 : 1, boxShadow: 'var(--shadow-card)' }}
+      className="pressable text-left rounded-[18px] overflow-hidden bg-[var(--card)] relative cursor-pointer"
+      style={{ opacity: sold ? 0.65 : 1, boxShadow: 'var(--shadow-card), inset 0 0 0 1px var(--rule)' }}
     >
       <div
         className="h-32 flex items-center justify-center text-5xl relative overflow-hidden"
@@ -68,15 +69,15 @@ export default function ListingCard({ listing, onSelect, isFavorite, onToggleFav
               e.stopPropagation()
               onToggleFavorite(listing.id)
             }}
-            className="pressable absolute top-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center text-sm transition-colors"
-            style={{ color: isFavorite ? 'var(--plum)' : 'var(--ink-soft)', background: 'color-mix(in srgb, var(--card) 90%, transparent)' }}
+            className="pressable absolute top-2 right-2 w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+            style={{ color: isFavorite ? 'var(--plum)' : 'var(--ink)', background: 'color-mix(in srgb, var(--card) 70%, transparent)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', boxShadow: 'inset 0 0 0 1px var(--rule)' }}
           >
-            {isFavorite ? '♥' : '♡'}
+            <Icon name="heart" size={16} filled={isFavorite} />
           </button>
         )}
         <span
-          className="absolute bottom-1.5 right-1.5 text-xs font-bold px-2 py-1 rounded-lg"
-          style={{ background: 'rgba(27,24,21,0.82)', color: 'white', fontVariantNumeric: 'tabular-nums' }}
+          className="absolute bottom-2 right-2 text-xs font-extrabold px-2.5 py-1 rounded-lg"
+          style={{ background: 'rgba(6,8,7,0.78)', color: '#E9FFF6', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.01em' }}
         >
           ${listing.price}
         </span>

@@ -97,7 +97,7 @@ export default function PickupSlotPicker({ listingId, buyerId }) {
                   onClick={() => handleCancel(slot)}
                   disabled={busySlotId === slot.id}
                   className="pressable shrink-0 px-2.5 py-1 rounded-full font-medium disabled:opacity-60"
-                  style={{ background: 'var(--forest)', color: 'white' }}
+                  style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
                 >
                   ✓ I'm coming
                 </button>

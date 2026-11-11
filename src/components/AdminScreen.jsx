@@ -58,7 +58,7 @@ const outreachStatuses = {
   contacted: { label: 'Contacted', background: 'var(--mustard-soft)', color: 'var(--mustard-deep)' },
   interested: { label: 'Interested', background: 'var(--forest-soft)', color: 'var(--forest-dark)' },
   declined: { label: 'Declined', background: 'var(--plum-soft)', color: 'var(--plum)' },
-  joined: { label: 'Joined!', background: 'var(--forest)', color: 'white' },
+  joined: { label: 'Joined!', background: 'var(--forest)', color: 'var(--on-forest)' },
 }
 
 
@@ -901,7 +901,7 @@ function OutreachPanel({ adminId }) {
         <button
           onClick={copyTemplate}
           className="pressable text-xs px-3 py-1.5 rounded-full font-medium mt-2.5"
-          style={{ background: 'var(--forest)', color: 'white' }}
+          style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
         >
           Copy message
         </button>
@@ -917,7 +917,7 @@ function OutreachPanel({ adminId }) {
           style={
             queueOpen
               ? { borderColor: 'var(--rule)', color: 'var(--ink)', border: '1px solid var(--rule)' }
-              : { background: 'var(--forest)', color: 'white' }
+              : { background: 'var(--forest)', color: 'var(--on-forest)' }
           }
         >
           {queueOpen ? '← Back to list' : '🎯 Work today’s queue'}
@@ -953,7 +953,7 @@ function OutreachPanel({ adminId }) {
             <button
               onClick={() => copyPersonalized(current)}
               className="pressable w-full mt-2 py-2 rounded-full font-medium text-xs"
-              style={{ background: 'var(--forest)', color: 'white' }}
+              style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
             >
               📋 Copy message
             </button>
@@ -1291,7 +1291,7 @@ function PromotionsPanel() {
                     disabled={busy}
                     onClick={() => approve(r)}
                     className="pressable text-xs px-2.5 py-1 rounded-full font-medium disabled:opacity-50"
-                    style={{ background: 'var(--forest)', color: 'white' }}
+                    style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
                   >
                     Approve
                   </button>
@@ -1385,7 +1385,7 @@ function BroadcastPanel() {
             className="pressable text-xs px-3 py-1.5 rounded-full border font-medium"
             style={
               audience === a.value
-                ? { background: 'var(--forest)', color: 'white', borderColor: 'var(--forest)' }
+                ? { background: 'var(--forest)', color: 'var(--on-forest)', borderColor: 'var(--forest)' }
                 : { borderColor: 'var(--rule)', color: 'var(--ink)' }
             }
           >
@@ -1423,7 +1423,7 @@ function BroadcastPanel() {
           onClick={() => setConfirming(true)}
           disabled={!message.trim() || (audience === 'neighborhood' && !neighborhood.trim())}
           className="pressable w-full mt-1 py-3 rounded-xl font-medium text-sm disabled:opacity-50"
-          style={{ background: 'var(--forest)', color: 'white' }}
+          style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
         >
           Review & send
         </button>

@@ -86,7 +86,7 @@ export default function AreaWaitlistCard({ defaultNeighborhood = '', title = "ðŸ
           type="submit"
           disabled={submitting}
           className="pressable text-sm py-2 rounded-xl font-medium disabled:opacity-60"
-          style={{ background: 'var(--forest)', color: 'white' }}
+          style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
         >
           {submitting ? 'Joiningâ€¦' : 'Notify me'}
         </button>

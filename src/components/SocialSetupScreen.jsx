@@ -83,7 +83,7 @@ export default function SocialSetupScreen({ onDone }) {
                   className="pressable flex-1 py-2.5 rounded-xl text-xs font-bold border"
                   style={
                     intent === opt.value
-                      ? { background: 'var(--forest)', color: 'white', borderColor: 'var(--forest)' }
+                      ? { background: 'var(--forest)', color: 'var(--on-forest)', borderColor: 'var(--forest)' }
                       : { borderColor: 'var(--rule)', color: 'var(--ink)' }
                   }
                 >

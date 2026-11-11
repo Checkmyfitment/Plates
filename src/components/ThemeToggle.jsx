@@ -27,7 +27,7 @@ export default function ThemeToggle() {
             className="pressable flex-1 text-xs px-3 py-2 rounded-xl border font-medium"
             style={
               theme === opt.value
-                ? { background: 'var(--forest)', color: 'white', borderColor: 'var(--forest)' }
+                ? { background: 'var(--forest)', color: 'var(--on-forest)', borderColor: 'var(--forest)' }
                 : { borderColor: 'var(--rule)', color: 'var(--ink)' }
             }
           >

@@ -57,6 +57,9 @@
   .card h2{font-size:19px; color:var(--dark); margin-bottom:4px}
   .card .sub{color:var(--ink-soft); font-size:14px; margin-bottom:20px}
 
+  .cook-card .btn{width:auto; display:flex}
+  .cook-note{color:var(--ink-soft); font-size:12.5px; margin:14px 0 0}
+
   .tabs{display:flex; gap:8px; margin-bottom:20px; background:var(--paper); border-radius:12px; padding:4px}
   .tab{
     flex:1; text-align:center; padding:9px 0; border-radius:9px; font-size:13px; font-weight:700;
@@ -111,11 +114,19 @@
     <p class="lead">Homemade food from home cooks, bakers, and food trucks in your actual neighborhood. Download the app, or open it in your browser and add it to your home screen.</p>
 
     <a class="btn btn-primary" href="https://apps.apple.com/app/id6809894925">📱 Download on the App Store</a>
+    <a class="btn btn-secondary" href="https://play.google.com/store/apps/details?id=com.platesapp.app">🤖 Get it on Google Play</a>
     <a class="btn btn-secondary" href="https://www.passtheplates.app">🍽️ Open Pass the Plates in your browser</a>
+
+    <div class="card cook-card">
+      <h2>Bake or cook at home? Sell to your neighbors.</h2>
+      <div class="sub">We're opening in Oceanside, Vista and Carlsbad with a small group of Founding Cooks. A storefront is free, you set your prices and pickup times, and we'll help you post your first listing.</div>
+      <a class="btn btn-primary" href="https://www.passtheplates.app">Open the app and tap Sell</a>
+      <p class="cook-note">Please follow California home-food rules for what you sell and list allergens honestly.</p>
+    </div>
 
     <div class="card">
       <h2>Prefer a shortcut? Add it to your home screen</h2>
-      <div class="sub">Works on iPhone and Android — this takes about 10 seconds. (An Android app is on the way.)</div>
+      <div class="sub">Works on iPhone and Android — this takes about 10 seconds. (Prefer the app? Get it from the App Store or Google Play above.)</div>
 
       <div class="tabs">
         <button class="tab" id="tab-ios" onclick="showPanel('ios')">iPhone</button>
@@ -160,6 +171,21 @@
     document.getElementById('tab-android').classList.toggle('active', which === 'android');
     try { localStorage.setItem('plates_home_device', which); } catch (e) {}
   }
+  // carry campaign tags to the outbound links so each channel is measurable
+  // (web app: utm_*; App Store Connect analytics: ct campaign token)
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var tags = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].filter(function (k) { return q.get(k); });
+    if (!tags.length) return;
+    var ct = [q.get('utm_source'), q.get('utm_content')].filter(Boolean).join('-').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+    document.querySelectorAll('a.btn').forEach(function (a) {
+      var u = new URL(a.href);
+      if (u.hostname === 'apps.apple.com') { if (ct) u.searchParams.set('ct', ct); }
+      else if (u.hostname === 'play.google.com') { if (ct) u.searchParams.set('referrer', 'utm_source=' + q.get('utm_source') + '&utm_campaign=' + (q.get('utm_campaign') || '') + '&utm_content=' + (q.get('utm_content') || '')); }
+      else tags.forEach(function (k) { u.searchParams.set(k, q.get(k)); });
+      a.href = u.toString();
+    });
+  })();
   var ua = navigator.userAgent || '';
   var guess = /iPhone|iPad|iPod/.test(ua) ? 'ios' : 'android';
   var saved = null;

@@ -84,7 +84,7 @@ export default function ProCard({ profile, userId, onProfileRefresh, offer = get
         <a
           href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Going Pro on Plates')}`}
           className="pressable inline-block mt-2 text-xs px-3 py-1.5 rounded-full font-medium"
-          style={{ background: 'var(--forest)', color: 'white' }}
+          style={{ background: 'var(--forest)', color: 'var(--on-forest)' }}
         >
           Message us to upgrade
         </a>

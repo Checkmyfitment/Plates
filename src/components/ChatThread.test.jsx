@@ -59,7 +59,7 @@ describe('ChatThread', () => {
     const chat = makeChat({ messages: [{ id: 'm1', from: 'them', text: 'Do you have tamales today?' }] })
     render(<ChatThread chat={chat} currentUserId="buyer-1" onSend={vi.fn()} />)
 
-    fireEvent.click(screen.getByText('🌐 Translate'))
+    fireEvent.click(screen.getByText('Translate'))
     await waitFor(() => expect(screen.getByText('¿Tienes tamales hoy?')).toBeInTheDocument())
     expect(spy).toHaveBeenCalledWith('Do you have tamales today?', expect.any(String))
 
@@ -67,7 +67,7 @@ describe('ChatThread', () => {
     expect(screen.queryByText('¿Tienes tamales hoy?')).not.toBeInTheDocument()
 
     // toggling back on reuses the cached result instead of translating again
-    fireEvent.click(screen.getByText('🌐 Translate'))
+    fireEvent.click(screen.getByText('Translate'))
     expect(screen.getByText('¿Tienes tamales hoy?')).toBeInTheDocument()
     expect(spy).toHaveBeenCalledTimes(1)
   })
@@ -77,7 +77,7 @@ describe('ChatThread', () => {
     const chat = makeChat({ messages: [{ id: 'm1', from: 'them', text: 'Hello' }] })
     render(<ChatThread chat={chat} currentUserId="buyer-1" onSend={vi.fn()} />)
 
-    fireEvent.click(screen.getByText('🌐 Translate'))
+    fireEvent.click(screen.getByText('Translate'))
     await waitFor(() => expect(screen.getByText("Couldn't translate this message.")).toBeInTheDocument())
   })
 })
